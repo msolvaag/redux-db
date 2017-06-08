@@ -1,4 +1,4 @@
-import {QuerySet} from "./querySet";
+import { Cursor } from "./cursor";
 
 
-export {QuerySet};
+export { Cursor };

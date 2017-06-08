@@ -10,6 +10,7 @@
     "sourceMap": false,
     "noImplicitAny": true,
     "module": "es2015",
+    "moduleResolution": "node",
     "jsx": "react",
     "strict": true,
     "strictNullChecks": true,

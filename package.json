@@ -22,5 +22,8 @@
     "url": "https://github.com/msolvaag/redux-db/issues"
   },
   "homepage": "https://github.com/msolvaag/redux-db#readme",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "tslib": "^1.7.1"
+  }
 }
