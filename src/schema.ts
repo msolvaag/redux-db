@@ -27,6 +27,7 @@ export interface SchemaDDL {
 export interface FieldDDL {
     type: FieldType;
     references?: string;
+    relationName?: string;
 }
 
 export interface TableDDL {
@@ -59,10 +60,12 @@ export class FieldSchema {
     name: string;
     type: FieldType;
     references?: string;
+    relationName?: string;
 
     constructor(name: string, schema: FieldDDL) {
         this.name = name;
         this.type = schema.type;
         this.references = schema.references;
+        this.relationName = schema.relationName;
     }
 }
