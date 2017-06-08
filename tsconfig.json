@@ -1,0 +1,24 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "noEmitOnError": true,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "removeComments": false,
+    "target": "es2015",
+    "outDir": "./src/es",
+    "sourceMap": false,
+    "noImplicitAny": true,
+    "module": "es2015",
+    "jsx": "react",
+    "strict": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "declaration": true,
+    "declarationDir": "./@types"
+  },
+  "exclude": [
+    "node_modules",
+    "wwwroot"
+  ]
+}

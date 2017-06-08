@@ -1,0 +1,27 @@
+{
+  "name": "redux-db",
+  "version": "1.0.0",
+  "description": "A state normalizer for redux",
+  "main": "./src/es/index.js",
+  "typings": "./@types/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msolvaag/redux-db.git"
+  },
+  "keywords": [
+    "redux",
+    "database",
+    "orm"
+  ],
+  "author": "Magnus Solvåg",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/msolvaag/redux-db/issues"
+  },
+  "homepage": "https://github.com/msolvaag/redux-db#readme",
+  "dependencies": {    
+  }
+}
