@@ -17,7 +17,11 @@ export interface DatabaseSchema {
 export declare class TableSchema {
     name: string;
     fields: FieldSchema[];
+    private _primaryKeyFields;
+    private _foreignKeyFields;
     constructor(name: string, fields: FieldSchema[]);
+    normalize(data: any): any;
+    getPrimaryKey(record: any): string;
 }
 export declare class FieldSchema {
     name: string;

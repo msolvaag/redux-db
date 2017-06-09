@@ -6,8 +6,7 @@
   "typings": "./@types/src/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "compile": "tsc -p tsconfig.json",
-    "compile-cjs": "tsc -p tsconfig.cjs.json"
+    "compile": "tsc && tsc -p tsconfig.cjs.json"
   },
   "repository": {
     "type": "git",

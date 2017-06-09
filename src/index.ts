@@ -1,18 +1,16 @@
 import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema } from "./schema";
-import { SessionModel, RecordModel, RecordSet, TableModel } from "./models";
+import { RecordModel, RecordSet, TableModel } from "./models";
+import { Session } from "./session";
 
 export interface Reducer {
-    (session: SessionModel, action: any): void;
+    (session: Session, action: any): void;
 }
 
 export const createDatabase = (name: string, schema: SchemaDDL) => {
-    const tableSchemas = Object.keys(schema).map(tableName => {
+    const tableSchemas = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName]));
 
-        const tableDef = schema[tableName];
-        const fields = Object.keys(tableDef.fields).map(fieldName => new FieldSchema(fieldName, tableDef[fieldName]));
-
-        return new TableSchema(tableName, fields);
-    });
+    // connect
+    tableSchemas.forEach(table => table.connect(tableSchemas));
 
     return new Database(name, tableSchemas);
 };
@@ -21,7 +19,7 @@ const combineSchemaReducers = (db: Database, reducers: Reducer[]) => {
     return (state: any, action: any) => {
 
         const _state = state[db.name] || {};
-        const session = new SessionModel(state, db);
+        const session = new Session(state, db);
 
         reducers.forEach(reducer => {
             reducer(session, action);

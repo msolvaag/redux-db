@@ -1,61 +1,23 @@
 import { DatabaseSchema, TableSchema, FieldSchema } from "./schema";
+import { Session, TableState } from "./session";
 
-
-
-export interface Transaction<T extends Record<string, TableModel>> {
-    tables: T;
-}
-
-export interface TableState {
-    byId: { [key: string]: any };
-    ids: string[];
-}
-
-class FieldModel {
-    constructor(state: any, schema: FieldSchema) {
-
-    }
-}
-
-const createPrototype = (schema: TableSchema) => {
-
-    class ModelClass extends RecordModel {
-        constructor(state: any, schema: TableSchema) {
-            super(state, schema);
-        }
-    }
-
-    schema.fields.forEach(field => {
-        Object.defineProperty(ModelClass, field.name, {});
-    });
-
-    return ModelClass;
-}
-
-export class SessionModel {
-    tables: any;
-
-    constructor(state: any, schema: DatabaseSchema) {
-        this.tables = schema.tables.map(t => new TableModel(state[t.name], t));
-    }
-}
 
 export class TableModel<T extends RecordModel = RecordModel> {
-    state: TableState;
+    stateRef: { state: TableState };
     schema: TableSchema;
 
     RecordClass: any;
 
-    constructor(state: TableState, schema: TableSchema) {
-        this.state = state;
-        this.schema = schema;
+    _records: RecordModel[] = [];
 
-        this.RecordClass = createPrototype(schema);
+    constructor(state: TableState = { ids: [], byId: {} }, schema: TableSchema) {
+        this.stateRef = { state: state };
+        this.schema = schema;
     }
 
     all(): T[] {
-        const records = this.state.ids.map(id => this.state.byId[id]);
-        return records.map(r => new this.RecordClass(r, this.schema));
+        const records = this.stateRef.state.ids.map(id => this.stateRef.state.byId[id]);
+        return this._records = records.map(r => new this.RecordClass(r, this.schema));
     }
 
     filter(predicate: (record: T, index: number) => boolean) {
@@ -63,7 +25,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
     }
 
     get(id: number | string): T {
-        const record = this.state.byId[id];
+        const record = this.stateRef.state.byId[id];
         if (!record)
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
 
@@ -71,20 +33,54 @@ export class TableModel<T extends RecordModel = RecordModel> {
     }
 
     exists(id: number | string) {
-        return this.state.byId[id] !== undefined;
+        return this.stateRef.state.byId[id] !== undefined;
+    }
+
+    insert(data: any) {
+        const record = this.schema.normalize(data);
+        const pk = this.schema.getPrimaryKey(record);
+
+        const { byId, ids } = this.stateRef.state;
+        this.stateRef.state = { byId: { ...byId, [pk]: record }, ids: [...ids, pk] };
+
+        return new this.RecordClass(record, this.schema);
+    }
+
+    update(data: any) {
+
+    }
+
+    upsert(data: any) {
+
     }
 }
 
 export class RecordModel {
-    state: TableState;
+    state: any;
     schema: TableSchema;
+    session: Session;
 
     constructor(state: any, schema: TableSchema) {
         this.state = state;
         this.schema = schema;
     }
 
+    get id() {
+        return this.schema.getPrimaryKey(this.state);
+    }
+
     delete() {
+
+    }
+
+    update(data: any) {
+        this.state = { ...this.state, ...data };
+    }
+}
+
+export class RecordSet<T extends RecordModel = RecordModel> {
+
+    insert(data: any) {
 
     }
 
@@ -93,8 +89,17 @@ export class RecordModel {
     }
 }
 
-export class RecordSet<T extends RecordModel = RecordModel> {
-    insert(data: any) {
 
+class FieldModel {
+    session: Session;
+    schema: FieldSchema;
+
+    constructor(session: Session, schema: FieldSchema) {
+        this.session = session;
+        this.schema = schema;
+    }
+
+    get value() {
+        return this.schema.getValue(this.session);
     }
 }

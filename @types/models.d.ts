@@ -1,6 +1,6 @@
 import { DatabaseSchema, TableSchema } from "./schema";
-export interface Transaction<T extends Record<string, TableModel>> {
-    tables: T;
+export interface DatabaseState {
+    [key: string]: TableState;
 }
 export interface TableState {
     byId: {
@@ -10,17 +10,25 @@ export interface TableState {
 }
 export declare class SessionModel {
     tables: any;
-    constructor(state: any, schema: DatabaseSchema);
+    state: DatabaseState;
+    constructor(state: DatabaseState | undefined, schema: DatabaseSchema);
+    update(data: any): void;
 }
 export declare class TableModel<T extends RecordModel = RecordModel> {
-    state: TableState;
+    stateRef: {
+        state: TableState;
+    };
     schema: TableSchema;
     RecordClass: any;
-    constructor(state: TableState, schema: TableSchema);
+    _records: RecordModel[];
+    constructor(state: TableState | undefined, schema: TableSchema);
     all(): T[];
     filter(predicate: (record: T, index: number) => boolean): T[];
     get(id: number | string): T;
     exists(id: number | string): boolean;
+    insert(data: any): any;
+    update(data: any): void;
+    upsert(data: any): void;
 }
 export declare class RecordModel {
     state: TableState;
@@ -29,6 +37,6 @@ export declare class RecordModel {
     delete(): void;
     update(data: any): void;
 }
-export declare class RecordSet {
+export declare class RecordSet<T extends RecordModel = RecordModel> {
     insert(data: any): void;
 }
