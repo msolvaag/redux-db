@@ -1,4 +1,4 @@
-import * as ReduxDB from "./index";
+import * as ReduxDB from "../src/index";
 const db = ReduxDB.createDatabase("orm", {
     "user": {
         "id": { type: "PK" }
