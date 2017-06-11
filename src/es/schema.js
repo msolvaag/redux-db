@@ -14,7 +14,7 @@ export class TableSchema {
         });
     }
     normalize(data, output = {}) {
-        if (!utils.isPlainObject(data) && !Array.isArray(data))
+        if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
         if (output[this.name])
             throw new Error("Failed to normalize data. Circular reference detected.");
