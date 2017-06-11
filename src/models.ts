@@ -1,9 +1,5 @@
-import { DatabaseSchema, TableSchema, FieldSchema, DatabaseState, TableState, RecordState, NormalizedState } from "./schema";
+import { DatabaseSchema, TableSchema, FieldSchema, DatabaseState, TableState, NormalizedState } from "./schema";
 import * as utils from "./utils";
-
-export interface RecordClass<T=RecordModel> {
-    new (id: string, table: TableModel): T;
-}
 
 export class Session {
     tables: Record<string, TableModel>;
@@ -34,7 +30,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
         this.schema = schema;
     }
 
-    all(): T[] {
+    all() {
         return this.state.ids.map(id => ModelFactory.default.newRecordModel<T>(id, this));
     }
 
@@ -42,7 +38,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return this.all().filter(predicate);
     }
 
-    get(id: number | string): T {
+    get(id: number | string) {
         id = id.toString();
         if (!this.exists(id))
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
@@ -50,15 +46,19 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return ModelFactory.default.newRecordModel<T>(id, this);
     }
 
+    getOrDefault(id: number | string) {
+        return this.exists(id) ? this.get(id) : null;
+    }
+
     exists(id: number | string) {
         return this.state.byId[id] !== undefined;
     }
 
-    insert(data: any): T {
+    insert(data: any) {
         return this.insertMany(data)[0];
     }
 
-    insertMany(data: any): T[] {
+    insertMany(data: any) {
         const norm = this.schema.normalize(data);
         const table = norm[this.schema.name];
 
@@ -68,11 +68,11 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return table.ids.map(id => ModelFactory.default.newRecordModel<T>(id, this));
     }
 
-    update(data: any): T {
+    update(data: any) {
         return this.updateMany(data)[0];
     }
 
-    updateMany(data: any): T[] {
+    updateMany(data: any) {
         const norm = this.schema.normalize(data);
         const table = norm[this.schema.name];
 
@@ -91,7 +91,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return records;
     }
 
-    upsert(data: any): T {
+    upsert(data: any) {
         const pk = this.schema.getPrimaryKey(data);
 
         if (this.exists(pk))
@@ -136,9 +136,9 @@ export class RecordModel {
 }
 
 export class RecordField {
-    record: RecordModel;
-    schema: FieldSchema;
-    name: string;
+    readonly record: RecordModel;
+    readonly schema: FieldSchema;
+    readonly name: string;
 
     constructor(schema: FieldSchema, record: RecordModel) {
         this.name = schema.name;
@@ -152,6 +152,20 @@ export class RecordField {
 }
 
 export class RecordSet<T extends RecordModel> {
+    readonly records: T[];
+    readonly table: TableModel;
+    readonly referencedFrom: RecordField;
+
+    constructor(records: T[], table: TableModel, referencedFrom: RecordField) {
+        this.records = records;
+        this.table = table;
+        this.referencedFrom = referencedFrom;
+    }
+
+    map<M>(callback: (record: T) => M) {
+        return this.records.map(callback);
+    }
+
     insert(data: any) { }
     update(data: any) { }
 }
@@ -172,23 +186,18 @@ class ModelFactory {
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 
             const refId = record.value[schema.name];
-            if (refId)
-                return this.newRecordModel(refId, record.table);
-            else
-                return null;
-        } else if (schema.constraint === "FK" && schema.table !== record.table.schema) {
+            return refTable.getOrDefault(refId);
+        } else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
             const refTable = record.table.session.tables[schema.table.name];
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 
-            const refId = record.value[schema.name];
-            if (refId)
-                return this.newRecordModel(refId, record.table);
-            else
-                return null;
+            const refRecords = refTable.filter(r => r.value[schema.name] === record.id);
+
+            return new RecordSet(refRecords, refTable, new RecordField(schema, record));
+
         } else
             return new RecordField(schema, record);
-
     }
 
     protected _createRecordModelClass(schema: TableSchema) {
@@ -213,14 +222,15 @@ class ModelFactory {
         });
 
         schema.relations.forEach(field => {
-            Object.defineProperty(Record.prototype, field.name, {
-                get: function (this: Record) {
-                    return ModelFactory.default.newRecordField(field, this);
-                },
-                set: function (this: Record, value: any) {
-                    throw new Error("Invalid attempt to set an foreign table relation field.");
-                }
-            });
+            if (field.relationName)
+                Object.defineProperty(Record.prototype, field.relationName, {
+                    get: function (this: Record) {
+                        return ModelFactory.default.newRecordField(field, this);
+                    },
+                    set: function (this: Record, value: any) {
+                        throw new Error("Invalid attempt to set an foreign table relation field.");
+                    }
+                });
         });
 
         return Record;

@@ -26,13 +26,15 @@ interface Project extends ReduxDB.Record {
 
 interface ProjectUser extends ReduxDB.Record { }
 
-interface Tables {
-    project: ReduxDB.Table<Project>;
-    projectUser: ReduxDB.Table<ProjectUser>;
+interface MySession {
+    tables: {
+        project: ReduxDB.Table<Project>;
+        projectUser: ReduxDB.Table<ProjectUser>;
+    }
 }
 
-db.combineReducers((session, action) => {
-    const { project } = (session.tables as any) as Tables;
+db.combineReducers((session: MySession, action) => {
+    const { project } = session.tables;
 
     switch (action.type) {
         case "PROJECT_UPDATE":
