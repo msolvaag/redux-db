@@ -130,8 +130,8 @@ class ModelFactory {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     }
     newRecordField(schema, record) {
-        if (schema.constraint === "FK" && schema.table === record.table.schema) {
-            const refTable = record.table.session.tables[schema.table.name];
+        if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
+            const refTable = record.table.session.tables[schema.references];
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
             const refId = record.value[schema.name];
