@@ -16,7 +16,7 @@ export const createDatabase = (name: string, schema: SchemaDDL) => {
 
 const combineSchemaReducers = (db: Database, reducers: Reducer[]) => {
     return (state: any = {}, action: any) => {
-        const session = new Session(state, db);
+        const session = db.createSession(state);
 
         reducers.forEach(reducer => {
             reducer(session, action);
@@ -37,6 +37,10 @@ export class Database implements DatabaseSchema {
 
     combineReducers(...reducers: Reducer[]) {
         return combineSchemaReducers(this, reducers);
+    }
+
+    createSession(state: any) {
+        return new Session(state, this);
     }
 }
 
