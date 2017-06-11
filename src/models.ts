@@ -234,14 +234,15 @@ class ModelFactory {
         }
 
         schema.fields.forEach(field => {
-            Object.defineProperty(Record.prototype, field.name, {
-                get: function (this: Record) {
-                    return ModelFactory.default.newRecordField(field, this);
-                },
-                set: function (this: Record, value: any) {
-                    return this.update({ [field.name]: value });
-                }
-            });
+            if (field.constraint == "FK")
+                Object.defineProperty(Record.prototype, field.name, {
+                    get: function (this: Record) {
+                        return ModelFactory.default.newRecordField(field, this);
+                    },
+                    set: function (this: Record, value: any) {
+                        return this.update({ [field.name]: value });
+                    }
+                });
         });
 
         schema.relations.forEach(field => {
