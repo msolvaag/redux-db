@@ -29,6 +29,9 @@ export class TableModel {
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
         return ModelFactory.default.newRecordModel(id, this);
     }
+    getOrDefault(id) {
+        return this.exists(id) ? this.get(id) : null;
+    }
     exists(id) {
         return this.state.byId[id] !== undefined;
     }
@@ -102,6 +105,14 @@ export class RecordField {
     }
 }
 export class RecordSet {
+    constructor(records, table, referencedFrom) {
+        this.records = records;
+        this.table = table;
+        this.referencedFrom = referencedFrom;
+    }
+    map(callback) {
+        return this.records.map(callback);
+    }
     insert(data) { }
     update(data) { }
 }
@@ -118,20 +129,14 @@ class ModelFactory {
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
             const refId = record.value[schema.name];
-            if (refId)
-                return this.newRecordModel(refId, record.table);
-            else
-                return null;
+            return refTable.getOrDefault(refId);
         }
-        else if (schema.constraint === "FK" && schema.table !== record.table.schema) {
+        else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
             const refTable = record.table.session.tables[schema.table.name];
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
-            const refId = record.value[schema.name];
-            if (refId)
-                return this.newRecordModel(refId, record.table);
-            else
-                return null;
+            const refRecords = refTable.filter(r => r.value[schema.name] === record.id);
+            return new RecordSet(refRecords, refTable, new RecordField(schema, record));
         }
         else
             return new RecordField(schema, record);
@@ -153,14 +158,15 @@ class ModelFactory {
             });
         });
         schema.relations.forEach(field => {
-            Object.defineProperty(Record.prototype, field.name, {
-                get: function () {
-                    return ModelFactory.default.newRecordField(field, this);
-                },
-                set: function (value) {
-                    throw new Error("Invalid attempt to set an foreign table relation field.");
-                }
-            });
+            if (field.relationName)
+                Object.defineProperty(Record.prototype, field.relationName, {
+                    get: function () {
+                        return ModelFactory.default.newRecordField(field, this);
+                    },
+                    set: function (value) {
+                        throw new Error("Invalid attempt to set an foreign table relation field.");
+                    }
+                });
         });
         return Record;
     }
