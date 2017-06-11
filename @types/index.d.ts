@@ -1,7 +1,7 @@
 import { SchemaDDL, DatabaseSchema, TableSchema } from "./schema";
-import { SessionModel, RecordModel, RecordSet, TableModel } from "./models";
+import { Session, RecordModel, RecordSet, TableModel } from "./models";
 export interface Reducer {
-    (session: SessionModel, action: any): void;
+    (session: Session, action: any): void;
 }
 export declare const createDatabase: (name: string, schema: SchemaDDL) => Database;
 declare const combineSchemaReducers: (db: Database, reducers: Reducer[]) => (state: any, action: any) => void;
