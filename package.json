@@ -1,6 +1,6 @@
 {
   "name": "redux-db",
-  "version": "0.0.0-14",
+  "version": "0.0.0-15",
   "description": "A state normalizer for redux",
   "main": "./src/es/index.js",
   "typings": "./@types/index.d.ts",
