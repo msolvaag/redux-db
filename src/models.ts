@@ -196,7 +196,7 @@ export class RecordSet<T extends RecordModel> {
 class ModelFactory {
     private _recordClass: { [key: string]: any } = {};
 
-    static default: ModelFactory;
+    static default: ModelFactory = new ModelFactory();
 
     newRecordModel<T extends RecordModel>(id: string, table: Table): T {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);

@@ -177,3 +177,4 @@ class ModelFactory {
         return Record;
     }
 }
+ModelFactory.default = new ModelFactory();
