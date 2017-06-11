@@ -3,7 +3,7 @@
   "version": "0.0.0-3",
   "description": "A state normalizer for redux",
   "main": "./src/es/index.js",
-  "typings": "./@types/src/index.d.ts",
+  "typings": "./@types/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "tsc && tsc -p tsconfig.cjs.json"
