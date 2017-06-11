@@ -40,4 +40,4 @@ export class Database implements DatabaseSchema {
     }
 }
 
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };
+export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers, Session };
