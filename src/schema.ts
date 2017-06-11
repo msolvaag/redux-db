@@ -109,15 +109,15 @@ export class TableSchema {
 
     getPrimaryKey(record: any) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-        let pk: string;
+        let pk: string | null = null;
 
         if (lookup.length === 1)
             pk = record[lookup[0]];
-        else
+        else if (lookup.length > 1)
             pk = lookup.reduce((p, n) => {
                 const k = record[n];
                 return p && k ? (p + "_" + k) : k;
-            });
+            }, record[lookup[0]]);
 
         if (!pk || pk.length === 0)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
