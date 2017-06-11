@@ -11,4 +11,4 @@ export declare class Database implements DatabaseSchema {
     constructor(name: string, tables: TableSchema[]);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => void;
 }
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };
+export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers, Session };

@@ -24,4 +24,4 @@ export class Database {
         return combineSchemaReducers(this, reducers);
     }
 }
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };
+export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers, Session };
