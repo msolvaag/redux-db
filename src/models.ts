@@ -33,6 +33,13 @@ export class Session {
                 this.tables[name].upsert(state[name]);
         });
     }
+
+    commit() {
+        Object.keys(this.tables).forEach(table => {
+            this.state = { ...this.state, [table]: this.tables[table].state };
+        });
+        return this.state as any;
+    }
 }
 
 export class TableModel<T extends RecordModel> implements Table {

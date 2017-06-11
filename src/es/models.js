@@ -10,6 +10,12 @@ export class Session {
                 this.tables[name].upsert(state[name]);
         });
     }
+    commit() {
+        Object.keys(this.tables).forEach(table => {
+            this.state = Object.assign({}, this.state, { [table]: this.tables[table].state });
+        });
+        return this.state;
+    }
 }
 export class TableModel {
     constructor(session, state = { ids: [], byId: {} }, schema) {

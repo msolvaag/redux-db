@@ -7,12 +7,12 @@ export const createDatabase = (name, schema) => {
     return new Database(name, tableSchemas);
 };
 const combineSchemaReducers = (db, reducers) => {
-    return (state, action) => {
-        const _state = state[db.name] || {};
+    return (state = {}, action) => {
         const session = new Session(state, db);
         reducers.forEach(reducer => {
             reducer(session, action);
         });
+        return session.commit();
     };
 };
 export class Database {

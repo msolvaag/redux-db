@@ -18,6 +18,7 @@ export declare class Session {
     state: DatabaseState;
     constructor(state: DatabaseState | undefined, schema: DatabaseSchema);
     upsert(state: NormalizedState, from?: Table): void;
+    commit(): any;
 }
 export declare class TableModel<T extends RecordModel> implements Table {
     readonly session: Session;

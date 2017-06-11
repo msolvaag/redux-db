@@ -15,14 +15,14 @@ export const createDatabase = (name: string, schema: SchemaDDL) => {
 };
 
 const combineSchemaReducers = (db: Database, reducers: Reducer[]) => {
-    return (state: any, action: any) => {
-
-        const _state = state[db.name] || {};
+    return (state: any = {}, action: any) => {
         const session = new Session(state, db);
 
         reducers.forEach(reducer => {
             reducer(session, action);
         });
+
+        return session.commit();
     };
 }
 
