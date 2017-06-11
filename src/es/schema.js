@@ -42,7 +42,7 @@ export class TableSchema {
             pk = lookup.reduce((p, n) => {
                 const k = record[n];
                 return p && k ? (p + "_" + k) : k;
-            }, record[lookup[0]]);
+            }, null);
         if (!pk || pk.length === 0)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
         return pk;
