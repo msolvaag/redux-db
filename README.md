@@ -1,3 +1,3 @@
 # redux-db
 
-In production..
+Work in progress...  Not usable quite yet.

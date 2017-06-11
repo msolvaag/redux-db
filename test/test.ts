@@ -32,7 +32,7 @@ interface Tables {
 }
 
 db.combineReducers((session, action) => {
-    const { project } = session.tables as Tables;
+    const { project } = (session.tables as any) as Tables;
 
     switch (action.type) {
         case "PROJECT_UPDATE":

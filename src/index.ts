@@ -1,6 +1,5 @@
 import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema } from "./schema";
-import { RecordModel, RecordSet, TableModel } from "./models";
-import { Session } from "./session";
+import { Session, RecordModel, RecordSet, TableModel } from "./models";
 
 export interface Reducer {
     (session: Session, action: any): void;
