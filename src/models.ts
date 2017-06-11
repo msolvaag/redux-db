@@ -1,8 +1,24 @@
 import { DatabaseSchema, TableSchema, FieldSchema, DatabaseState, TableState, NormalizedState } from "./schema";
 import * as utils from "./utils";
 
+export interface Table {
+    session: Session;
+    schema: TableSchema;
+    state: TableState;
+
+    upsert: (data: any) => RecordModel;
+    get: (id: string | number) => RecordModel;
+    getOrDefault: (id: string | number) => RecordModel | null;
+    all(): RecordModel[];
+    filter: (callback: (record: RecordModel) => boolean) => RecordModel[];
+    exists: (id: string | number) => boolean;
+    update: (data: any) => RecordModel;
+    updateMany: (data: any) => RecordModel[];
+    delete: (id: string | number) => void;
+}
+
 export class Session {
-    tables: Record<string, TableModel>;
+    tables: Record<string, Table>;
     state: DatabaseState;
 
     constructor(state: DatabaseState = {}, schema: DatabaseSchema) {
@@ -11,7 +27,7 @@ export class Session {
             schema.tables.map(t => new TableModel(this, state[t.name], t)), t => t.schema.name);
     }
 
-    upsert(state: NormalizedState, from?: TableModel) {
+    upsert(state: NormalizedState, from?: Table) {
         Object.keys(state).forEach(name => {
             if (!from || name !== from.schema.name)
                 this.tables[name].upsert(state[name]);
@@ -19,7 +35,7 @@ export class Session {
     }
 }
 
-export class TableModel<T extends RecordModel = RecordModel> {
+export class TableModel<T extends RecordModel> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
@@ -30,7 +46,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
         this.schema = schema;
     }
 
-    all() {
+    all(): T[] {
         return this.state.ids.map(id => ModelFactory.default.newRecordModel<T>(id, this));
     }
 
@@ -38,7 +54,7 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return this.all().filter(predicate);
     }
 
-    get(id: number | string) {
+    get(id: number | string): T {
         id = id.toString();
         if (!this.exists(id))
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
@@ -54,11 +70,11 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return this.state.byId[id] !== undefined;
     }
 
-    insert(data: any) {
+    insert(data: any): T {
         return this.insertMany(data)[0];
     }
 
-    insertMany(data: any) {
+    insertMany(data: any): T[] {
         const norm = this.schema.normalize(data);
         const table = norm[this.schema.name];
 
@@ -68,11 +84,11 @@ export class TableModel<T extends RecordModel = RecordModel> {
         return table.ids.map(id => ModelFactory.default.newRecordModel<T>(id, this));
     }
 
-    update(data: any) {
+    update(data: any): T {
         return this.updateMany(data)[0];
     }
 
-    updateMany(data: any) {
+    updateMany(data: any): T[] {
         const norm = this.schema.normalize(data);
         const table = norm[this.schema.name];
 
@@ -113,10 +129,10 @@ export class TableModel<T extends RecordModel = RecordModel> {
 }
 
 export class RecordModel {
-    table: TableModel;
+    table: Table;
     id: string;
 
-    constructor(id: string, table: TableModel) {
+    constructor(id: string, table: Table) {
         this.id = id;
         this.table = table;
     }
@@ -153,10 +169,10 @@ export class RecordField {
 
 export class RecordSet<T extends RecordModel> {
     readonly records: T[];
-    readonly table: TableModel;
+    readonly table: Table;
     readonly referencedFrom: RecordField;
 
-    constructor(records: T[], table: TableModel, referencedFrom: RecordField) {
+    constructor(records: T[], table: Table, referencedFrom: RecordField) {
         this.records = records;
         this.table = table;
         this.referencedFrom = referencedFrom;
@@ -175,7 +191,7 @@ class ModelFactory {
 
     static default: ModelFactory;
 
-    newRecordModel<T extends RecordModel>(id: string, table: TableModel): T {
+    newRecordModel<T extends RecordModel>(id: string, table: Table): T {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     }
 
@@ -203,9 +219,9 @@ class ModelFactory {
     protected _createRecordModelClass(schema: TableSchema) {
 
         class Record extends RecordModel {
-            table: TableModel;
+            table: Table;
 
-            constructor(id: string, table: TableModel) {
+            constructor(id: string, table: Table) {
                 super(id, table);
             }
         }
