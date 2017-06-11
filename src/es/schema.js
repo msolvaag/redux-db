@@ -4,7 +4,7 @@ export class TableSchema {
     constructor(name, schema) {
         this.relations = [];
         this.name = name;
-        this.fields = Object.keys(schema.fields).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
+        this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
         this._primaryKeyFields = this.fields.filter(f => f.constraint === PK).map(f => f.name);
         this._foreignKeyFields = this.fields.filter(f => f.constraint === FK).map(f => f.name);
     }
