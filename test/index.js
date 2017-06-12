@@ -66,7 +66,7 @@ test('insert nested data', function (t) {
     const { testTable } = session.tables;
     const recordModel = testTable.insert({
         id: 2, name: "test nested", modified: "1", refs: [
-            { id: 1, prop: "val" }
+            { id: 1, test: 2, prop: "val" }
         ]
     });
 
