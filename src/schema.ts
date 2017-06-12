@@ -9,6 +9,7 @@ export interface FieldDDL {
     constraint?: ConstraintType;
     references?: string;
     relationName?: string;
+    name?: string;
 }
 
 export interface TableDDL {
@@ -129,6 +130,7 @@ export class TableSchema {
 export class FieldSchema {
     readonly table: TableSchema;
     readonly name: string;
+    readonly propName: string;
 
     readonly type: FieldType;
     readonly constraint: ConstraintType;
@@ -139,6 +141,7 @@ export class FieldSchema {
     constructor(table: TableSchema, name: string, schema: FieldDDL) {
         this.table = table;
         this.name = name;
+        this.propName = schema.name || name;
         this.type = schema.type || "any";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;

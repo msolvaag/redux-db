@@ -155,7 +155,7 @@ class ModelFactory {
         }
         schema.fields.forEach(field => {
             if (field.constraint == "FK")
-                Object.defineProperty(Record.prototype, field.name, {
+                Object.defineProperty(Record.prototype, field.propName, {
                     get: function () {
                         return ModelFactory.default.newRecordField(field, this);
                     },

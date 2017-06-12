@@ -52,6 +52,7 @@ export class FieldSchema {
     constructor(table, name, schema) {
         this.table = table;
         this.name = name;
+        this.propName = schema.name || name;
         this.type = schema.type || "any";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;

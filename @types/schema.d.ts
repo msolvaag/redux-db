@@ -6,6 +6,7 @@ export interface FieldDDL {
     constraint?: ConstraintType;
     references?: string;
     relationName?: string;
+    name?: string;
 }
 export interface TableDDL {
     [key: string]: FieldDDL;
@@ -59,6 +60,7 @@ export declare class TableSchema {
 export declare class FieldSchema {
     readonly table: TableSchema;
     readonly name: string;
+    readonly propName: string;
     readonly type: FieldType;
     readonly constraint: ConstraintType;
     readonly references?: string;
