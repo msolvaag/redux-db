@@ -67,7 +67,8 @@ export class TableModel {
             const newRecord = table.byId[id];
             const oldRecord = state.byId[id];
             const modified = this.schema.isModified(oldRecord, newRecord);
-            state.byId[id] = Object.assign({}, oldRecord, newRecord);
+            if (modified)
+                state.byId[id] = Object.assign({}, oldRecord, newRecord);
             return ModelFactory.default.newRecordModel(id, this);
         });
         this.state = state;

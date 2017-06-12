@@ -81,7 +81,8 @@ var TableModel = (function () {
             var newRecord = table.byId[id];
             var oldRecord = state.byId[id];
             var modified = _this.schema.isModified(oldRecord, newRecord);
-            state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
+            if (modified)
+                state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
             return ModelFactory.default.newRecordModel(id, _this);
         });
         this.state = state;

@@ -121,7 +121,9 @@ export class TableModel<T extends TableRecord> implements Table {
             const oldRecord = state.byId[id];
             const modified = this.schema.isModified(oldRecord, newRecord);
 
-            state.byId[id] = { ...oldRecord, ...newRecord };
+            if (modified)
+                state.byId[id] = { ...oldRecord, ...newRecord };
+
             return ModelFactory.default.newRecordModel<T>(id, this);
         });
 

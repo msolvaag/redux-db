@@ -1,0 +1,25 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "noEmitOnError": true,
+    "noEmitHelpers": false,
+    "importHelpers": false,
+    "removeComments": false,
+    "target": "es5",
+    "outFile": "./dist/redux-db.js",
+    "sourceMap": false,
+    "noImplicitAny": true,
+    "module": "amd",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "strict": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true
+  },
+  "exclude": [
+    "node_modules",
+    "wwwroot",
+    "@types",
+    "test"
+  ]
+}

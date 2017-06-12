@@ -26,5 +26,10 @@
   "dependencies": {
     "tslib": "^1.7.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^3.0.0",
+    "pump": "^1.0.2"
+  }
 }
