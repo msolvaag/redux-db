@@ -6,8 +6,9 @@ export class Session {
     }
     upsert(state, from) {
         Object.keys(state).forEach(name => {
-            if (!from || name !== from.schema.name)
-                this.tables[name].upsert(state[name]);
+            if (!from || name !== from.schema.name) {
+                this.tables[name].upsertNormalized(state[name]);
+            }
         });
     }
     commit() {
@@ -48,39 +49,16 @@ export class TableModel {
         return this.insertMany(data)[0];
     }
     insertMany(data) {
-        const norm = this.schema.normalize(data);
-        const table = norm[this.schema.name];
-        this.state = { ids: this.state.ids.concat(table.ids), byId: Object.assign({}, this.state.byId, table.byId) };
-        this.session.upsert(norm, this);
-        return table.ids.map(id => ModelFactory.default.newRecordModel(id, this));
+        return this._normalizedAction(data, this.insertNormalized);
     }
     update(data) {
         return this.updateMany(data)[0];
     }
     updateMany(data) {
-        const norm = this.schema.normalize(data);
-        const table = norm[this.schema.name];
-        let state = Object.assign({}, this.state);
-        const records = Object.keys(table.byId).map(id => {
-            if (!this.state.byId[id])
-                throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
-            const newRecord = table.byId[id];
-            const oldRecord = state.byId[id];
-            const modified = this.schema.isModified(oldRecord, newRecord);
-            if (modified)
-                state.byId[id] = Object.assign({}, oldRecord, newRecord);
-            return ModelFactory.default.newRecordModel(id, this);
-        });
-        this.state = state;
-        this.session.upsert(norm, this);
-        return records;
+        return this._normalizedAction(data, this.updateNormalized);
     }
     upsert(data) {
-        const pk = this.schema.getPrimaryKey(data);
-        if (this.exists(pk))
-            return this.update(data);
-        else
-            return this.insert(data);
+        return this._normalizedAction(data, this.upsertNormalized)[0];
     }
     delete(id) {
         const byId = Object.assign({}, this.state.byId), ids = this.state.ids.slice();
@@ -89,6 +67,50 @@ export class TableModel {
         if (idx >= 0)
             ids.splice(idx, 1);
         this.state = Object.assign({}, this.state, { byId: byId, ids: ids });
+    }
+    insertNormalized(table) {
+        this.state = { ids: this.state.ids.concat(table.ids), byId: Object.assign({}, this.state.byId, table.byId) };
+        return table.ids.map(id => ModelFactory.default.newRecordModel(id, this));
+    }
+    updateNormalized(table) {
+        let state = Object.assign({}, this.state), dirty = false;
+        const records = Object.keys(table.byId).map(id => {
+            if (!this.state.byId[id])
+                throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
+            const newRecord = table.byId[id];
+            const oldRecord = state.byId[id];
+            const isModified = this.schema.isModified(oldRecord, newRecord);
+            if (isModified) {
+                state.byId[id] = Object.assign({}, oldRecord, newRecord);
+                dirty = true;
+            }
+            return ModelFactory.default.newRecordModel(id, this);
+        });
+        if (dirty)
+            this.state = state;
+        return records;
+    }
+    upsertNormalized(norm) {
+        const toUpdate = { ids: [], byId: {} };
+        const toInsert = { ids: [], byId: {} };
+        norm.ids.forEach(id => {
+            if (this.exists(id)) {
+                toUpdate.ids.push(id);
+                toUpdate.byId[id] = norm.byId[id];
+            }
+            else {
+                toInsert.ids.push(id);
+                toInsert.byId[id] = norm.byId[id];
+            }
+        });
+        return (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+    }
+    _normalizedAction(data, action) {
+        const norm = this.schema.normalize(data);
+        const table = norm[this.schema.name];
+        const records = table ? action.call(this, table) : [];
+        this.session.upsert(norm, this);
+        return records;
     }
 }
 export class RecordModel {

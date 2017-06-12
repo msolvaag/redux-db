@@ -21,7 +21,7 @@ export class TableSchema {
             throw new Error("Failed to normalize data. Circular reference detected.");
         output[this.name] = { ids: [], byId: {} };
         output[this.name].ids = utils.ensureArray(data).map(obj => {
-            const pk = this.getPrimaryKey(data);
+            const pk = this.getPrimaryKey(obj);
             output[this.name].byId[pk] = obj;
             const relations = {};
             this.relations.forEach(rel => {
@@ -52,10 +52,10 @@ export class TableSchema {
     }
     isModified(x, y) {
         if (this._stampFields.length === 1)
-            return x[this._stampFields[0]] === y[this._stampFields[0]];
+            return x[this._stampFields[0]] !== y[this._stampFields[0]];
         else if (this._stampFields.length > 1) {
             return this._stampFields.reduce((p, n) => {
-                return p + (x[this._stampFields[0]] === y[this._stampFields[0]] ? 1 : 0);
+                return p + (x[this._stampFields[0]] !== y[this._stampFields[0]] ? 1 : 0);
             }, 0) !== this._stampFields.length;
         }
         else

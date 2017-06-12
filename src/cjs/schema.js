@@ -27,7 +27,7 @@ var TableSchema = (function () {
             throw new Error("Failed to normalize data. Circular reference detected.");
         output[this.name] = { ids: [], byId: {} };
         output[this.name].ids = utils.ensureArray(data).map(function (obj) {
-            var pk = _this.getPrimaryKey(data);
+            var pk = _this.getPrimaryKey(obj);
             output[_this.name].byId[pk] = obj;
             var relations = {};
             _this.relations.forEach(function (rel) {
@@ -59,10 +59,10 @@ var TableSchema = (function () {
     TableSchema.prototype.isModified = function (x, y) {
         var _this = this;
         if (this._stampFields.length === 1)
-            return x[this._stampFields[0]] === y[this._stampFields[0]];
+            return x[this._stampFields[0]] !== y[this._stampFields[0]];
         else if (this._stampFields.length > 1) {
             return this._stampFields.reduce(function (p, n) {
-                return p + (x[_this._stampFields[0]] === y[_this._stampFields[0]] ? 1 : 0);
+                return p + (x[_this._stampFields[0]] !== y[_this._stampFields[0]] ? 1 : 0);
             }, 0) !== this._stampFields.length;
         }
         else

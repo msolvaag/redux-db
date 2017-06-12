@@ -43,6 +43,10 @@ export declare class TableModel<T extends TableRecord> implements Table {
     updateMany(data: any): T[];
     upsert(data: any): T;
     delete(id: string): void;
+    insertNormalized(table: TableState): T[];
+    updateNormalized(table: TableState): T[];
+    upsertNormalized(norm: TableState): T[];
+    private _normalizedAction(data, action);
 }
 export declare class RecordModel<T> implements TableRecord {
     table: Table;

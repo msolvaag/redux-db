@@ -93,7 +93,7 @@ export class TableSchema {
 
         output[this.name] = { ids: [], byId: {} };
         output[this.name].ids = utils.ensureArray(data).map(obj => {
-            const pk = this.getPrimaryKey(data);
+            const pk = this.getPrimaryKey(obj);
             output[this.name].byId[pk] = obj;
 
             const relations: Record<string, any> = {};
@@ -133,10 +133,10 @@ export class TableSchema {
 
     isModified(x: any, y: any) {
         if (this._stampFields.length === 1)
-            return x[this._stampFields[0]] === y[this._stampFields[0]];
+            return x[this._stampFields[0]] !== y[this._stampFields[0]];
         else if (this._stampFields.length > 1) {
             return this._stampFields.reduce((p, n) => {
-                return p + (x[this._stampFields[0]] === y[this._stampFields[0]] ? 1 : 0);
+                return p + (x[this._stampFields[0]] !== y[this._stampFields[0]] ? 1 : 0);
             }, 0) !== this._stampFields.length;
         } else
             return true;

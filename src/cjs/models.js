@@ -12,8 +12,9 @@ var Session = (function () {
     Session.prototype.upsert = function (state, from) {
         var _this = this;
         Object.keys(state).forEach(function (name) {
-            if (!from || name !== from.schema.name)
-                _this.tables[name].upsert(state[name]);
+            if (!from || name !== from.schema.name) {
+                _this.tables[name].upsertNormalized(state[name]);
+            }
         });
     };
     Session.prototype.commit = function () {
@@ -60,41 +61,16 @@ var TableModel = (function () {
         return this.insertMany(data)[0];
     };
     TableModel.prototype.insertMany = function (data) {
-        var _this = this;
-        var norm = this.schema.normalize(data);
-        var table = norm[this.schema.name];
-        this.state = { ids: this.state.ids.concat(table.ids), byId: tslib_1.__assign({}, this.state.byId, table.byId) };
-        this.session.upsert(norm, this);
-        return table.ids.map(function (id) { return ModelFactory.default.newRecordModel(id, _this); });
+        return this._normalizedAction(data, this.insertNormalized);
     };
     TableModel.prototype.update = function (data) {
         return this.updateMany(data)[0];
     };
     TableModel.prototype.updateMany = function (data) {
-        var _this = this;
-        var norm = this.schema.normalize(data);
-        var table = norm[this.schema.name];
-        var state = tslib_1.__assign({}, this.state);
-        var records = Object.keys(table.byId).map(function (id) {
-            if (!_this.state.byId[id])
-                throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
-            var newRecord = table.byId[id];
-            var oldRecord = state.byId[id];
-            var modified = _this.schema.isModified(oldRecord, newRecord);
-            if (modified)
-                state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
-            return ModelFactory.default.newRecordModel(id, _this);
-        });
-        this.state = state;
-        this.session.upsert(norm, this);
-        return records;
+        return this._normalizedAction(data, this.updateNormalized);
     };
     TableModel.prototype.upsert = function (data) {
-        var pk = this.schema.getPrimaryKey(data);
-        if (this.exists(pk))
-            return this.update(data);
-        else
-            return this.insert(data);
+        return this._normalizedAction(data, this.upsertNormalized)[0];
     };
     TableModel.prototype.delete = function (id) {
         var byId = tslib_1.__assign({}, this.state.byId), ids = this.state.ids.slice();
@@ -103,6 +79,53 @@ var TableModel = (function () {
         if (idx >= 0)
             ids.splice(idx, 1);
         this.state = tslib_1.__assign({}, this.state, { byId: byId, ids: ids });
+    };
+    TableModel.prototype.insertNormalized = function (table) {
+        var _this = this;
+        this.state = { ids: this.state.ids.concat(table.ids), byId: tslib_1.__assign({}, this.state.byId, table.byId) };
+        return table.ids.map(function (id) { return ModelFactory.default.newRecordModel(id, _this); });
+    };
+    TableModel.prototype.updateNormalized = function (table) {
+        var _this = this;
+        var state = tslib_1.__assign({}, this.state), dirty = false;
+        var records = Object.keys(table.byId).map(function (id) {
+            if (!_this.state.byId[id])
+                throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
+            var newRecord = table.byId[id];
+            var oldRecord = state.byId[id];
+            var isModified = _this.schema.isModified(oldRecord, newRecord);
+            if (isModified) {
+                state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
+                dirty = true;
+            }
+            return ModelFactory.default.newRecordModel(id, _this);
+        });
+        if (dirty)
+            this.state = state;
+        return records;
+    };
+    TableModel.prototype.upsertNormalized = function (norm) {
+        var _this = this;
+        var toUpdate = { ids: [], byId: {} };
+        var toInsert = { ids: [], byId: {} };
+        norm.ids.forEach(function (id) {
+            if (_this.exists(id)) {
+                toUpdate.ids.push(id);
+                toUpdate.byId[id] = norm.byId[id];
+            }
+            else {
+                toInsert.ids.push(id);
+                toInsert.byId[id] = norm.byId[id];
+            }
+        });
+        return (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+    };
+    TableModel.prototype._normalizedAction = function (data, action) {
+        var norm = this.schema.normalize(data);
+        var table = norm[this.schema.name];
+        var records = table ? action.call(this, table) : [];
+        this.session.upsert(norm, this);
+        return records;
     };
     return TableModel;
 }());
