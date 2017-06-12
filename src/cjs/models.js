@@ -171,7 +171,10 @@ var ModelFactory = (function () {
             var refTable = record.table.session.tables[schema.table.name];
             if (!refTable)
                 throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-            var refRecords = refTable.filter(function (r) { return r.value[schema.name] === record.id; });
+            var refRecords = refTable.filter(function (r) {
+                var refId = r.value[schema.name];
+                return refId && refId.toString() === record.id;
+            });
             return new RecordSet(refRecords, refTable, new RecordField(schema, record));
         }
         else

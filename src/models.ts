@@ -224,7 +224,10 @@ class ModelFactory {
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 
-            const refRecords = refTable.filter(r => r.value[schema.name] === record.id);
+            const refRecords = refTable.filter(r => {
+                const refId = r.value[schema.name];
+                return refId && refId.toString() === record.id;
+            });
 
             return new RecordSet(refRecords, refTable, new RecordField(schema, record));
 
