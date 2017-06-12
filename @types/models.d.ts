@@ -3,15 +3,22 @@ export interface Table {
     session: Session;
     schema: TableSchema;
     state: TableState;
-    upsert: (data: any) => RecordModel;
-    get: (id: string | number) => RecordModel;
-    getOrDefault: (id: string | number) => RecordModel | null;
-    all(): RecordModel[];
-    filter: (callback: (record: RecordModel) => boolean) => RecordModel[];
+    upsert: (data: any) => TableRecord;
+    get: (id: string | number) => TableRecord;
+    getOrDefault: (id: string | number) => TableRecord | null;
+    all(): TableRecord[];
+    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
     exists: (id: string | number) => boolean;
-    update: (data: any) => RecordModel;
-    updateMany: (data: any) => RecordModel[];
+    update: (data: any) => TableRecord;
+    updateMany: (data: any) => TableRecord[];
     delete: (id: string | number) => void;
+}
+export interface TableRecord {
+    id: string;
+    table: Table;
+    value: any;
+    update(data: any): TableRecord;
+    delete(): void;
 }
 export declare class Session {
     tables: Record<string, Table>;
@@ -20,7 +27,7 @@ export declare class Session {
     upsert(state: NormalizedState, from?: Table): void;
     commit(): any;
 }
-export declare class TableModel<T extends RecordModel> implements Table {
+export declare class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
@@ -34,25 +41,25 @@ export declare class TableModel<T extends RecordModel> implements Table {
     insertMany(data: any): T[];
     update(data: any): T;
     updateMany(data: any): T[];
-    upsert(data: any): T;
+    upsert(data: any): TableRecord;
     delete(id: string): void;
 }
-export declare class RecordModel {
+export declare class RecordModel<T> implements TableRecord {
     table: Table;
     id: string;
     constructor(id: string, table: Table);
-    readonly value: any;
+    readonly value: T;
     delete(): void;
     update(data: any): this;
 }
 export declare class RecordField {
-    readonly record: RecordModel;
+    readonly record: TableRecord;
     readonly schema: FieldSchema;
     readonly name: string;
-    constructor(schema: FieldSchema, record: RecordModel);
+    constructor(schema: FieldSchema, record: TableRecord);
     readonly value: any;
 }
-export declare class RecordSet<T extends RecordModel> {
+export declare class RecordSet<T extends TableRecord> {
     readonly records: T[];
     readonly table: Table;
     readonly referencedFrom: RecordField;

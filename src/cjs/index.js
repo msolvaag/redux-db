@@ -2,24 +2,24 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var schema_1 = require("./schema");
 var models_1 = require("./models");
+exports.Session = models_1.Session;
 exports.Record = models_1.RecordModel;
 exports.RecordSet = models_1.RecordSet;
 exports.Table = models_1.TableModel;
 exports.createDatabase = function (name, schema) {
-    var tableSchemas = Object.keys(schema).map(function (tableName) {
-        var tableDef = schema[tableName];
-        var fields = Object.keys(tableDef.fields).map(function (fieldName) { return new schema_1.FieldSchema(fieldName, tableDef[fieldName]); });
-        return new schema_1.TableSchema(tableName, fields);
-    });
+    var tableSchemas = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName]); });
+    // connect
+    tableSchemas.forEach(function (table) { return table.connect(tableSchemas); });
     return new Database(name, tableSchemas);
 };
 var combineSchemaReducers = function (db, reducers) {
     return function (state, action) {
-        var _state = state[db.name] || {};
-        var session = new models_1.SessionModel(state, db);
+        if (state === void 0) { state = {}; }
+        var session = db.createSession(state);
         reducers.forEach(function (reducer) {
             reducer(session, action);
         });
+        return session.commit();
     };
 };
 exports.combineReducers = combineSchemaReducers;
@@ -34,6 +34,9 @@ var Database = (function () {
             reducers[_i] = arguments[_i];
         }
         return combineSchemaReducers(this, reducers);
+    };
+    Database.prototype.createSession = function (state) {
+        return new models_1.Session(state, this);
     };
     return Database;
 }());

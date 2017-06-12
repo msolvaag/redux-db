@@ -15,7 +15,13 @@ const db = ReduxDB.createDatabase("orm", {
     }
 });
 
-interface User extends ReduxDB.Record {
+interface UserModel {
+    id: number;
+    email: string;
+    name: string;
+}
+
+interface User extends ReduxDB.RecordOf<UserModel> {
     memberships: ReduxDB.RecordSet<ProjectUser>;
 }
 

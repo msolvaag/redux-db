@@ -6,15 +6,24 @@ export interface Table {
     schema: TableSchema;
     state: TableState;
 
-    upsert: (data: any) => RecordModel;
-    get: (id: string | number) => RecordModel;
-    getOrDefault: (id: string | number) => RecordModel | null;
-    all(): RecordModel[];
-    filter: (callback: (record: RecordModel) => boolean) => RecordModel[];
+    upsert: (data: any) => TableRecord;
+    get: (id: string | number) => TableRecord;
+    getOrDefault: (id: string | number) => TableRecord | null;
+    all(): TableRecord[];
+    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
     exists: (id: string | number) => boolean;
-    update: (data: any) => RecordModel;
-    updateMany: (data: any) => RecordModel[];
+    update: (data: any) => TableRecord;
+    updateMany: (data: any) => TableRecord[];
     delete: (id: string | number) => void;
+}
+
+export interface TableRecord {
+    id: string;
+    table: Table;
+    value: any;
+
+    update(data: any): TableRecord;
+    delete(): void;
 }
 
 export class Session {
@@ -42,7 +51,7 @@ export class Session {
     }
 }
 
-export class TableModel<T extends RecordModel> implements Table {
+export class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
@@ -135,7 +144,7 @@ export class TableModel<T extends RecordModel> implements Table {
     }
 }
 
-export class RecordModel {
+export class RecordModel<T> implements TableRecord {
     table: Table;
     id: string;
 
@@ -144,7 +153,7 @@ export class RecordModel {
         this.table = table;
     }
 
-    get value() {
+    get value(): T {
         return this.table.state.byId[this.id];
     }
 
@@ -159,11 +168,11 @@ export class RecordModel {
 }
 
 export class RecordField {
-    readonly record: RecordModel;
+    readonly record: TableRecord;
     readonly schema: FieldSchema;
     readonly name: string;
 
-    constructor(schema: FieldSchema, record: RecordModel) {
+    constructor(schema: FieldSchema, record: TableRecord) {
         this.name = schema.name;
         this.schema = schema;
         this.record = record;
@@ -174,7 +183,7 @@ export class RecordField {
     }
 }
 
-export class RecordSet<T extends RecordModel> {
+export class RecordSet<T extends TableRecord> {
     readonly records: T[];
     readonly table: Table;
     readonly referencedFrom: RecordField;
@@ -198,11 +207,11 @@ class ModelFactory {
 
     static default: ModelFactory = new ModelFactory();
 
-    newRecordModel<T extends RecordModel>(id: string, table: Table): T {
+    newRecordModel<T extends TableRecord>(id: string, table: Table): T {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     }
 
-    newRecordField(schema: FieldSchema, record: RecordModel) {
+    newRecordField(schema: FieldSchema, record: TableRecord) {
         if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
             const refTable = record.table.session.tables[schema.references];
             if (!refTable)
@@ -225,7 +234,7 @@ class ModelFactory {
 
     protected _createRecordModelClass(schema: TableSchema) {
 
-        class Record extends RecordModel {
+        class Record extends RecordModel<any> {
             table: Table;
 
             constructor(id: string, table: Table) {
