@@ -35,11 +35,11 @@ const reducer = db.combineReducers(
 
         switch( action.type ){
             case "ADD_TASK":
-                project.insert(action.payload);
+                task.insert(action.payload);
                 break;        
             case "FETCH_TASKS":
             case "FETCH_TASK":
-                project.upsert(action.payload);
+                task.upsert(action.payload);
         }
     }
 );
