@@ -19,7 +19,10 @@ var Session = (function () {
     Session.prototype.commit = function () {
         var _this = this;
         Object.keys(this.tables).forEach(function (table) {
-            _this.state = tslib_1.__assign({}, _this.state, (_a = {}, _a[table] = _this.tables[table].state, _a));
+            var oldState = _this.state[table];
+            var newState = _this.tables[table].state;
+            if (oldState !== newState)
+                _this.state = tslib_1.__assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
             var _a;
         });
         return this.state;
@@ -75,7 +78,10 @@ var TableModel = (function () {
         var records = Object.keys(table.byId).map(function (id) {
             if (!_this.state.byId[id])
                 throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
-            state.byId[id] = tslib_1.__assign({}, state.byId[id], table.byId[id]);
+            var newRecord = table.byId[id];
+            var oldRecord = state.byId[id];
+            var modified = _this.schema.isModified(oldRecord, newRecord);
+            state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
             return ModelFactory.default.newRecordModel(id, _this);
         });
         this.state = state;

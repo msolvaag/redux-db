@@ -19,7 +19,7 @@ export interface TableDDL {
 const PK = "PK", FK = "FK", NONE = "NONE";
 
 export type ConstraintType = "PK" | "FK" | "NONE";
-export type FieldType = "string" | "number" | "any";
+export type FieldType = "ATTR" | "MODIFIED";
 
 export interface DatabaseSchema {
     name: string;
@@ -67,6 +67,7 @@ export class TableSchema {
     relations: FieldSchema[] = [];
     private _primaryKeyFields: string[];
     private _foreignKeyFields: string[];
+    private _stampFields: string[];
 
     constructor(name: string, schema: TableDDL) {
         this.name = name;
@@ -74,6 +75,7 @@ export class TableSchema {
 
         this._primaryKeyFields = this.fields.filter(f => f.constraint === PK).map(f => f.name);
         this._foreignKeyFields = this.fields.filter(f => f.constraint === FK).map(f => f.name);
+        this._stampFields = this.fields.filter(f => f.type === "MODIFIED").map(f => f.name);
     }
 
     connect(schemas: TableSchema[]) {
@@ -128,6 +130,17 @@ export class TableSchema {
 
         return pk;
     }
+
+    isModified(x: any, y: any) {
+        if (this._stampFields.length === 1)
+            return x[this._stampFields[0]] === y[this._stampFields[0]];
+        else if (this._stampFields.length > 1) {
+            return this._stampFields.reduce((p, n) => {
+                return p + (x[this._stampFields[0]] === y[this._stampFields[0]] ? 1 : 0);
+            }, 0) !== this._stampFields.length;
+        } else
+            return true;
+    }
 }
 
 export class FieldSchema {
@@ -145,7 +158,7 @@ export class FieldSchema {
         this.table = table;
         this.name = name;
         this.propName = schema.name || name;
-        this.type = schema.type || "any";
+        this.type = schema.type || "ATTR";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;
         this.relationName = schema.relationName;

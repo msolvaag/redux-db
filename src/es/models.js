@@ -12,7 +12,10 @@ export class Session {
     }
     commit() {
         Object.keys(this.tables).forEach(table => {
-            this.state = Object.assign({}, this.state, { [table]: this.tables[table].state });
+            const oldState = this.state[table];
+            const newState = this.tables[table].state;
+            if (oldState !== newState)
+                this.state = Object.assign({}, this.state, { [table]: newState });
         });
         return this.state;
     }
@@ -61,7 +64,10 @@ export class TableModel {
         const records = Object.keys(table.byId).map(id => {
             if (!this.state.byId[id])
                 throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
-            state.byId[id] = Object.assign({}, state.byId[id], table.byId[id]);
+            const newRecord = table.byId[id];
+            const oldRecord = state.byId[id];
+            const modified = this.schema.isModified(oldRecord, newRecord);
+            state.byId[id] = Object.assign({}, oldRecord, newRecord);
             return ModelFactory.default.newRecordModel(id, this);
         });
         this.state = state;

@@ -12,7 +12,7 @@ export interface TableDDL {
     [key: string]: FieldDDL;
 }
 export declare type ConstraintType = "PK" | "FK" | "NONE";
-export declare type FieldType = "string" | "number" | "any";
+export declare type FieldType = "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     name: string;
     tables: TableSchema[];
@@ -52,10 +52,12 @@ export declare class TableSchema {
     relations: FieldSchema[];
     private _primaryKeyFields;
     private _foreignKeyFields;
+    private _stampFields;
     constructor(name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
     normalize(data: any, output?: NormalizedState): NormalizedState;
     getPrimaryKey(record: any): string;
+    isModified(x: any, y: any): boolean;
 }
 export declare class FieldSchema {
     readonly table: TableSchema;

@@ -45,7 +45,11 @@ export class Session {
 
     commit() {
         Object.keys(this.tables).forEach(table => {
-            this.state = { ...this.state, [table]: this.tables[table].state };
+            const oldState = this.state[table];
+            const newState = this.tables[table].state;
+
+            if (oldState !== newState)
+                this.state = { ...this.state, [table]: newState };
         });
         return this.state as any;
     }
@@ -113,7 +117,11 @@ export class TableModel<T extends TableRecord> implements Table {
             if (!this.state.byId[id])
                 throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
 
-            state.byId[id] = { ...state.byId[id], ...table.byId[id] };
+            const newRecord = table.byId[id];
+            const oldRecord = state.byId[id];
+            const modified = this.schema.isModified(oldRecord, newRecord);
+
+            state.byId[id] = { ...oldRecord, ...newRecord };
             return ModelFactory.default.newRecordModel<T>(id, this);
         });
 

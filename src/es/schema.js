@@ -7,6 +7,7 @@ export class TableSchema {
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
         this._primaryKeyFields = this.fields.filter(f => f.constraint === PK).map(f => f.name);
         this._foreignKeyFields = this.fields.filter(f => f.constraint === FK).map(f => f.name);
+        this._stampFields = this.fields.filter(f => f.type === "MODIFIED").map(f => f.name);
     }
     connect(schemas) {
         schemas.forEach(schema => {
@@ -49,13 +50,24 @@ export class TableSchema {
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
         return pk;
     }
+    isModified(x, y) {
+        if (this._stampFields.length === 1)
+            return x[this._stampFields[0]] === y[this._stampFields[0]];
+        else if (this._stampFields.length > 1) {
+            return this._stampFields.reduce((p, n) => {
+                return p + (x[this._stampFields[0]] === y[this._stampFields[0]] ? 1 : 0);
+            }, 0) !== this._stampFields.length;
+        }
+        else
+            return true;
+    }
 }
 export class FieldSchema {
     constructor(table, name, schema) {
         this.table = table;
         this.name = name;
         this.propName = schema.name || name;
-        this.type = schema.type || "any";
+        this.type = schema.type || "ATTR";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;
         this.relationName = schema.relationName;

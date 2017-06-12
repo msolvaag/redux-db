@@ -10,6 +10,7 @@ var TableSchema = (function () {
         this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
         this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; }).map(function (f) { return f.name; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; }).map(function (f) { return f.name; });
+        this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; }).map(function (f) { return f.name; });
     }
     TableSchema.prototype.connect = function (schemas) {
         var _this = this;
@@ -55,6 +56,18 @@ var TableSchema = (function () {
             throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
         return pk;
     };
+    TableSchema.prototype.isModified = function (x, y) {
+        var _this = this;
+        if (this._stampFields.length === 1)
+            return x[this._stampFields[0]] === y[this._stampFields[0]];
+        else if (this._stampFields.length > 1) {
+            return this._stampFields.reduce(function (p, n) {
+                return p + (x[_this._stampFields[0]] === y[_this._stampFields[0]] ? 1 : 0);
+            }, 0) !== this._stampFields.length;
+        }
+        else
+            return true;
+    };
     return TableSchema;
 }());
 exports.TableSchema = TableSchema;
@@ -63,7 +76,7 @@ var FieldSchema = (function () {
         this.table = table;
         this.name = name;
         this.propName = schema.name || name;
-        this.type = schema.type || "any";
+        this.type = schema.type || "ATTR";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;
         this.relationName = schema.relationName;
