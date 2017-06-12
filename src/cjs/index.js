@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var schema_1 = require("./schema");
 var models_1 = require("./models");
-exports.Session = models_1.Session;
 exports.Record = models_1.RecordModel;
 exports.RecordSet = models_1.RecordSet;
 exports.Table = models_1.TableModel;
@@ -17,7 +16,7 @@ var combineSchemaReducers = function (db, reducers) {
         if (state === void 0) { state = {}; }
         var session = db.createSession(state);
         reducers.forEach(function (reducer) {
-            reducer(session, action);
+            reducer(session.tables, action);
         });
         return session.commit();
     };

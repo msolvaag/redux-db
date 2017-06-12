@@ -10,7 +10,7 @@ const combineSchemaReducers = (db, reducers) => {
     return (state = {}, action) => {
         const session = db.createSession(state);
         reducers.forEach(reducer => {
-            reducer(session, action);
+            reducer(session.tables, action);
         });
         return session.commit();
     };
@@ -27,4 +27,4 @@ export class Database {
         return new Session(state, this);
     }
 }
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers, Session };
+export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };

@@ -21,26 +21,25 @@ interface UserModel {
     name: string;
 }
 
-interface User extends ReduxDB.RecordOf<UserModel> {
+interface User extends ReduxDB.Record<UserModel> {
     memberships: ReduxDB.RecordSet<ProjectUser>;
 }
 
-interface Project extends ReduxDB.Record {
+interface Project extends ReduxDB.Record<any> {
     members: ReduxDB.RecordSet<ProjectUser>;
     createdBy: User;
 }
 
-interface ProjectUser extends ReduxDB.Record { }
+interface ProjectUser extends ReduxDB.Record<any> { }
 
 interface MySession {
-    tables: {
-        project: ReduxDB.Table<Project>;
-        projectUser: ReduxDB.Table<ProjectUser>;
-    }
+    user: ReduxDB.Table<User>,
+    project: ReduxDB.Table<Project>;
+    projectUser: ReduxDB.Table<ProjectUser>;
 }
 
 db.combineReducers((session: MySession, action) => {
-    const { project } = session.tables;
+    const { project } = session;
 
     switch (action.type) {
         case "PROJECT_UPDATE":

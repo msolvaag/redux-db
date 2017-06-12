@@ -2,7 +2,7 @@ import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema } from "./schema";
 import { Session, RecordModel, RecordSet, TableModel } from "./models";
 
 export interface Reducer {
-    (session: Session, action: any): void;
+    (session: any, action: any): void;
 }
 
 export const createDatabase = (name: string, schema: SchemaDDL) => {
@@ -19,7 +19,7 @@ const combineSchemaReducers = (db: Database, reducers: Reducer[]) => {
         const session = db.createSession(state);
 
         reducers.forEach(reducer => {
-            reducer(session, action);
+            reducer(session.tables, action);
         });
 
         return session.commit();
@@ -44,4 +44,4 @@ export class Database implements DatabaseSchema {
     }
 }
 
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers, Session };
+export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };
