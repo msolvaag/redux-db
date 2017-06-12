@@ -43,6 +43,8 @@ export class TableSchema {
                 const k = record[n];
                 return p && k ? (p + "_" + k) : k;
             }, null);
+        if (pk !== null && pk !== undefined && typeof (pk) !== "string")
+            pk = pk.toString();
         if (!pk || pk.length === 0)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
         return pk;

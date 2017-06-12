@@ -110,7 +110,7 @@ export class TableSchema {
 
     getPrimaryKey(record: any) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-        let pk: string | null = null;
+        let pk: string | number | null | undefined = null;
 
         if (lookup.length === 1)
             pk = record[lookup[0]];
@@ -119,6 +119,9 @@ export class TableSchema {
                 const k = record[n];
                 return p && k ? (p + "_" + k) : k;
             }, null);
+
+        if (pk !== null && pk !== undefined && typeof (pk) !== "string")
+            pk = pk.toString();
 
         if (!pk || pk.length === 0)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
