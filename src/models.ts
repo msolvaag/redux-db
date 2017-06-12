@@ -27,7 +27,7 @@ export interface TableRecord {
 }
 
 export class Session {
-    tables: Record<string, Table>;
+    tables: any;
     state: DatabaseState;
 
     constructor(state: DatabaseState = {}, schema: DatabaseSchema) {
@@ -213,14 +213,14 @@ class ModelFactory {
 
     newRecordField(schema: FieldSchema, record: TableRecord) {
         if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
-            const refTable = record.table.session.tables[schema.references];
+            const refTable = record.table.session.tables[schema.references] as Table;
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 
             const refId = record.value[schema.name];
             return refTable.getOrDefault(refId);
         } else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
-            const refTable = record.table.session.tables[schema.table.name];
+            const refTable = record.table.session.tables[schema.table.name] as Table;
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 

@@ -21,7 +21,7 @@ export interface TableRecord {
     delete(): void;
 }
 export declare class Session {
-    tables: Record<string, Table>;
+    tables: any;
     state: DatabaseState;
     constructor(state: DatabaseState | undefined, schema: DatabaseSchema);
     upsert(state: NormalizedState, from?: Table): void;
