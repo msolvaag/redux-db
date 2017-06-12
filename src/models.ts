@@ -127,7 +127,7 @@ export class TableModel<T extends TableRecord> implements Table {
         const pk = this.schema.getPrimaryKey(data);
 
         if (this.exists(pk))
-            return this.get(pk).update(data);
+            return this.update(data);
         else
             return this.insert(data);
     }

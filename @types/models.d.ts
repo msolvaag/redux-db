@@ -41,7 +41,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     insertMany(data: any): T[];
     update(data: any): T;
     updateMany(data: any): T[];
-    upsert(data: any): TableRecord;
+    upsert(data: any): T;
     delete(id: string): void;
 }
 export declare class RecordModel<T> implements TableRecord {
