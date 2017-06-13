@@ -65,14 +65,14 @@ const reducer = db.combineReducers(
                 task.get(taskId).users.add(userId);
                 // or
                 // user.get(userId).tasks.add(taskId);
-                // taskUser.insert({task:taskId,user:userId});
+                // userTask.insert({task:taskId,user:userId});
                 break;
             case "REMOVE_TASK_USER":
                 const {taskId, userId} = action.payload;
                 task.get(taskId).users.remove(userId);
                 // or
                 // user.get(userId).tasks.remove(taskId);
-                // taskUser.get({task:taskId,user:userId}).delete();
+                // userTask.get({task:taskId,user:userId}).delete();
                 break;
             case "CLEAR_TASK_USERS":
                 const {taskId} = action.payload;
