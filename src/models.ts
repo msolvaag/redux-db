@@ -224,7 +224,7 @@ export class RecordSet<T extends TableRecord> {
     readonly schema: FieldSchema;
     readonly record: TableRecord;
 
-    constructor(records: T[], table: Table, referencedFrom: RecordRef, schema: FieldSchema, record: TableRecord) {
+    constructor(records: T[], table: Table, schema: FieldSchema, record: TableRecord) {
         this.records = records;
         this.table = table;
         this.schema = schema;
@@ -254,10 +254,6 @@ export class RecordSet<T extends TableRecord> {
     delete() {
 
     }
-}
-
-export class RecordRef {
-    constructor(public schema: FieldSchema, public record: TableRecord) { }
 }
 
 class ModelFactory {
