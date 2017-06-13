@@ -1,42 +1,37 @@
-import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema } from "./schema";
+import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, DatabaseOptions } from "./schema";
 import { Session, RecordModel, RecordSet, TableModel } from "./models";
 
 export interface Reducer {
     (session: any, action: any): void;
 }
 
-export const createDatabase = (name: string, schema: SchemaDDL) => {
-    const tableSchemas = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName]));
-
-    // connect
-    tableSchemas.forEach(table => table.connect(tableSchemas));
-
-    return new Database(name, tableSchemas);
+const defaultOptions = {
 };
 
-const combineSchemaReducers = (db: Database, reducers: Reducer[]) => {
-    return (state: any = {}, action: any) => {
-        const session = db.createSession(state);
-
-        reducers.forEach(reducer => {
-            reducer(session.tables, action);
-        });
-
-        return session.commit();
-    };
-}
+export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => {
+    return new Database(schema, options || defaultOptions);
+};
 
 export class Database implements DatabaseSchema {
-    name: string;
     tables: TableSchema[];
+    options: DatabaseOptions;
 
-    constructor(name: string, tables: TableSchema[]) {
-        this.name = name;
-        this.tables = tables;
+    constructor(schema: SchemaDDL, options: DatabaseOptions) {
+        this.options = options;
+        this.tables = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName]));
+        this.tables.forEach(table => table.connect(this.tables));
     }
 
     combineReducers(...reducers: Reducer[]) {
-        return combineSchemaReducers(this, reducers);
+        return (state: any = {}, action: any) => {
+            const session = this.createSession(state);
+
+            reducers.forEach(reducer => {
+                reducer(session.tables, action);
+            });
+
+            return session.commit();
+        };
     }
 
     createSession(state: any) {
@@ -44,4 +39,4 @@ export class Database implements DatabaseSchema {
     }
 }
 
-export { RecordModel as Record, RecordSet, TableModel as Table, combineSchemaReducers as combineReducers };
+export { RecordModel as Record, RecordSet, TableModel as Table };

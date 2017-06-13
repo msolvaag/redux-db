@@ -2,7 +2,7 @@ var test = require('tape');
 var reduxDB = require("../src/cjs");
 
 let state = {};
-const db = reduxDB.createDatabase("db", {
+const db = reduxDB.createDatabase({
     "testTable": {
         "id": { constraint: "PK" },
         "modified": { type: "MODIFIED" }
@@ -65,10 +65,19 @@ test('insert nested data', function (t) {
     const session = db.createSession(state);
     const { testTable } = session.tables;
     const recordModel = testTable.insert({
-        id: 2, name: "test nested", modified: "1", refs: [
-            { id: 1, test: 2, prop: "val" }
-        ]
+        id: 2, name: "test nested", modified: "1", refs: [1]
     });
 
-    t.assert(recordModel.refs, "Foreign relations are reflected through properties");
+    t.assert(recordModel.refs.all().length === 1, "Foreign relations are reflected through properties");
+});
+
+test('add record relation', function (t) {
+    t.plan(1);
+
+    const session = db.createSession(state);
+    const { testTable } = session.tables;
+    const recordModel = testTable.get(1);
+    recordModel.refs.add(1);
+
+    t.assert(recordModel.refs.all().length === 1, "Added relation is reflected immediatly");
 });

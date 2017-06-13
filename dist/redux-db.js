@@ -1,3 +1,11 @@
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -8,14 +16,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 define("utils", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -91,13 +91,31 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var relations = {};
                 _this.relations.forEach(function (rel) {
                     if (rel.relationName && data[rel.relationName]) {
-                        rel.table.normalize(data[rel.relationName], output);
+                        var normalizedRels = _this.inferRelations(data[rel.relationName], rel, pk);
+                        rel.table.normalize(normalizedRels, output);
                         delete data[rel.relationName];
                     }
                 });
                 return pk;
             });
             return output;
+        };
+        TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
+            if (!rel.relationName)
+                return data;
+            var otherFks = rel.table.fields.filter(function (f) { return f.constraint === "FK" && f !== rel; });
+            return utils.ensureArray(data).map(function (obj) {
+                if (typeof obj === "number" || typeof obj === "string") {
+                    if (otherFks.length === 1) {
+                        obj = (_a = {}, _a[otherFks[0].name] = obj, _a);
+                    }
+                    else {
+                        obj = { id: obj };
+                    }
+                }
+                return __assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
+                var _a, _b;
+            });
         };
         TableSchema.prototype.getPrimaryKey = function (record) {
             var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
@@ -185,7 +203,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         }
         TableModel.prototype.all = function () {
             var _this = this;
-            return this.state.ids.map(function (id) { return ModelFactory.default.newRecordModel(id, _this); });
+            return this.state.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
         };
         TableModel.prototype.filter = function (predicate) {
             return this.all().filter(predicate);
@@ -194,7 +212,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             id = id.toString();
             if (!this.exists(id))
                 throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
-            return ModelFactory.default.newRecordModel(id, this);
+            return ModelFactory.default.newRecord(id, this);
         };
         TableModel.prototype.getOrDefault = function (id) {
             return this.exists(id) ? this.get(id) : null;
@@ -228,7 +246,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         TableModel.prototype.insertNormalized = function (table) {
             var _this = this;
             this.state = { ids: this.state.ids.concat(table.ids), byId: __assign({}, this.state.byId, table.byId) };
-            return table.ids.map(function (id) { return ModelFactory.default.newRecordModel(id, _this); });
+            return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
         };
         TableModel.prototype.updateNormalized = function (table) {
             var _this = this;
@@ -243,7 +261,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                     state.byId[id] = __assign({}, oldRecord, newRecord);
                     dirty = true;
                 }
-                return ModelFactory.default.newRecordModel(id, _this);
+                return ModelFactory.default.newRecord(id, _this);
             });
             if (dirty)
                 this.state = state;
@@ -314,16 +332,55 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     }());
     exports.RecordField = RecordField;
     var RecordSet = (function () {
-        function RecordSet(records, table, referencedFrom) {
-            this.records = records;
+        function RecordSet(table, schema, owner) {
             this.table = table;
-            this.referencedFrom = referencedFrom;
+            this.schema = schema;
+            this.owner = owner;
         }
-        RecordSet.prototype.map = function (callback) {
-            return this.records.map(callback);
+        RecordSet.prototype.all = function () {
+            var _this = this;
+            return this.table.filter(function (r) {
+                var refId = r.value[_this.schema.name];
+                return refId && refId.toString() === _this.owner.id;
+            });
         };
-        RecordSet.prototype.insert = function (data) { };
-        RecordSet.prototype.update = function (data) { };
+        Object.defineProperty(RecordSet.prototype, "value", {
+            get: function () {
+                return this.map(function (r) { return r.value; });
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(RecordSet.prototype, "length", {
+            get: function () {
+                return this.all().length;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        RecordSet.prototype.map = function (callback) {
+            return this.all().map(callback);
+        };
+        RecordSet.prototype.add = function (data) {
+            this.table.insert(this._normalize(data));
+        };
+        RecordSet.prototype.remove = function (data) {
+            var _this = this;
+            this._normalize(data).forEach(function (obj) {
+                var pk = _this.table.schema.getPrimaryKey(obj);
+                _this.table.delete(pk);
+            });
+        };
+        RecordSet.prototype.update = function (data) {
+            this.table.update(this._normalize(data));
+        };
+        RecordSet.prototype.delete = function () {
+            var _this = this;
+            this.all().forEach(function (obj) { return _this.table.delete(obj.id); });
+        };
+        RecordSet.prototype._normalize = function (data) {
+            return this.table.schema.inferRelations(data, this.schema, this.owner.id);
+        };
         return RecordSet;
     }());
     exports.RecordSet = RecordSet;
@@ -331,7 +388,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         function ModelFactory() {
             this._recordClass = {};
         }
-        ModelFactory.prototype.newRecordModel = function (id, table) {
+        ModelFactory.prototype.newRecord = function (id, table) {
             return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
         };
         ModelFactory.prototype.newRecordField = function (schema, record) {
@@ -339,18 +396,11 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 var refTable = record.table.session.tables[schema.references];
                 if (!refTable)
                     throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-                var refId = record.value[schema.name];
-                return refTable.getOrDefault(refId);
+                return refTable.getOrDefault(record.value[schema.name]);
             }
             else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
                 var refTable = record.table.session.tables[schema.table.name];
-                if (!refTable)
-                    throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-                var refRecords = refTable.filter(function (r) {
-                    var refId = r.value[schema.name];
-                    return refId && refId.toString() === record.id;
-                });
-                return new RecordSet(refRecords, refTable, new RecordField(schema, record));
+                return new RecordSet(refTable, schema, record);
             }
             else
                 return new RecordField(schema, record);
@@ -359,32 +409,21 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             var Record = (function (_super) {
                 __extends(Record, _super);
                 function Record(id, table) {
-                    return _super.call(this, id, table) || this;
+                    var _this = _super.call(this, id, table) || this;
+                    _this._fields = {};
+                    return _this;
                 }
                 return Record;
             }(RecordModel));
-            schema.fields.forEach(function (field) {
-                if (field.constraint == "FK")
-                    Object.defineProperty(Record.prototype, field.propName, {
+            schema.fields.concat(schema.relations).forEach(function (field) {
+                if (field.constraint == "FK") {
+                    var name_1 = field.relationName || field.propName;
+                    Object.defineProperty(Record.prototype, name_1, {
                         get: function () {
-                            return ModelFactory.default.newRecordField(field, this);
-                        },
-                        set: function (value) {
-                            return this.update((_a = {}, _a[field.name] = value, _a));
-                            var _a;
+                            return this._fields[name_1] || (this._fields[name_1] = ModelFactory.default.newRecordField(field, this));
                         }
                     });
-            });
-            schema.relations.forEach(function (field) {
-                if (field.relationName)
-                    Object.defineProperty(Record.prototype, field.relationName, {
-                        get: function () {
-                            return ModelFactory.default.newRecordField(field, this);
-                        },
-                        set: function (value) {
-                            throw new Error("Invalid attempt to set an foreign table relation field.");
-                        }
-                    });
+                }
             });
             return Record;
         };
@@ -398,34 +437,31 @@ define("index", ["require", "exports", "schema", "models"], function (require, e
     exports.Record = models_1.RecordModel;
     exports.RecordSet = models_1.RecordSet;
     exports.Table = models_1.TableModel;
-    exports.createDatabase = function (name, schema) {
-        var tableSchemas = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName]); });
-        // connect
-        tableSchemas.forEach(function (table) { return table.connect(tableSchemas); });
-        return new Database(name, tableSchemas);
+    var defaultOptions = {};
+    exports.createDatabase = function (schema, options) {
+        return new Database(schema, options || defaultOptions);
     };
-    var combineSchemaReducers = function (db, reducers) {
-        return function (state, action) {
-            if (state === void 0) { state = {}; }
-            var session = db.createSession(state);
-            reducers.forEach(function (reducer) {
-                reducer(session.tables, action);
-            });
-            return session.commit();
-        };
-    };
-    exports.combineReducers = combineSchemaReducers;
     var Database = (function () {
-        function Database(name, tables) {
-            this.name = name;
-            this.tables = tables;
+        function Database(schema, options) {
+            var _this = this;
+            this.options = options;
+            this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName]); });
+            this.tables.forEach(function (table) { return table.connect(_this.tables); });
         }
         Database.prototype.combineReducers = function () {
+            var _this = this;
             var reducers = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 reducers[_i] = arguments[_i];
             }
-            return combineSchemaReducers(this, reducers);
+            return function (state, action) {
+                if (state === void 0) { state = {}; }
+                var session = _this.createSession(state);
+                reducers.forEach(function (reducer) {
+                    reducer(session.tables, action);
+                });
+                return session.commit();
+            };
         };
         Database.prototype.createSession = function (state) {
             return new models_1.Session(state, this);

@@ -14,8 +14,9 @@ export interface TableDDL {
 export declare type ConstraintType = "PK" | "FK" | "NONE";
 export declare type FieldType = "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
-    name: string;
     tables: TableSchema[];
+}
+export interface DatabaseOptions {
 }
 export interface DatabaseState {
     [key: string]: TableState;
@@ -56,6 +57,7 @@ export declare class TableSchema {
     constructor(name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
     normalize(data: any, output?: NormalizedState): NormalizedState;
+    inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     getPrimaryKey(record: any): string;
     isModified(x: any, y: any): boolean;
 }

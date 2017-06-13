@@ -3,12 +3,14 @@ export interface Table {
     session: Session;
     schema: TableSchema;
     state: TableState;
-    upsert: (data: any) => TableRecord;
     get: (id: string | number) => TableRecord;
     getOrDefault: (id: string | number) => TableRecord | null;
     all(): TableRecord[];
     filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
     exists: (id: string | number) => boolean;
+    upsert: (data: any) => TableRecord;
+    insert: (data: any) => TableRecord;
+    insertMany: (data: any) => TableRecord[];
     update: (data: any) => TableRecord;
     updateMany: (data: any) => TableRecord[];
     delete: (id: string | number) => void;
@@ -64,11 +66,17 @@ export declare class RecordField {
     readonly value: any;
 }
 export declare class RecordSet<T extends TableRecord> {
-    readonly records: T[];
     readonly table: Table;
-    readonly referencedFrom: RecordField;
-    constructor(records: T[], table: Table, referencedFrom: RecordField);
+    readonly schema: FieldSchema;
+    readonly owner: TableRecord;
+    constructor(table: Table, schema: FieldSchema, owner: TableRecord);
+    all(): TableRecord[];
+    readonly value: any[];
+    readonly length: number;
     map<M>(callback: (record: T) => M): M[];
-    insert(data: any): void;
+    add(data: any): void;
+    remove(data: any): void;
     update(data: any): void;
+    delete(): void;
+    private _normalize(data);
 }

@@ -26,13 +26,30 @@ export class TableSchema {
             const relations = {};
             this.relations.forEach(rel => {
                 if (rel.relationName && data[rel.relationName]) {
-                    rel.table.normalize(data[rel.relationName], output);
+                    const normalizedRels = this.inferRelations(data[rel.relationName], rel, pk);
+                    rel.table.normalize(normalizedRels, output);
                     delete data[rel.relationName];
                 }
             });
             return pk;
         });
         return output;
+    }
+    inferRelations(data, rel, ownerId) {
+        if (!rel.relationName)
+            return data;
+        const otherFks = rel.table.fields.filter(f => f.constraint === "FK" && f !== rel);
+        return utils.ensureArray(data).map(obj => {
+            if (typeof obj === "number" || typeof obj === "string") {
+                if (otherFks.length === 1) {
+                    obj = { [otherFks[0].name]: obj };
+                }
+                else {
+                    obj = { id: obj };
+                }
+            }
+            return Object.assign({}, obj, { [rel.name]: ownerId });
+        });
     }
     getPrimaryKey(record) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);

@@ -19,11 +19,11 @@ bower install redux-db
 ```
 
 ### Usage
-#### example in typescript
+#### example many to many
 ```
-import * as ReduxDB from "redux-db";
+import ReduxDB from "redux-db";
 
-const db = ReduxDB.createDatabase( "db", {
+const db = ReduxDB.createDatabase( {
     "user": {
         "id": { constraint: "PK" }
     },
@@ -31,7 +31,7 @@ const db = ReduxDB.createDatabase( "db", {
         "id": { constraint: "PK" },
         "createdBy": { constraint: "FK", references: "user" }
     },
-    "userTasks":{
+    "userTask":{
         "user": { constraint: "FK", references: "user", relationName: "tasks" },
         "task": { constraint: "FK", references: "task", relationName: "users"}
     }
@@ -39,24 +39,50 @@ const db = ReduxDB.createDatabase( "db", {
 
 const reducer = db.combineReducers(
     (session, action) => {
-        const { task } = session;
+        const { task, userTask, user } = session;
 
         switch( action.type ){
             case "ADD_TASK":
                 task.insert(action.payload);
                 break;        
-            case "FETCH_TASKS":
-            case "FETCH_TASK":
+            case "FETCH_TASKS_FULFILLED":
+            case "FETCH_TASK_FULFILLED":
+                // Payload may include nested data. 
+                // Nested relations will automatically be normalized and upserted to the correct schema table.
+                /* eg. [{
+                    id: 1,
+                    title: "Task one",
+                    users: [
+                        { id: 1, name: "Ola" },
+                        { id: 2, name: "Kari }
+                    ]
+                }]*/
+
                 task.upsert(action.payload);
                 break;
             case "ADD_TASK_USER":
                 const {taskId, userId} = action.payload;
                 task.get(taskId).users.add(userId);
+                // or
+                // user.get(userId).tasks.add(taskId);
+                // taskUser.insert({task:taskId,user:userId});
                 break;
+            case "REMOVE_TASK_USER":
+                const {taskId, userId} = action.payload;
+                task.get(taskId).users.remove(userId);
+                // or
+                // user.get(userId).tasks.remove(taskId);
+                // taskUser.get({task:taskId,user:userId}).delete();
+                break;
+            case "CLEAR_TASK_USERS":
+                const {taskId} = action.payload;
+                task.get(taskId).users.delete();
+                break;
+
         }
-    }
+    } //, (session,action)=>{}, ... other reducers
 );
 ```
 
 ### Dependencies
-* [tslib](https://www.npmjs.com/package/tslib)
+* none

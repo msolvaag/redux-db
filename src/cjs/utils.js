@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toArray = function (obj) {
+exports.toArray = (obj) => {
     if (!obj)
         return [];
     if (Array.isArray(obj))
         return obj;
     else if (typeof obj === 'object')
-        return Object.keys(obj).map(function (key) { return obj[key]; });
+        return Object.keys(obj).map(key => obj[key]);
     else
         return [];
 };
-exports.ensureArray = function (obj) {
+exports.ensureArray = (obj) => {
     if (!obj)
         return [];
     if (Array.isArray(obj))
@@ -18,20 +18,20 @@ exports.ensureArray = function (obj) {
     else
         return [obj];
 };
-exports.toObject = function (a, key) {
-    return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
+exports.toObject = (a, key) => {
+    return a.reduce((o, v) => { o[key(v)] = v; return o; }, {});
 };
-exports.isObject = function (val) {
+exports.isObject = (val) => {
     return val != null
         && typeof val === 'object'
         && Array.isArray(val) === false;
 };
-var isObjectObject = function (o) {
+const isObjectObject = (o) => {
     return exports.isObject(o)
         && Object.prototype.toString.call(o) === '[object Object]';
 };
-exports.isPlainObject = function (o) {
-    var ctor, prot;
+exports.isPlainObject = (o) => {
+    let ctor, prot;
     return isObjectObject(o)
         && typeof (ctor = o.constructor) !== "function"
         && isObjectObject(prot = ctor.prototype)

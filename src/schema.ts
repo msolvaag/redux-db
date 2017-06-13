@@ -22,8 +22,10 @@ export type ConstraintType = "PK" | "FK" | "NONE";
 export type FieldType = "ATTR" | "MODIFIED";
 
 export interface DatabaseSchema {
-    name: string;
     tables: TableSchema[];
+}
+
+export interface DatabaseOptions {
 }
 
 export interface DatabaseState {
@@ -99,7 +101,9 @@ export class TableSchema {
             const relations: Record<string, any> = {};
             this.relations.forEach(rel => {
                 if (rel.relationName && data[rel.relationName]) {
-                    rel.table.normalize(data[rel.relationName], output);
+                    const normalizedRels = this.inferRelations(data[rel.relationName], rel, pk);
+
+                    rel.table.normalize(normalizedRels, output);
                     delete data[rel.relationName];
                 }
             });
@@ -108,6 +112,23 @@ export class TableSchema {
         });
 
         return output;
+    }
+
+    inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {
+        if (!rel.relationName) return data;
+
+        const otherFks = rel.table.fields.filter(f => f.constraint === "FK" && f !== rel);
+
+        return utils.ensureArray(data).map(obj => {
+            if (typeof obj === "number" || typeof obj === "string") {
+                if (otherFks.length === 1) {
+                    obj = { [otherFks[0].name]: obj };
+                } else {
+                    obj = { id: obj };
+                }
+            }
+            return { ...obj, [rel.name]: ownerId };
+        });
     }
 
     getPrimaryKey(record: any) {
