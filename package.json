@@ -1,6 +1,6 @@
 {
   "name": "redux-db",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "A state normalizer for redux",
   "main": "./src/es/index.js",
   "typings": "./@types/index.d.ts",
@@ -15,7 +15,8 @@
   "keywords": [
     "redux",
     "database",
-    "orm"
+    "orm",
+    "normalize"
   ],
   "author": "Magnus Solvåg",
   "license": "ISC",

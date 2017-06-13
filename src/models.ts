@@ -221,20 +221,39 @@ export class RecordField {
 export class RecordSet<T extends TableRecord> {
     readonly records: T[];
     readonly table: Table;
-    readonly referencedFrom: RecordField;
+    readonly schema: FieldSchema;
+    readonly record: TableRecord;
 
-    constructor(records: T[], table: Table, referencedFrom: RecordField) {
+    constructor(records: T[], table: Table, schema: FieldSchema, record: TableRecord) {
         this.records = records;
         this.table = table;
-        this.referencedFrom = referencedFrom;
+        this.schema = schema;
+        this.record = record;
     }
 
     map<M>(callback: (record: T) => M) {
         return this.records.map(callback);
     }
 
-    insert(data: any) { }
-    update(data: any) { }
+    add(data: any) {
+        if (typeof data === "number" || typeof data === "string") {
+
+            const otherFks = this.schema.table.fields.filter(f => f !== this.schema);
+            if (otherFks.length === 1) {
+                data = { [otherFks[0].name]: data, [this.schema.name]: this.record.id };
+            }
+        }
+
+        this.table.upsert(data);
+    }
+
+    update(data: any) {
+
+    }
+
+    delete() {
+
+    }
 }
 
 class ModelFactory {
@@ -264,7 +283,7 @@ class ModelFactory {
                 return refId && refId.toString() === record.id;
             });
 
-            return new RecordSet(refRecords, refTable, new RecordField(schema, record));
+            return new RecordSet(refRecords, refTable, schema, record);
 
         } else
             return new RecordField(schema, record);
@@ -293,7 +312,7 @@ class ModelFactory {
         });
 
         schema.relations.forEach(field => {
-            if (field.relationName)
+            if (field.constraint == "FK" && field.relationName)
                 Object.defineProperty(Record.prototype, field.relationName, {
                     get: function (this: Record) {
                         return ModelFactory.default.newRecordField(field, this);
