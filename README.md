@@ -1,6 +1,6 @@
 # redux-db
 
-redux-db provides a normalized [redux](http://redux.js.org) store and easy object management. Inspired by great libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm), redux-db will give a similiar workflow with a smaller footprint.
+redux-db provides a normalized [redux](http://redux.js.org) store and easy object management. Inspired by great libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm), redux-db will give a similiar workflow with a smaller footprint (at the moment only ~10k minified).
 
 **NB! Current release is in BETA dev.**
 
@@ -8,6 +8,14 @@ redux-db provides a normalized [redux](http://redux.js.org) store and easy objec
 #### node npm
 ```
 npm install redux-db --save
+```
+#### yarn
+```
+yarn add redux-db
+```
+#### bower
+```
+bower install redux-db
 ```
 
 ### Usage
@@ -40,6 +48,11 @@ const reducer = db.combineReducers(
             case "FETCH_TASKS":
             case "FETCH_TASK":
                 task.upsert(action.payload);
+                break;
+            case "ADD_TASK_USER":
+                const {taskId, userId} = action.payload;
+                task.get(taskId).users.add(userId);
+                break;
         }
     }
 );

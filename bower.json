@@ -1,0 +1,23 @@
+{
+  "name": "redux-db",
+  "description": "A state normalizer for redux",
+  "main": "./dist/redux-db.js",
+  "authors": [
+    "Magnus Solvåg"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "redux",
+    "database",
+    "orm",
+    "normalize"
+  ],
+  "homepage": "https://github.com/msolvaag/redux-db",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
