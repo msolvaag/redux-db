@@ -40,22 +40,6 @@ define("utils", ["require", "exports"], function (require, exports) {
     exports.toObject = function (a, key) {
         return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
     };
-    exports.isObject = function (val) {
-        return val != null
-            && typeof val === 'object'
-            && Array.isArray(val) === false;
-    };
-    var isObjectObject = function (o) {
-        return exports.isObject(o)
-            && Object.prototype.toString.call(o) === '[object Object]';
-    };
-    exports.isPlainObject = function (o) {
-        var ctor, prot;
-        return isObjectObject(o)
-            && typeof (ctor = o.constructor) !== "function"
-            && isObjectObject(prot = ctor.prototype)
-            && prot.hasOwnProperty("isPrototypeOf");
-    };
 });
 define("schema", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
@@ -103,7 +87,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
             if (!rel.relationName)
                 return data;
-            var otherFks = rel.table.fields.filter(function (f) { return f.constraint === "FK" && f !== rel; });
+            var otherFks = rel.table.fields.filter(function (f) { return f.constraint === FK && f !== rel; });
             return utils.ensureArray(data).map(function (obj) {
                 if (typeof obj === "number" || typeof obj === "string") {
                     if (otherFks.length === 1) {
@@ -417,12 +401,13 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             }(RecordModel));
             schema.fields.concat(schema.relations).forEach(function (field) {
                 if (field.constraint == "FK") {
-                    var name_1 = field.relationName || field.propName;
-                    Object.defineProperty(Record.prototype, name_1, {
-                        get: function () {
-                            return this._fields[name_1] || (this._fields[name_1] = ModelFactory.default.newRecordField(field, this));
-                        }
-                    });
+                    var name_1 = field.table !== schema ? field.relationName : field.propName;
+                    if (name_1)
+                        Object.defineProperty(Record.prototype, name_1, {
+                            get: function () {
+                                return this._fields[name_1] || (this._fields[name_1] = ModelFactory.default.newRecordField(field, this));
+                            }
+                        });
                 }
             });
             return Record;

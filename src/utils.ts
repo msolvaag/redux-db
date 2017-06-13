@@ -23,23 +23,3 @@ export const ensureArray = (obj: any) => {
 export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});
 }
-
-
-export const isObject = (val: any) => {
-    return val != null
-        && typeof val === 'object'
-        && Array.isArray(val) === false;
-};
-
-const isObjectObject = (o: any) => {
-    return isObject(o)
-        && Object.prototype.toString.call(o) === '[object Object]';
-}
-
-export const isPlainObject = (o: any) => {
-    let ctor, prot;
-    return isObjectObject(o)
-        && typeof (ctor = o.constructor) !== "function"
-        && isObjectObject(prot = ctor.prototype)
-        && prot.hasOwnProperty("isPrototypeOf");
-};

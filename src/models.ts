@@ -314,12 +314,13 @@ class ModelFactory {
 
         schema.fields.concat(schema.relations).forEach(field => {
             if (field.constraint == "FK") {
-                const name = field.relationName || field.propName;
-                Object.defineProperty(Record.prototype, name, {
-                    get: function (this: Record) {
-                        return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
-                    }
-                });
+                const name = field.table !== schema ? field.relationName : field.propName;
+                if (name)
+                    Object.defineProperty(Record.prototype, name, {
+                        get: function (this: Record) {
+                            return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                        }
+                    });
             }
         });
 

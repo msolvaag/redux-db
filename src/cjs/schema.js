@@ -40,7 +40,7 @@ class TableSchema {
     inferRelations(data, rel, ownerId) {
         if (!rel.relationName)
             return data;
-        const otherFks = rel.table.fields.filter(f => f.constraint === "FK" && f !== rel);
+        const otherFks = rel.table.fields.filter(f => f.constraint === FK && f !== rel);
         return utils.ensureArray(data).map(obj => {
             if (typeof obj === "number" || typeof obj === "string") {
                 if (otherFks.length === 1) {
