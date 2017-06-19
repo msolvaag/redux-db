@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toArray = (obj) => {
+exports.toArray = function (obj) {
     if (!obj)
         return [];
     if (Array.isArray(obj))
         return obj;
     else if (typeof obj === 'object')
-        return Object.keys(obj).map(key => obj[key]);
+        return Object.keys(obj).map(function (key) { return obj[key]; });
     else
         return [];
 };
-exports.ensureArray = (obj) => {
+exports.ensureArray = function (obj) {
     if (!obj)
         return [];
     if (Array.isArray(obj))
@@ -18,10 +18,10 @@ exports.ensureArray = (obj) => {
     else
         return [obj];
 };
-exports.toObject = (a, key) => {
-    return a.reduce((o, v) => { o[key(v)] = v; return o; }, {});
+exports.toObject = function (a, key) {
+    return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
 };
-exports.arrayMerge = (a, b) => {
+exports.arrayMerge = function (a, b) {
     var hash = {}, i;
     for (i = 0; i < a.length; i++) {
         hash[a[i]] = true;

@@ -1,108 +1,118 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const utils = require("./utils");
-class TableModel {
-    constructor(session, state = { ids: [], byId: {}, indexes: {} }, schema) {
+var tslib_1 = require("tslib");
+var utils = require("./utils");
+var TableModel = (function () {
+    function TableModel(session, state, schema) {
+        if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
         this.session = session;
         this.state = state;
         this.schema = schema;
     }
-    all() {
-        return this.state.ids.map(id => ModelFactory.default.newRecord(id, this));
-    }
-    get length() {
-        return this.state.ids.length;
-    }
-    filter(predicate) {
+    TableModel.prototype.all = function () {
+        var _this = this;
+        return this.state.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
+    };
+    Object.defineProperty(TableModel.prototype, "length", {
+        get: function () {
+            return this.state.ids.length;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    TableModel.prototype.filter = function (predicate) {
         return this.all().filter(predicate);
-    }
-    index(name, fk) {
+    };
+    TableModel.prototype.index = function (name, fk) {
         if (this.state.indexes[name] && this.state.indexes[name][fk])
             return this.state.indexes[name][fk];
         else
             return [];
-    }
-    get(id) {
+    };
+    TableModel.prototype.get = function (id) {
         id = id.toString();
         if (!this.exists(id))
-            throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
+            throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
         return ModelFactory.default.newRecord(id, this);
-    }
-    value(id) {
+    };
+    TableModel.prototype.value = function (id) {
         if (typeof id === "number")
             id = id.toString();
         return this.state.byId[id];
-    }
-    getOrDefault(id) {
+    };
+    TableModel.prototype.getOrDefault = function (id) {
         return this.exists(id) ? this.get(id) : null;
-    }
-    exists(id) {
+    };
+    TableModel.prototype.exists = function (id) {
         return this.state.byId[id] !== undefined;
-    }
-    insert(data) {
+    };
+    TableModel.prototype.insert = function (data) {
         return this.insertMany(data)[0];
-    }
-    insertMany(data) {
+    };
+    TableModel.prototype.insertMany = function (data) {
         return this._normalizedAction(data, this.insertNormalized);
-    }
-    update(data) {
+    };
+    TableModel.prototype.update = function (data) {
         return this.updateMany(data)[0];
-    }
-    updateMany(data) {
+    };
+    TableModel.prototype.updateMany = function (data) {
         return this._normalizedAction(data, this.updateNormalized);
-    }
-    upsert(data) {
+    };
+    TableModel.prototype.upsert = function (data) {
         return this._normalizedAction(data, this.upsertNormalized)[0];
-    }
-    delete(id) {
-        const byId = Object.assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = Object.assign({}, this.state.indexes), ref = byId[id];
+    };
+    TableModel.prototype.delete = function (id) {
+        var byId = tslib_1.__assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = tslib_1.__assign({}, this.state.indexes), ref = byId[id];
         delete byId[id];
-        const idx = ids.indexOf(id);
+        var idx = ids.indexOf(id);
         if (idx >= 0)
             ids.splice(idx, 1);
         if (ref) {
-            const fks = this.schema.getForeignKeys(ref);
-            fks.forEach(fk => {
-                const fkIdx = indexes[fk.name][fk.value].indexOf(id);
+            var fks = this.schema.getForeignKeys(ref);
+            fks.forEach(function (fk) {
+                var fkIdx = indexes[fk.name][fk.value].indexOf(id);
                 if (fkIdx >= 0) {
-                    const idxBucket = indexes[fk.name][fk.value].slice();
+                    var idxBucket = indexes[fk.name][fk.value].slice();
                     idxBucket.splice(fkIdx, 1);
                     indexes[fk.name][fk.value] = idxBucket;
                 }
             });
         }
-        this.state = Object.assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
-    }
-    insertNormalized(table) {
-        this.state = Object.assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: Object.assign({}, this.state.byId, table.byId) });
+        this.state = tslib_1.__assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
+    };
+    TableModel.prototype.insertNormalized = function (table) {
+        var _this = this;
+        this.state = tslib_1.__assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: tslib_1.__assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
-        return table.ids.map(id => ModelFactory.default.newRecord(id, this));
-    }
-    updateNormalized(table) {
-        let state = Object.assign({}, this.state), dirty = false;
-        const records = Object.keys(table.byId).map(id => {
-            if (!this.state.byId[id])
-                throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
-            const newRecord = table.byId[id];
-            const oldRecord = state.byId[id];
-            const isModified = this.schema.isModified(oldRecord, newRecord);
+        return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
+    };
+    TableModel.prototype.updateNormalized = function (table) {
+        var _this = this;
+        var state = tslib_1.__assign({}, this.state), dirty = false;
+        var records = Object.keys(table.byId).map(function (id) {
+            if (!_this.state.byId[id])
+                throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
+            var newRecord = table.byId[id];
+            var oldRecord = state.byId[id];
+            var isModified = _this.schema.isModified(oldRecord, newRecord);
             if (isModified) {
-                state.byId[id] = Object.assign({}, oldRecord, newRecord);
+                state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
                 dirty = true;
             }
-            return ModelFactory.default.newRecord(id, this);
+            return ModelFactory.default.newRecord(id, _this);
         });
         if (dirty) {
             this.state = state;
             this._updateIndexes(table);
         }
         return records;
-    }
-    upsertNormalized(norm) {
-        const toUpdate = { ids: [], byId: {}, indexes: {} };
-        const toInsert = { ids: [], byId: {}, indexes: {} };
-        norm.ids.forEach(id => {
-            if (this.exists(id)) {
+    };
+    TableModel.prototype.upsertNormalized = function (norm) {
+        var _this = this;
+        var toUpdate = { ids: [], byId: {}, indexes: {} };
+        var toInsert = { ids: [], byId: {}, indexes: {} };
+        norm.ids.forEach(function (id) {
+            if (_this.exists(id)) {
                 toUpdate.ids.push(id);
                 toUpdate.byId[id] = norm.byId[id];
             }
@@ -111,138 +121,170 @@ class TableModel {
                 toInsert.byId[id] = norm.byId[id];
             }
         });
-        const refs = (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+        var refs = (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
         this._updateIndexes(norm);
         return refs;
-    }
-    _normalizedAction(data, action) {
-        const norm = this.schema.normalize(data);
-        const table = norm[this.schema.name];
-        const records = table ? action.call(this, table) : [];
+    };
+    TableModel.prototype._normalizedAction = function (data, action) {
+        var norm = this.schema.normalize(data);
+        var table = norm[this.schema.name];
+        var records = table ? action.call(this, table) : [];
         this.session.upsert(norm, this);
         return records;
-    }
-    _updateIndexes(table) {
-        Object.keys(table.indexes).forEach(key => {
-            const idx = this.state.indexes[key] || (this.state.indexes[key] = {});
-            Object.keys(table.indexes[key]).forEach(fk => {
-                const idxBucket = idx[fk] || (idx[fk] = []);
+    };
+    TableModel.prototype._updateIndexes = function (table) {
+        var _this = this;
+        Object.keys(table.indexes).forEach(function (key) {
+            var idx = _this.state.indexes[key] || (_this.state.indexes[key] = {});
+            Object.keys(table.indexes[key]).forEach(function (fk) {
+                var idxBucket = idx[fk] || (idx[fk] = []);
                 idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
             });
         });
-    }
-}
+    };
+    return TableModel;
+}());
 exports.TableModel = TableModel;
-class RecordModel {
-    constructor(id, table) {
+var RecordModel = (function () {
+    function RecordModel(id, table) {
         this.id = id;
         this.table = table;
     }
-    get value() {
-        return this.table.value(this.id);
-    }
-    delete() {
+    Object.defineProperty(RecordModel.prototype, "value", {
+        get: function () {
+            return this.table.value(this.id);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    RecordModel.prototype.delete = function () {
         this.table.delete(this.id);
-    }
-    update(data) {
+    };
+    RecordModel.prototype.update = function (data) {
         this.table.update(data);
         return this;
-    }
-}
+    };
+    return RecordModel;
+}());
 exports.RecordModel = RecordModel;
-class RecordField {
-    constructor(schema, record) {
+var RecordField = (function () {
+    function RecordField(schema, record) {
         this.name = schema.name;
         this.schema = schema;
         this.record = record;
     }
-    get value() {
-        return this.schema.getRecordValue(this.record);
-    }
-}
+    Object.defineProperty(RecordField.prototype, "value", {
+        get: function () {
+            return this.schema.getRecordValue(this.record);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return RecordField;
+}());
 exports.RecordField = RecordField;
-class RecordSet {
-    constructor(table, schema, owner) {
+var RecordSet = (function () {
+    function RecordSet(table, schema, owner) {
         this.table = table;
         this.schema = schema;
         this.owner = owner;
         this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
     }
-    get value() {
-        return this.map(r => r.value);
-    }
-    get ids() {
-        return this.table.index(this.schema.name, this.owner.id);
-    }
-    get length() {
-        return this.all().length;
-    }
-    all() {
-        return this.ids.map(id => ModelFactory.default.newRecord(id, this.table));
-    }
-    map(callback) {
+    Object.defineProperty(RecordSet.prototype, "value", {
+        get: function () {
+            return this.map(function (r) { return r.value; });
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RecordSet.prototype, "ids", {
+        get: function () {
+            return this.table.index(this.schema.name, this.owner.id);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RecordSet.prototype, "length", {
+        get: function () {
+            return this.all().length;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    RecordSet.prototype.all = function () {
+        var _this = this;
+        return this.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this.table); });
+    };
+    RecordSet.prototype.map = function (callback) {
         return this.all().map(callback);
-    }
-    add(data) {
+    };
+    RecordSet.prototype.add = function (data) {
         this.table.insert(this._normalize(data));
-    }
-    remove(data) {
-        this._normalize(data).forEach(obj => {
-            const pk = this.table.schema.getPrimaryKey(obj);
-            this.table.delete(pk);
+    };
+    RecordSet.prototype.remove = function (data) {
+        var _this = this;
+        this._normalize(data).forEach(function (obj) {
+            var pk = _this.table.schema.getPrimaryKey(obj);
+            _this.table.delete(pk);
         });
-    }
-    update(data) {
+    };
+    RecordSet.prototype.update = function (data) {
         this.table.update(this._normalize(data));
-    }
-    delete() {
-        this.all().forEach(obj => this.table.delete(obj.id));
-    }
-    _normalize(data) {
+    };
+    RecordSet.prototype.delete = function () {
+        var _this = this;
+        this.all().forEach(function (obj) { return _this.table.delete(obj.id); });
+    };
+    RecordSet.prototype._normalize = function (data) {
         return this.table.schema.inferRelations(data, this.schema, this.owner.id);
-    }
-}
+    };
+    return RecordSet;
+}());
 exports.RecordSet = RecordSet;
-class ModelFactory {
-    constructor() {
+var ModelFactory = (function () {
+    function ModelFactory() {
         this._recordClass = {};
     }
-    newRecord(id, table) {
+    ModelFactory.prototype.newRecord = function (id, table) {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
-    }
-    newRecordField(schema, record) {
+    };
+    ModelFactory.prototype.newRecordField = function (schema, record) {
         if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
-            const refTable = record.table.session.tables[schema.references];
+            var refTable = record.table.session.tables[schema.references];
             if (!refTable)
-                throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
+                throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
             return refTable.getOrDefault(schema.getRecordValue(record));
         }
         else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
-            const refTable = record.table.session.tables[schema.table.name];
+            var refTable = record.table.session.tables[schema.table.name];
             return new RecordSet(refTable, schema, record);
         }
         else
             return new RecordField(schema, record);
-    }
-    _createRecordModelClass(schema) {
-        class Record extends RecordModel {
-            constructor(id, table) {
-                super(id, table);
-                this._fields = {};
+    };
+    ModelFactory.prototype._createRecordModelClass = function (schema) {
+        var Record = (function (_super) {
+            tslib_1.__extends(Record, _super);
+            function Record(id, table) {
+                var _this = _super.call(this, id, table) || this;
+                _this._fields = {};
+                return _this;
             }
-        }
-        schema.fields.concat(schema.relations).forEach(field => {
+            return Record;
+        }(RecordModel));
+        schema.fields.concat(schema.relations).forEach(function (field) {
             if (field.constraint != "PK") {
-                const name = field.table !== schema ? field.relationName : field.propName;
-                if (name)
-                    Object.defineProperty(Record.prototype, name, {
+                var name_1 = field.table !== schema ? field.relationName : field.propName;
+                if (name_1)
+                    Object.defineProperty(Record.prototype, name_1, {
                         get: function () {
-                            return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                            return this._fields[name_1] || (this._fields[name_1] = ModelFactory.default.newRecordField(field, this));
                         }
                     });
             }
         });
         return Record;
-    }
-}
+    };
+    return ModelFactory;
+}());
 ModelFactory.default = new ModelFactory();
