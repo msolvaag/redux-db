@@ -60,7 +60,7 @@ class TableModel {
             fks.forEach(fk => {
                 const fkIdx = indexes[fk.name][fk.value].indexOf(id);
                 if (fkIdx >= 0)
-                    this.state.indexes[fk.name][fk.value].splice(fkIdx, 1);
+                    indexes[fk.name][fk.value] = indexes[fk.name][fk.value].slice().splice(fkIdx, 1);
             });
         }
         this.state = Object.assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });

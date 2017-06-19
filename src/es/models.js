@@ -48,12 +48,20 @@ export class TableModel {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     }
     delete(id) {
-        const byId = Object.assign({}, this.state.byId), ids = this.state.ids.slice();
+        const byId = Object.assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = Object.assign({}, this.state.indexes), ref = byId[id];
         delete byId[id];
         const idx = ids.indexOf(id);
         if (idx >= 0)
             ids.splice(idx, 1);
-        this.state = Object.assign({}, this.state, { byId: byId, ids: ids });
+        if (ref) {
+            const fks = this.schema.getForeignKeys(ref);
+            fks.forEach(fk => {
+                const fkIdx = indexes[fk.name][fk.value].indexOf(id);
+                if (fkIdx >= 0)
+                    indexes[fk.name][fk.value] = indexes[fk.name][fk.value].slice().splice(fkIdx, 1);
+            });
+        }
+        this.state = Object.assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
     }
     insertNormalized(table) {
         this.state = Object.assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: Object.assign({}, this.state.byId, table.byId) });
@@ -76,7 +84,7 @@ export class TableModel {
         });
         if (dirty) {
             this.state = state;
-            table.indexes && this._updateIndexes(table);
+            this._updateIndexes(table);
         }
         return records;
     }
@@ -107,7 +115,7 @@ export class TableModel {
     _updateIndexes(table) {
         Object.keys(table.indexes).forEach(key => {
             const idx = this.state.indexes[key] || (this.state.indexes[key] = {});
-            Object.keys(idx).forEach(fk => {
+            Object.keys(table.indexes[key]).forEach(fk => {
                 const idxBucket = idx[fk] || (idx[fk] = []);
                 idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
             });

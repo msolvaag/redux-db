@@ -28,9 +28,9 @@ export class TableSchema {
             fks.forEach(fk => {
                 if (!tbl.indexes[fk.name])
                     tbl.indexes[fk.name] = {};
-                if (!tbl.indexes[fk.name][pk])
-                    tbl.indexes[fk.name][pk] = [];
-                tbl.indexes[fk.name][pk].push(fk.value);
+                if (!tbl.indexes[fk.name][fk.value])
+                    tbl.indexes[fk.name][fk.value] = [];
+                tbl.indexes[fk.name][fk.value].push(pk);
             });
             const relations = {};
             this.relations.forEach(rel => {
