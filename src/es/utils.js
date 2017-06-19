@@ -1,14 +1,14 @@
-export const toArray = (obj) => {
+export var toArray = function (obj) {
     if (!obj)
         return [];
     if (Array.isArray(obj))
         return obj;
     else if (typeof obj === 'object')
-        return Object.keys(obj).map(key => obj[key]);
+        return Object.keys(obj).map(function (key) { return obj[key]; });
     else
         return [];
 };
-export const ensureArray = (obj) => {
+export var ensureArray = function (obj) {
     if (!obj)
         return [];
     if (Array.isArray(obj))
@@ -16,10 +16,10 @@ export const ensureArray = (obj) => {
     else
         return [obj];
 };
-export const toObject = (a, key) => {
-    return a.reduce((o, v) => { o[key(v)] = v; return o; }, {});
+export var toObject = function (a, key) {
+    return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
 };
-export const arrayMerge = (a, b) => {
+export var arrayMerge = function (a, b) {
     var hash = {}, i;
     for (i = 0; i < a.length; i++) {
         hash[a[i]] = true;
