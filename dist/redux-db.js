@@ -193,9 +193,8 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             return this.all().filter(predicate);
         };
         TableModel.prototype.index = function (name, fk) {
-            var _this = this;
             if (this.state.indexes[name] && this.state.indexes[name][fk])
-                return this.state.indexes[name][fk].map(function (id) { return ModelFactory.default.newRecord(id, _this); });
+                return this.state.indexes[name][fk];
             else
                 return [];
         };
@@ -355,12 +354,16 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this.owner = owner;
             this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
         }
-        RecordSet.prototype.all = function () {
-            return this.table.index(this.schema.name, this.owner.id);
-        };
         Object.defineProperty(RecordSet.prototype, "value", {
             get: function () {
                 return this.map(function (r) { return r.value; });
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(RecordSet.prototype, "ids", {
+            get: function () {
+                return this.table.index(this.schema.name, this.owner.id);
             },
             enumerable: true,
             configurable: true
@@ -372,6 +375,10 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             enumerable: true,
             configurable: true
         });
+        RecordSet.prototype.all = function () {
+            var _this = this;
+            return this.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this.table); });
+        };
         RecordSet.prototype.map = function (callback) {
             return this.all().map(callback);
         };

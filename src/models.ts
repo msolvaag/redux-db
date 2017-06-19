@@ -34,9 +34,9 @@ export class TableModel<T extends TableRecord> implements Table {
         return this.all().filter(predicate);
     }
 
-    index(name: string, fk: string): T[] {
+    index(name: string, fk: string): string[] {
         if (this.state.indexes[name] && this.state.indexes[name][fk])
-            return this.state.indexes[name][fk].map(id => ModelFactory.default.newRecord<T>(id, this));
+            return this.state.indexes[name][fk];
         else
             return [];
     }
@@ -236,16 +236,20 @@ export class RecordSet<T extends TableRecord> {
         this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
     }
 
-    all() {
-        return this.table.index(this.schema.name, this.owner.id);
-    }
-
     get value() {
         return this.map(r => r.value);
     }
 
+    get ids() {
+        return this.table.index(this.schema.name, this.owner.id);
+    }
+
     get length() {
         return this.all().length;
+    }
+
+    all() {
+        return this.ids.map(id => ModelFactory.default.newRecord(id, this.table));
     }
 
     map<M>(callback: (record: T) => M) {
