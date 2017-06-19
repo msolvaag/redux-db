@@ -49,6 +49,12 @@ export class TableModel<T extends TableRecord> implements Table {
         return ModelFactory.default.newRecord<T>(id, this);
     }
 
+    value(id: number | string) {
+        if (typeof id === "number")
+            id = id.toString();
+        return this.state.byId[id];
+    }
+
     getOrDefault(id: number | string) {
         return this.exists(id) ? this.get(id) : null;
     }
@@ -192,7 +198,7 @@ export class RecordModel<T> implements TableRecord {
     }
 
     get value(): T {
-        return this.table.state.byId[this.id];
+        return this.table.value(this.id);
     }
 
     delete() {
@@ -249,7 +255,7 @@ export class RecordSet<T extends TableRecord> {
     }
 
     all() {
-        return this.ids.map(id => ModelFactory.default.newRecord(id, this.table));
+        return this.ids.map(id => ModelFactory.default.newRecord<T>(id, this.table));
     }
 
     map<M>(callback: (record: T) => M) {
