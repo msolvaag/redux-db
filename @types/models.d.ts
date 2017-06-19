@@ -9,6 +9,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     filter(predicate: (record: T, index: number) => boolean): T[];
     index(name: string, fk: string): string[];
     get(id: number | string): T;
+    value(id: number | string): any;
     getOrDefault(id: number | string): T | null;
     exists(id: number | string): boolean;
     insert(data: any): T;
@@ -47,7 +48,7 @@ export declare class RecordSet<T extends TableRecord> {
     readonly value: any[];
     readonly ids: string[];
     readonly length: number;
-    all(): TableRecord[];
+    all(): T[];
     map<M>(callback: (record: T) => M): M[];
     add(data: any): void;
     remove(data: any): void;

@@ -204,6 +204,11 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
             return ModelFactory.default.newRecord(id, this);
         };
+        TableModel.prototype.value = function (id) {
+            if (typeof id === "number")
+                id = id.toString();
+            return this.state.byId[id];
+        };
         TableModel.prototype.getOrDefault = function (id) {
             return this.exists(id) ? this.get(id) : null;
         };
@@ -316,7 +321,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         }
         Object.defineProperty(RecordModel.prototype, "value", {
             get: function () {
-                return this.table.state.byId[this.id];
+                return this.table.value(this.id);
             },
             enumerable: true,
             configurable: true

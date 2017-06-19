@@ -28,6 +28,11 @@ class TableModel {
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
         return ModelFactory.default.newRecord(id, this);
     }
+    value(id) {
+        if (typeof id === "number")
+            id = id.toString();
+        return this.state.byId[id];
+    }
     getOrDefault(id) {
         return this.exists(id) ? this.get(id) : null;
     }
@@ -134,7 +139,7 @@ class RecordModel {
         this.table = table;
     }
     get value() {
-        return this.table.state.byId[this.id];
+        return this.table.value(this.id);
     }
     delete() {
         this.table.delete(this.id);

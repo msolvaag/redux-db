@@ -8,6 +8,7 @@ export interface Table {
     filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
     exists: (id: string | number) => boolean;
     index: (name: string, fk: string) => string[];
+    value: (id: string | number) => any;
     upsert: (data: any) => TableRecord;
     insert: (data: any) => TableRecord;
     insertMany: (data: any) => TableRecord[];
