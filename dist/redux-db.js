@@ -40,6 +40,16 @@ define("utils", ["require", "exports"], function (require, exports) {
     exports.toObject = function (a, key) {
         return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
     };
+    exports.arrayMerge = function (a, b) {
+        var hash = {}, i;
+        for (i = 0; i < a.length; i++) {
+            hash[a[i]] = true;
+        }
+        for (i = 0; i < b.length; i++) {
+            hash[b[i]] = true;
+        }
+        return Object.keys(hash);
+    };
 });
 define("schema", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
@@ -68,10 +78,19 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
             if (output[this.name])
                 throw new Error("Failed to normalize data. Circular reference detected.");
-            output[this.name] = { ids: [], byId: {} };
+            output[this.name] = { ids: [], byId: {}, indexes: {} };
             output[this.name].ids = utils.ensureArray(data).map(function (obj) {
                 var pk = _this.getPrimaryKey(obj);
-                output[_this.name].byId[pk] = obj;
+                var fks = _this.getForeignKeys(obj);
+                var tbl = output[_this.name];
+                tbl.byId[pk] = obj;
+                fks.forEach(function (fk) {
+                    if (!tbl.indexes[fk.name])
+                        tbl.indexes[fk.name] = {};
+                    if (!tbl.indexes[fk.name][fk.value])
+                        tbl.indexes[fk.name][fk.value] = [];
+                    tbl.indexes[fk.name][fk.value].push(pk);
+                });
                 var relations = {};
                 _this.relations.forEach(function (rel) {
                     if (rel.relationName && data[rel.relationName]) {
@@ -113,12 +132,12 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
             return pk;
         };
+        TableSchema.prototype.getForeignKeys = function (record) {
+            return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name] }); });
+        };
         TableSchema.prototype.isModified = function (x, y) {
-            if (this._stampFields.length > 0) {
-                return this._stampFields.reduce(function (p, n) {
-                    return p + (n.getValue(x) === n.getValue(y) ? 1 : 0);
-                }, 0) !== this._stampFields.length;
-            }
+            if (this._stampFields.length > 0)
+                return this._stampFields.reduce(function (p, n) { return p + (n.getValue(x) === n.getValue(y) ? 1 : 0); }, 0) !== this._stampFields.length;
             else
                 return true;
         };
@@ -149,12 +168,12 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     }());
     exports.FieldSchema = FieldSchema;
 });
-define("models", ["require", "exports"], function (require, exports) {
+define("models", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var TableModel = (function () {
         function TableModel(session, state, schema) {
-            if (state === void 0) { state = { ids: [], byId: {} }; }
+            if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
             this.session = session;
             this.state = state;
             this.schema = schema;
@@ -172,6 +191,13 @@ define("models", ["require", "exports"], function (require, exports) {
         });
         TableModel.prototype.filter = function (predicate) {
             return this.all().filter(predicate);
+        };
+        TableModel.prototype.index = function (name, fk) {
+            var _this = this;
+            if (this.state.indexes[name] && this.state.indexes[name][fk])
+                return this.state.indexes[name][fk].map(function (id) { return ModelFactory.default.newRecord(id, _this); });
+            else
+                return [];
         };
         TableModel.prototype.get = function (id) {
             id = id.toString();
@@ -201,16 +227,28 @@ define("models", ["require", "exports"], function (require, exports) {
             return this._normalizedAction(data, this.upsertNormalized)[0];
         };
         TableModel.prototype.delete = function (id) {
-            var byId = __assign({}, this.state.byId), ids = this.state.ids.slice();
+            var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), ref = byId[id];
             delete byId[id];
             var idx = ids.indexOf(id);
             if (idx >= 0)
                 ids.splice(idx, 1);
-            this.state = __assign({}, this.state, { byId: byId, ids: ids });
+            if (ref) {
+                var fks = this.schema.getForeignKeys(ref);
+                fks.forEach(function (fk) {
+                    var fkIdx = indexes[fk.name][fk.value].indexOf(id);
+                    if (fkIdx >= 0) {
+                        var idxBucket = indexes[fk.name][fk.value].slice();
+                        idxBucket.splice(fkIdx, 1);
+                        indexes[fk.name][fk.value] = idxBucket;
+                    }
+                });
+            }
+            this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
         };
         TableModel.prototype.insertNormalized = function (table) {
             var _this = this;
-            this.state = { ids: this.state.ids.concat(table.ids), byId: __assign({}, this.state.byId, table.byId) };
+            this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
+            this._updateIndexes(table);
             return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
         };
         TableModel.prototype.updateNormalized = function (table) {
@@ -228,14 +266,16 @@ define("models", ["require", "exports"], function (require, exports) {
                 }
                 return ModelFactory.default.newRecord(id, _this);
             });
-            if (dirty)
+            if (dirty) {
                 this.state = state;
+                this._updateIndexes(table);
+            }
             return records;
         };
         TableModel.prototype.upsertNormalized = function (norm) {
             var _this = this;
-            var toUpdate = { ids: [], byId: {} };
-            var toInsert = { ids: [], byId: {} };
+            var toUpdate = { ids: [], byId: {}, indexes: {} };
+            var toInsert = { ids: [], byId: {}, indexes: {} };
             norm.ids.forEach(function (id) {
                 if (_this.exists(id)) {
                     toUpdate.ids.push(id);
@@ -246,7 +286,9 @@ define("models", ["require", "exports"], function (require, exports) {
                     toInsert.byId[id] = norm.byId[id];
                 }
             });
-            return (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+            var refs = (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat((toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+            this._updateIndexes(norm);
+            return refs;
         };
         TableModel.prototype._normalizedAction = function (data, action) {
             var norm = this.schema.normalize(data);
@@ -254,6 +296,16 @@ define("models", ["require", "exports"], function (require, exports) {
             var records = table ? action.call(this, table) : [];
             this.session.upsert(norm, this);
             return records;
+        };
+        TableModel.prototype._updateIndexes = function (table) {
+            var _this = this;
+            Object.keys(table.indexes).forEach(function (key) {
+                var idx = _this.state.indexes[key] || (_this.state.indexes[key] = {});
+                Object.keys(table.indexes[key]).forEach(function (fk) {
+                    var idxBucket = idx[fk] || (idx[fk] = []);
+                    idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
+                });
+            });
         };
         return TableModel;
     }());
@@ -303,18 +355,8 @@ define("models", ["require", "exports"], function (require, exports) {
             this.owner = owner;
             this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
         }
-        /**[Symbol.iterator]() {
-            var i = 0, items = this.all();
-            while (items[i] !== undefined) {
-                yield items[i++];
-            }
-        }*/
         RecordSet.prototype.all = function () {
-            var _this = this;
-            return this.table.session.db.cache(this.key, function () { return _this.table.filter(function (r) {
-                var refId = _this.schema.getValue(r.value, r);
-                return refId && refId.toString() === _this.owner.id;
-            }); });
+            return this.table.index(this.schema.name, this.owner.id);
         };
         Object.defineProperty(RecordSet.prototype, "value", {
             get: function () {
@@ -335,7 +377,6 @@ define("models", ["require", "exports"], function (require, exports) {
         };
         RecordSet.prototype.add = function (data) {
             this.table.insert(this._normalize(data));
-            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.remove = function (data) {
             var _this = this;
@@ -343,16 +384,13 @@ define("models", ["require", "exports"], function (require, exports) {
                 var pk = _this.table.schema.getPrimaryKey(obj);
                 _this.table.delete(pk);
             });
-            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.update = function (data) {
             this.table.update(this._normalize(data));
-            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.delete = function () {
             var _this = this;
             this.all().forEach(function (obj) { return _this.table.delete(obj.id); });
-            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype._normalize = function (data) {
             return this.table.schema.inferRelations(data, this.schema, this.owner.id);
@@ -441,13 +479,13 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
                 return session.commit();
             };
         };
-        Database.prototype.createSession = function (state) {
-            return new DatabaseSession(state, this);
+        Database.prototype.createSession = function (state, options) {
+            return new DatabaseSession(state, this, options || { readOnly: false });
         };
         Database.prototype.createSelector = function (dbName, selector) {
             var _this = this;
             return function (state, props) {
-                var session = _this.createSession(state[dbName]);
+                var session = _this.createSession(state[dbName], { readOnly: true });
                 return selector(session.tables, props);
             };
         };
@@ -461,15 +499,18 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
     }());
     exports.Database = Database;
     var DatabaseSession = (function () {
-        function DatabaseSession(state, schema) {
+        function DatabaseSession(state, schema, options) {
             if (state === void 0) { state = {}; }
             var _this = this;
             this.state = state;
             this.db = schema;
+            this.options = options;
             this.tables = utils.toObject(schema.tables.map(function (t) { return new models_1.TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
         }
         DatabaseSession.prototype.upsert = function (state, from) {
             var _this = this;
+            if (this.options.readOnly)
+                throw new Error("Invalid attempt to alter a readonly session.");
             Object.keys(state).forEach(function (name) {
                 if (!from || name !== from.schema.name) {
                     _this.tables[name].upsertNormalized(state[name]);
@@ -478,6 +519,8 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
         };
         DatabaseSession.prototype.commit = function () {
             var _this = this;
+            if (this.options.readOnly)
+                throw new Error("Invalid attempt to alter a readonly session.");
             Object.keys(this.tables).forEach(function (table) {
                 var oldState = _this.state[table];
                 var newState = _this.tables[table].state;

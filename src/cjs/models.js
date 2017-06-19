@@ -59,8 +59,11 @@ class TableModel {
             const fks = this.schema.getForeignKeys(ref);
             fks.forEach(fk => {
                 const fkIdx = indexes[fk.name][fk.value].indexOf(id);
-                if (fkIdx >= 0)
-                    indexes[fk.name][fk.value] = indexes[fk.name][fk.value].slice().splice(fkIdx, 1);
+                if (fkIdx >= 0) {
+                    const idxBucket = indexes[fk.name][fk.value].slice();
+                    idxBucket.splice(fkIdx, 1);
+                    indexes[fk.name][fk.value] = idxBucket;
+                }
             });
         }
         this.state = Object.assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });

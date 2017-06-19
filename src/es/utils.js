@@ -19,4 +19,13 @@ export const ensureArray = (obj) => {
 export const toObject = (a, key) => {
     return a.reduce((o, v) => { o[key(v)] = v; return o; }, {});
 };
-export const arrayMerge = (...arr) => [...new Set([].concat(...arr))];
+export const arrayMerge = (a, b) => {
+    var hash = {}, i;
+    for (i = 0; i < a.length; i++) {
+        hash[a[i]] = true;
+    }
+    for (i = 0; i < b.length; i++) {
+        hash[b[i]] = true;
+    }
+    return Object.keys(hash);
+};

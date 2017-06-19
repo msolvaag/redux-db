@@ -18,10 +18,19 @@ export const ensureArray = (obj: any) => {
         return obj;
     else
         return [obj];
-}
+};
 
 export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});
-}
+};
 
-export const arrayMerge = <T>(...arr: T[][]) => [...new Set<T>((<T[]>[]).concat(...arr))];
+export const arrayMerge = (a: string[], b: string[]) => {
+    var hash: { [key: string]: boolean } = {}, i;
+    for (i = 0; i < a.length; i++) {
+        hash[a[i]] = true;
+    }
+    for (i = 0; i < b.length; i++) {
+        hash[b[i]] = true;
+    }
+    return Object.keys(hash);
+};
