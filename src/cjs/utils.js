@@ -21,3 +21,4 @@ exports.ensureArray = (obj) => {
 exports.toObject = (a, key) => {
     return a.reduce((o, v) => { o[key(v)] = v; return o; }, {});
 };
+exports.arrayMerge = (...arr) => [...new Set([].concat(...arr))];

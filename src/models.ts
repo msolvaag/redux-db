@@ -1,70 +1,22 @@
-import { DatabaseSchema, TableSchema, FieldSchema, DatabaseState, TableState, NormalizedState } from "./schema";
+import {
+    DatabaseSchema,
+    TableSchema,
+    FieldSchema,
+    DatabaseState,
+    TableState,
+    NormalizedState,
+    Table,
+    TableRecord,
+    Session
+} from "./schema";
 import * as utils from "./utils";
-
-export interface Table {
-    session: Session;
-    schema: TableSchema;
-    state: TableState;
-
-    get: (id: string | number) => TableRecord;
-    getOrDefault: (id: string | number) => TableRecord | null;
-    all(): TableRecord[];
-    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
-    exists: (id: string | number) => boolean;
-
-    upsert: (data: any) => TableRecord;
-    insert: (data: any) => TableRecord;
-    insertMany: (data: any) => TableRecord[];
-    update: (data: any) => TableRecord;
-    updateMany: (data: any) => TableRecord[];
-    delete: (id: string | number) => void;
-}
-
-export interface TableRecord {
-    id: string;
-    table: Table;
-    value: any;
-
-    update(data: any): TableRecord;
-    delete(): void;
-}
-
-export class Session {
-    tables: any;
-    state: DatabaseState;
-
-    constructor(state: DatabaseState = {}, schema: DatabaseSchema) {
-        this.state = state;
-        this.tables = utils.toObject(
-            schema.tables.map(t => new TableModel(this, state[t.name], t)), t => t.schema.name);
-    }
-
-    upsert(state: NormalizedState, from?: Table) {
-        Object.keys(state).forEach(name => {
-            if (!from || name !== from.schema.name) {
-                this.tables[name].upsertNormalized(state[name]);
-            }
-        });
-    }
-
-    commit() {
-        Object.keys(this.tables).forEach(table => {
-            const oldState = this.state[table];
-            const newState = this.tables[table].state;
-
-            if (oldState !== newState)
-                this.state = { ...this.state, [table]: newState };
-        });
-        return this.state as any;
-    }
-}
 
 export class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
 
-    constructor(session: Session, state: TableState = { ids: [], byId: {} }, schema: TableSchema) {
+    constructor(session: Session, state: TableState = { ids: [], byId: {}, indexes: {} }, schema: TableSchema) {
         this.session = session;
         this.state = state;
         this.schema = schema;
@@ -74,8 +26,19 @@ export class TableModel<T extends TableRecord> implements Table {
         return this.state.ids.map(id => ModelFactory.default.newRecord<T>(id, this));
     }
 
+    get length() {
+        return this.state.ids.length;
+    }
+
     filter(predicate: (record: T, index: number) => boolean) {
         return this.all().filter(predicate);
+    }
+
+    index(name: string, fk: string): T[] {
+        if (this.state.indexes[name] && this.state.indexes[name][fk])
+            return this.state.indexes[name][fk].map(id => ModelFactory.default.newRecord<T>(id, this));
+        else
+            return [];
     }
 
     get(id: number | string): T {
@@ -116,17 +79,33 @@ export class TableModel<T extends TableRecord> implements Table {
 
     delete(id: string) {
         const byId = { ...this.state.byId },
-            ids = this.state.ids.slice();
+            ids = this.state.ids.slice(),
+            indexes = { ...this.state.indexes },
+            ref = byId[id];
         delete byId[id];
         const idx = ids.indexOf(id);
         if (idx >= 0)
             ids.splice(idx, 1);
 
-        this.state = { ...this.state, byId: byId, ids: ids };
+        if (ref) {
+            const fks = this.schema.getForeignKeys(ref);
+            fks.forEach(fk => {
+                const fkIdx = indexes[fk.name][fk.value].indexOf(id);
+                if (fkIdx >= 0)
+                    indexes[fk.name][fk.value] = indexes[fk.name][fk.value].slice().splice(fkIdx, 1);
+            });
+        }
+
+        this.state = { ...this.state, byId: byId, ids: ids, indexes: indexes };
     }
 
     insertNormalized(table: TableState) {
-        this.state = { ids: this.state.ids.concat(table.ids), byId: { ...this.state.byId, ...table.byId } };
+        this.state = {
+            ...this.state,
+            ids: utils.arrayMerge(this.state.ids, table.ids),
+            byId: { ...this.state.byId, ...table.byId }
+        };
+        this._updateIndexes(table);
 
         return table.ids.map(id => ModelFactory.default.newRecord<T>(id, this));
     }
@@ -149,15 +128,17 @@ export class TableModel<T extends TableRecord> implements Table {
             return ModelFactory.default.newRecord<T>(id, this);
         });
 
-        if (dirty)
+        if (dirty) {
             this.state = state;
+            this._updateIndexes(table);
+        }
 
         return records;
     }
 
     upsertNormalized(norm: TableState): T[] {
-        const toUpdate: TableState = { ids: [], byId: {} };
-        const toInsert: TableState = { ids: [], byId: {} };
+        const toUpdate: TableState = { ids: [], byId: {}, indexes: {} };
+        const toInsert: TableState = { ids: [], byId: {}, indexes: {} };
 
         norm.ids.forEach(id => {
             if (this.exists(id)) {
@@ -169,8 +150,12 @@ export class TableModel<T extends TableRecord> implements Table {
             }
         });
 
-        return (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat(
+        const refs = (toUpdate.ids.length ? this.updateNormalized(toUpdate) : []).concat(
             (toInsert.ids.length ? this.insertNormalized(toInsert) : []));
+
+        this._updateIndexes(norm);
+
+        return refs;
     }
 
     private _normalizedAction(data: any, action: (norm: TableState) => T[]): T[] {
@@ -179,6 +164,17 @@ export class TableModel<T extends TableRecord> implements Table {
         const records = table ? action.call(this, table) : [];
         this.session.upsert(norm, this);
         return records;
+    }
+
+    private _updateIndexes(table: TableState) {
+        Object.keys(table.indexes).forEach(key => {
+            const idx = this.state.indexes[key] || (this.state.indexes[key] = {});
+
+            Object.keys(table.indexes[key]).forEach(fk => {
+                const idxBucket = idx[fk] || (idx[fk] = []);
+                idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
+            });
+        });
     }
 }
 
@@ -217,7 +213,7 @@ export class RecordField {
     }
 
     get value() {
-        return this.record.value[this.name];
+        return this.schema.getRecordValue(this.record);
     }
 }
 
@@ -226,19 +222,18 @@ export class RecordSet<T extends TableRecord> {
     readonly table: Table;
     readonly schema: FieldSchema;
     readonly owner: TableRecord;
+    readonly key: string;
 
     constructor(table: Table, schema: FieldSchema, owner: TableRecord) {
 
         this.table = table;
         this.schema = schema;
         this.owner = owner;
+        this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
     }
 
     all() {
-        return this.table.filter(r => {
-            const refId = r.value[this.schema.name];
-            return refId && refId.toString() === this.owner.id;
-        });
+        return this.table.index(this.schema.name, this.owner.id);
     }
 
     get value() {
@@ -292,7 +287,7 @@ class ModelFactory {
             if (!refTable)
                 throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
 
-            return refTable.getOrDefault(record.value[schema.name]);
+            return refTable.getOrDefault(schema.getRecordValue(record));
         } else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
             const refTable = record.table.session.tables[schema.table.name] as Table;
 
@@ -313,7 +308,7 @@ class ModelFactory {
         }
 
         schema.fields.concat(schema.relations).forEach(field => {
-            if (field.constraint == "FK") {
+            if (field.constraint != "PK") {
                 const name = field.table !== schema ? field.relationName : field.propName;
                 if (name)
                     Object.defineProperty(Record.prototype, name, {

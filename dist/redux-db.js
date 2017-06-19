@@ -51,9 +51,9 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             this.relations = [];
             this.name = name;
             this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
-            this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; }).map(function (f) { return f.name; });
-            this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; }).map(function (f) { return f.name; });
-            this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; }).map(function (f) { return f.name; });
+            this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
+            this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
+            this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
         }
         TableSchema.prototype.connect = function (schemas) {
             var _this = this;
@@ -103,14 +103,10 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         };
         TableSchema.prototype.getPrimaryKey = function (record) {
             var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-            var pk = null;
-            if (lookup.length === 1)
-                pk = record[lookup[0]];
-            else if (lookup.length > 1)
-                pk = lookup.reduce(function (p, n) {
-                    var k = record[n];
-                    return p && k ? (p + "_" + k) : k;
-                }, null);
+            var pk = lookup.reduce(function (p, n) {
+                var k = n.getValue(record);
+                return p && k ? (p + "_" + k) : k;
+            }, null);
             if (pk !== null && pk !== undefined && typeof (pk) !== "string")
                 pk = pk.toString();
             if (!pk || pk.length === 0)
@@ -118,12 +114,9 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             return pk;
         };
         TableSchema.prototype.isModified = function (x, y) {
-            var _this = this;
-            if (this._stampFields.length === 1)
-                return x[this._stampFields[0]] !== y[this._stampFields[0]];
-            else if (this._stampFields.length > 1) {
+            if (this._stampFields.length > 0) {
                 return this._stampFields.reduce(function (p, n) {
-                    return p + (x[_this._stampFields[0]] !== y[_this._stampFields[0]] ? 1 : 0);
+                    return p + (n.getValue(x) === n.getValue(y) ? 1 : 0);
                 }, 0) !== this._stampFields.length;
             }
             else
@@ -136,48 +129,29 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         function FieldSchema(table, name, schema) {
             this.table = table;
             this.name = name;
-            this.propName = schema.name || name;
+            this.propName = schema.propName || name;
             this.type = schema.type || "ATTR";
             this.constraint = schema.constraint || "NONE";
             this.references = schema.references;
             this.relationName = schema.relationName;
+            this._valueFn = schema.value ? schema.value.bind(this) : null;
         }
+        FieldSchema.prototype.getValue = function (data, record) {
+            return this._valueFn ? this._valueFn(data, {
+                schema: this,
+                record: record
+            }) : data[this.name];
+        };
+        FieldSchema.prototype.getRecordValue = function (record) {
+            return this.getValue(record.value, record);
+        };
         return FieldSchema;
     }());
     exports.FieldSchema = FieldSchema;
 });
-define("models", ["require", "exports", "utils"], function (require, exports, utils) {
+define("models", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var Session = (function () {
-        function Session(state, schema) {
-            if (state === void 0) { state = {}; }
-            var _this = this;
-            this.state = state;
-            this.tables = utils.toObject(schema.tables.map(function (t) { return new TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
-        }
-        Session.prototype.upsert = function (state, from) {
-            var _this = this;
-            Object.keys(state).forEach(function (name) {
-                if (!from || name !== from.schema.name) {
-                    _this.tables[name].upsertNormalized(state[name]);
-                }
-            });
-        };
-        Session.prototype.commit = function () {
-            var _this = this;
-            Object.keys(this.tables).forEach(function (table) {
-                var oldState = _this.state[table];
-                var newState = _this.tables[table].state;
-                if (oldState !== newState)
-                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
-                var _a;
-            });
-            return this.state;
-        };
-        return Session;
-    }());
-    exports.Session = Session;
     var TableModel = (function () {
         function TableModel(session, state, schema) {
             if (state === void 0) { state = { ids: [], byId: {} }; }
@@ -189,6 +163,13 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             var _this = this;
             return this.state.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
         };
+        Object.defineProperty(TableModel.prototype, "length", {
+            get: function () {
+                return this.state.ids.length;
+            },
+            enumerable: true,
+            configurable: true
+        });
         TableModel.prototype.filter = function (predicate) {
             return this.all().filter(predicate);
         };
@@ -307,7 +288,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         }
         Object.defineProperty(RecordField.prototype, "value", {
             get: function () {
-                return this.record.value[this.name];
+                return this.schema.getRecordValue(this.record);
             },
             enumerable: true,
             configurable: true
@@ -320,13 +301,20 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this.table = table;
             this.schema = schema;
             this.owner = owner;
+            this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
         }
+        /**[Symbol.iterator]() {
+            var i = 0, items = this.all();
+            while (items[i] !== undefined) {
+                yield items[i++];
+            }
+        }*/
         RecordSet.prototype.all = function () {
             var _this = this;
-            return this.table.filter(function (r) {
-                var refId = r.value[_this.schema.name];
+            return this.table.session.db.cache(this.key, function () { return _this.table.filter(function (r) {
+                var refId = _this.schema.getValue(r.value, r);
                 return refId && refId.toString() === _this.owner.id;
-            });
+            }); });
         };
         Object.defineProperty(RecordSet.prototype, "value", {
             get: function () {
@@ -347,6 +335,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         };
         RecordSet.prototype.add = function (data) {
             this.table.insert(this._normalize(data));
+            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.remove = function (data) {
             var _this = this;
@@ -354,13 +343,16 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 var pk = _this.table.schema.getPrimaryKey(obj);
                 _this.table.delete(pk);
             });
+            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.update = function (data) {
             this.table.update(this._normalize(data));
+            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype.delete = function () {
             var _this = this;
             this.all().forEach(function (obj) { return _this.table.delete(obj.id); });
+            this.table.session.db.clearCache(this.key);
         };
         RecordSet.prototype._normalize = function (data) {
             return this.table.schema.inferRelations(data, this.schema, this.owner.id);
@@ -380,7 +372,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 var refTable = record.table.session.tables[schema.references];
                 if (!refTable)
                     throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-                return refTable.getOrDefault(record.value[schema.name]);
+                return refTable.getOrDefault(schema.getRecordValue(record));
             }
             else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
                 var refTable = record.table.session.tables[schema.table.name];
@@ -400,7 +392,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 return Record;
             }(RecordModel));
             schema.fields.concat(schema.relations).forEach(function (field) {
-                if (field.constraint == "FK") {
+                if (field.constraint != "PK") {
                     var name_1 = field.table !== schema ? field.relationName : field.propName;
                     if (name_1)
                         Object.defineProperty(Record.prototype, name_1, {
@@ -416,7 +408,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     }());
     ModelFactory.default = new ModelFactory();
 });
-define("index", ["require", "exports", "schema", "models"], function (require, exports, schema_1, models_1) {
+define("index", ["require", "exports", "schema", "models", "utils"], function (require, exports, schema_1, models_1, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Record = models_1.RecordModel;
@@ -429,6 +421,7 @@ define("index", ["require", "exports", "schema", "models"], function (require, e
     var Database = (function () {
         function Database(schema, options) {
             var _this = this;
+            this._cache = {};
             this.options = options;
             this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName]); });
             this.tables.forEach(function (table) { return table.connect(_this.tables); });
@@ -449,9 +442,52 @@ define("index", ["require", "exports", "schema", "models"], function (require, e
             };
         };
         Database.prototype.createSession = function (state) {
-            return new models_1.Session(state, this);
+            return new DatabaseSession(state, this);
+        };
+        Database.prototype.createSelector = function (dbName, selector) {
+            var _this = this;
+            return function (state, props) {
+                var session = _this.createSession(state[dbName]);
+                return selector(session.tables, props);
+            };
+        };
+        Database.prototype.cache = function (key, valueFn) {
+            return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));
+        };
+        Database.prototype.clearCache = function (key) {
+            delete this._cache[key];
         };
         return Database;
     }());
     exports.Database = Database;
+    var DatabaseSession = (function () {
+        function DatabaseSession(state, schema) {
+            if (state === void 0) { state = {}; }
+            var _this = this;
+            this.state = state;
+            this.db = schema;
+            this.tables = utils.toObject(schema.tables.map(function (t) { return new models_1.TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
+        }
+        DatabaseSession.prototype.upsert = function (state, from) {
+            var _this = this;
+            Object.keys(state).forEach(function (name) {
+                if (!from || name !== from.schema.name) {
+                    _this.tables[name].upsertNormalized(state[name]);
+                }
+            });
+        };
+        DatabaseSession.prototype.commit = function () {
+            var _this = this;
+            Object.keys(this.tables).forEach(function (table) {
+                var oldState = _this.state[table];
+                var newState = _this.tables[table].state;
+                if (oldState !== newState)
+                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+                var _a;
+            });
+            return this.state;
+        };
+        return DatabaseSession;
+    }());
+    exports.DatabaseSession = DatabaseSession;
 });

@@ -1,41 +1,13 @@
-import { DatabaseSchema, TableSchema, FieldSchema, DatabaseState, TableState, NormalizedState } from "./schema";
-export interface Table {
-    session: Session;
-    schema: TableSchema;
-    state: TableState;
-    get: (id: string | number) => TableRecord;
-    getOrDefault: (id: string | number) => TableRecord | null;
-    all(): TableRecord[];
-    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
-    exists: (id: string | number) => boolean;
-    upsert: (data: any) => TableRecord;
-    insert: (data: any) => TableRecord;
-    insertMany: (data: any) => TableRecord[];
-    update: (data: any) => TableRecord;
-    updateMany: (data: any) => TableRecord[];
-    delete: (id: string | number) => void;
-}
-export interface TableRecord {
-    id: string;
-    table: Table;
-    value: any;
-    update(data: any): TableRecord;
-    delete(): void;
-}
-export declare class Session {
-    tables: any;
-    state: DatabaseState;
-    constructor(state: DatabaseState | undefined, schema: DatabaseSchema);
-    upsert(state: NormalizedState, from?: Table): void;
-    commit(): any;
-}
+import { TableSchema, FieldSchema, TableState, Table, TableRecord, Session } from "./schema";
 export declare class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
     constructor(session: Session, state: TableState | undefined, schema: TableSchema);
     all(): T[];
+    readonly length: number;
     filter(predicate: (record: T, index: number) => boolean): T[];
+    index(name: string, fk: string): T[];
     get(id: number | string): T;
     getOrDefault(id: number | string): T | null;
     exists(id: number | string): boolean;
@@ -49,6 +21,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     updateNormalized(table: TableState): T[];
     upsertNormalized(norm: TableState): T[];
     private _normalizedAction(data, action);
+    private _updateIndexes(table);
 }
 export declare class RecordModel<T> implements TableRecord {
     table: Table;
@@ -69,6 +42,7 @@ export declare class RecordSet<T extends TableRecord> {
     readonly table: Table;
     readonly schema: FieldSchema;
     readonly owner: TableRecord;
+    readonly key: string;
     constructor(table: Table, schema: FieldSchema, owner: TableRecord);
     all(): TableRecord[];
     readonly value: any[];

@@ -1,5 +1,34 @@
 import * as utils from "./utils";
 
+export interface Table {
+    session: Session;
+    schema: TableSchema;
+    state: TableState;
+
+    get: (id: string | number) => TableRecord;
+    getOrDefault: (id: string | number) => TableRecord | null;
+    all(): TableRecord[];
+    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
+    exists: (id: string | number) => boolean;
+    index: (name: string, fk: string) => TableRecord[];
+
+    upsert: (data: any) => TableRecord;
+    insert: (data: any) => TableRecord;
+    insertMany: (data: any) => TableRecord[];
+    update: (data: any) => TableRecord;
+    updateMany: (data: any) => TableRecord[];
+    delete: (id: string | number) => void;
+}
+
+export interface TableRecord {
+    id: string;
+    table: Table;
+    value: any;
+
+    update(data: any): TableRecord;
+    delete(): void;
+}
+
 export interface SchemaDDL {
     [key: string]: TableDDL;
 }
@@ -9,7 +38,13 @@ export interface FieldDDL {
     constraint?: ConstraintType;
     references?: string;
     relationName?: string;
-    name?: string;
+    propName?: string;
+    value?: (record: any, context?: ComputeContext) => any;
+}
+
+export interface ComputeContext {
+    schema: FieldSchema;
+    record?: TableRecord;
 }
 
 export interface TableDDL {
@@ -23,9 +58,15 @@ export type FieldType = "ATTR" | "MODIFIED";
 
 export interface DatabaseSchema {
     tables: TableSchema[];
+
+    cache<T>(key: string, valueFn?: () => T): T;
+    clearCache(key: string): void;
 }
 
 export interface DatabaseOptions {
+}
+export interface SessionOptions {
+    readOnly: boolean;
 }
 
 export interface DatabaseState {
@@ -35,6 +76,11 @@ export interface DatabaseState {
 export interface TableState {
     byId: { [key: string]: any };
     ids: string[];
+    indexes: {
+        [key: string]: {
+            [key: string]: string[]
+        }
+    };
 }
 
 export interface RecordState {
@@ -49,8 +95,11 @@ export interface Schema {
 }
 
 export interface Session {
-    name: string;
+    db: DatabaseSchema;
     state: DatabaseState;
+    tables: any;
+
+    upsert(state: DatabaseState, from: Table): void;
 }
 
 export interface NormalizedState {
@@ -58,6 +107,9 @@ export interface NormalizedState {
         ids: string[],
         byId: {
             [key: string]: any
+        },
+        indexes: {
+            [key: string]: { [key: string]: string[] }
         }
     };
 }
@@ -67,17 +119,18 @@ export class TableSchema {
     readonly fields: FieldSchema[];
 
     relations: FieldSchema[] = [];
-    private _primaryKeyFields: string[];
-    private _foreignKeyFields: string[];
-    private _stampFields: string[];
+
+    private _primaryKeyFields: FieldSchema[];
+    private _foreignKeyFields: FieldSchema[];
+    private _stampFields: FieldSchema[];
 
     constructor(name: string, schema: TableDDL) {
         this.name = name;
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
 
-        this._primaryKeyFields = this.fields.filter(f => f.constraint === PK).map(f => f.name);
-        this._foreignKeyFields = this.fields.filter(f => f.constraint === FK).map(f => f.name);
-        this._stampFields = this.fields.filter(f => f.type === "MODIFIED").map(f => f.name);
+        this._primaryKeyFields = this.fields.filter(f => f.constraint === PK);
+        this._foreignKeyFields = this.fields.filter(f => f.constraint === FK);
+        this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
     }
 
     connect(schemas: TableSchema[]) {
@@ -93,10 +146,21 @@ export class TableSchema {
         if (output[this.name])
             throw new Error("Failed to normalize data. Circular reference detected.");
 
-        output[this.name] = { ids: [], byId: {} };
+        output[this.name] = { ids: [], byId: {}, indexes: {} };
         output[this.name].ids = utils.ensureArray(data).map(obj => {
             const pk = this.getPrimaryKey(obj);
-            output[this.name].byId[pk] = obj;
+            const fks = this.getForeignKeys(obj);
+            const tbl = output[this.name];
+
+            tbl.byId[pk] = obj;
+
+            fks.forEach(fk => {
+                if (!tbl.indexes[fk.name])
+                    tbl.indexes[fk.name] = {};
+                if (!tbl.indexes[fk.name][fk.value])
+                    tbl.indexes[fk.name][fk.value] = [];
+                tbl.indexes[fk.name][fk.value].push(pk);
+            });
 
             const relations: Record<string, any> = {};
             this.relations.forEach(rel => {
@@ -133,15 +197,11 @@ export class TableSchema {
 
     getPrimaryKey(record: any) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-        let pk: string | number | null | undefined = null;
 
-        if (lookup.length === 1)
-            pk = record[lookup[0]];
-        else if (lookup.length > 1)
-            pk = lookup.reduce((p, n) => {
-                const k = record[n];
-                return p && k ? (p + "_" + k) : k;
-            }, null);
+        let pk = lookup.reduce((p, n) => {
+            const k = n.getValue(record);
+            return p && k ? (p + "_" + k) : k;
+        }, <string | null | undefined | number>null);
 
         if (pk !== null && pk !== undefined && typeof (pk) !== "string")
             pk = pk.toString();
@@ -152,14 +212,14 @@ export class TableSchema {
         return pk;
     }
 
+    getForeignKeys(record: any) {
+        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name] }));
+    }
+
     isModified(x: any, y: any) {
-        if (this._stampFields.length === 1)
-            return x[this._stampFields[0]] !== y[this._stampFields[0]];
-        else if (this._stampFields.length > 1) {
-            return this._stampFields.reduce((p, n) => {
-                return p + (x[this._stampFields[0]] !== y[this._stampFields[0]] ? 1 : 0);
-            }, 0) !== this._stampFields.length;
-        } else
+        if (this._stampFields.length > 0)
+            return this._stampFields.reduce((p, n) => p + (n.getValue(x) === n.getValue(y) ? 1 : 0), 0) !== this._stampFields.length;
+        else
             return true;
     }
 }
@@ -175,13 +235,27 @@ export class FieldSchema {
     readonly references?: string;
     readonly relationName?: string;
 
+    private _valueFn?: (record: any, context?: ComputeContext) => any;
+
     constructor(table: TableSchema, name: string, schema: FieldDDL) {
         this.table = table;
         this.name = name;
-        this.propName = schema.name || name;
+        this.propName = schema.propName || name;
         this.type = schema.type || "ATTR";
         this.constraint = schema.constraint || "NONE";
         this.references = schema.references;
         this.relationName = schema.relationName;
+        this._valueFn = schema.value ? schema.value.bind(this) : null;
+    }
+
+    getValue(data: any, record?: TableRecord) {
+        return this._valueFn ? this._valueFn(data, {
+            schema: this,
+            record: record
+        }) : data[this.name];
+    }
+
+    getRecordValue(record: TableRecord) {
+        return this.getValue(record.value, record);
     }
 }

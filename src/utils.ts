@@ -23,3 +23,5 @@ export const ensureArray = (obj: any) => {
 export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});
 }
+
+export const arrayMerge = <T>(...arr: T[][]) => [...new Set<T>((<T[]>[]).concat(...arr))];

@@ -5,7 +5,8 @@ let state = {};
 const db = reduxDB.createDatabase({
     "testTable": {
         "id": { constraint: "PK" },
-        "modified": { type: "MODIFIED" }
+        "modified": { type: "MODIFIED" },
+        "computed": { value: (o) => o.id + "test" }
     },
     "testRef": {
         "id": { constraint: "PK" },
@@ -68,16 +69,29 @@ test('insert nested data', function (t) {
         id: 2, name: "test nested", modified: "1", refs: [1]
     });
 
-    t.assert(recordModel.refs.all().length === 1, "Foreign relations are reflected through properties");
+    t.assert(recordModel.refs.length === 1, "Foreign relations are reflected through properties");
 });
 
-test('add record relation', function (t) {
+test('add/remove record relation', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const { testTable } = session.tables;
+    const recordModel = testTable.get(1);
+
+    recordModel.refs.add(1);
+    t.assert(recordModel.refs.length === 1, "Added relation is reflected immediatly");
+
+    recordModel.refs.remove(1);
+    t.assert(recordModel.refs.length === 0, "Removed relation is reflected immediatly");
+});
+
+test('computed property', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
     const { testTable } = session.tables;
     const recordModel = testTable.get(1);
-    recordModel.refs.add(1);
 
-    t.assert(recordModel.refs.all().length === 1, "Added relation is reflected immediatly");
+    t.equal(recordModel.computed.value, "1test", "computed property exists");
 });

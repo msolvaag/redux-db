@@ -1,3 +1,27 @@
+export interface Table {
+    session: Session;
+    schema: TableSchema;
+    state: TableState;
+    get: (id: string | number) => TableRecord;
+    getOrDefault: (id: string | number) => TableRecord | null;
+    all(): TableRecord[];
+    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
+    exists: (id: string | number) => boolean;
+    index: (name: string, fk: string) => TableRecord[];
+    upsert: (data: any) => TableRecord;
+    insert: (data: any) => TableRecord;
+    insertMany: (data: any) => TableRecord[];
+    update: (data: any) => TableRecord;
+    updateMany: (data: any) => TableRecord[];
+    delete: (id: string | number) => void;
+}
+export interface TableRecord {
+    id: string;
+    table: Table;
+    value: any;
+    update(data: any): TableRecord;
+    delete(): void;
+}
 export interface SchemaDDL {
     [key: string]: TableDDL;
 }
@@ -6,7 +30,12 @@ export interface FieldDDL {
     constraint?: ConstraintType;
     references?: string;
     relationName?: string;
-    name?: string;
+    propName?: string;
+    value?: (record: any, context?: ComputeContext) => any;
+}
+export interface ComputeContext {
+    schema: FieldSchema;
+    record?: TableRecord;
 }
 export interface TableDDL {
     [key: string]: FieldDDL;
@@ -15,8 +44,13 @@ export declare type ConstraintType = "PK" | "FK" | "NONE";
 export declare type FieldType = "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
+    cache<T>(key: string, valueFn?: () => T): T;
+    clearCache(key: string): void;
 }
 export interface DatabaseOptions {
+}
+export interface SessionOptions {
+    readOnly: boolean;
 }
 export interface DatabaseState {
     [key: string]: TableState;
@@ -26,6 +60,11 @@ export interface TableState {
         [key: string]: any;
     };
     ids: string[];
+    indexes: {
+        [key: string]: {
+            [key: string]: string[];
+        };
+    };
 }
 export interface RecordState {
     id: string;
@@ -36,14 +75,21 @@ export interface Schema {
     getPrimaryKey: (state: any) => string;
 }
 export interface Session {
-    name: string;
+    db: DatabaseSchema;
     state: DatabaseState;
+    tables: any;
+    upsert(state: DatabaseState, from: Table): void;
 }
 export interface NormalizedState {
     [key: string]: {
         ids: string[];
         byId: {
             [key: string]: any;
+        };
+        indexes: {
+            [key: string]: {
+                [key: string]: string[];
+            };
         };
     };
 }
@@ -59,6 +105,10 @@ export declare class TableSchema {
     normalize(data: any, output?: NormalizedState): NormalizedState;
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     getPrimaryKey(record: any): string;
+    getForeignKeys(record: any): {
+        name: string;
+        value: any;
+    }[];
     isModified(x: any, y: any): boolean;
 }
 export declare class FieldSchema {
@@ -69,5 +119,8 @@ export declare class FieldSchema {
     readonly constraint: ConstraintType;
     readonly references?: string;
     readonly relationName?: string;
+    private _valueFn?;
     constructor(table: TableSchema, name: string, schema: FieldDDL);
+    getValue(data: any, record?: TableRecord): any;
+    getRecordValue(record: TableRecord): any;
 }

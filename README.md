@@ -1,10 +1,10 @@
 # redux-db
 
-redux-db provides a normalized [redux](http://redux.js.org) store and easy object management. Inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm), redux-db will give a similiar workflow with a smaller footprint (at the moment only ~10k minified).
+redux-db provides a normalized [redux](http://redux.js.org) store and easy object management. Inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm), redux-db will give a similiar workflow with a smaller footprint and no dependencies.
 
-**NB! Current release is in BETA dev.**
+**NB! Current release is in BETA**
 
-### How to install
+## How to install
 #### node npm
 ```
 npm install redux-db --save
@@ -18,9 +18,8 @@ yarn add redux-db
 bower install redux-db
 ```
 
-### Usage
-#### example many to many
-```
+## Usage
+```js
 import ReduxDB from "redux-db";
 
 const db = ReduxDB.createDatabase( {
@@ -83,6 +82,18 @@ const reducer = db.combineReducers(
     } //, (session,action)=>{}, ... other reducers
 );
 ```
+
+## Why
+Having a normalized state is a good strategy if your data is nested in different ways. The redux documentation has a nice explanation [here](http://redux.js.org/docs/recipes/reducers/NormalizingStateShape.html).
+
+## Defining your schema
+..
+
+## Reducers
+..
+
+## Selectors
+.. 
 
 ### Dependencies
 * none
