@@ -2,7 +2,8 @@
   "name": "redux-db",
   "version": "0.1.9",
   "description": "A state normalizer and orm for redux",
-  "main": "./src/es/index.js",
+  "main": "./src/cjs/index.js",
+  "module": "./src/es/index.js",
   "typings": "./@types/index.d.ts",
   "scripts": {
     "test": "tape test/*.js | \"node_modules/.bin/tap-spec\"",
