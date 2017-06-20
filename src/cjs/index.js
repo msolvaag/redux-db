@@ -1,6 +1,13 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = require("tslib");
 var schema_1 = require("./schema");
 var models_1 = require("./models");
 exports.Record = models_1.RecordModel;
@@ -80,7 +87,7 @@ var DatabaseSession = (function () {
             var oldState = _this.state[table];
             var newState = _this.tables[table].state;
             if (oldState !== newState)
-                _this.state = tslib_1.__assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+                _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
             var _a;
         });
         return this.state;

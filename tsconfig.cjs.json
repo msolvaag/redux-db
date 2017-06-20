@@ -2,8 +2,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "noEmitOnError": true,
-    "noEmitHelpers": true,
-    "importHelpers": true,
+    "noEmitHelpers": false,
+    "importHelpers": false,
     "removeComments": false,
     "target": "es5",
     "outDir": "./src/cjs",

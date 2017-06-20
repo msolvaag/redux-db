@@ -1,6 +1,23 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = require("tslib");
 var utils = require("./utils");
 var TableModel = (function () {
     function TableModel(session, state, schema) {
@@ -62,7 +79,7 @@ var TableModel = (function () {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     };
     TableModel.prototype.delete = function (id) {
-        var byId = tslib_1.__assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = tslib_1.__assign({}, this.state.indexes), ref = byId[id];
+        var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), ref = byId[id];
         delete byId[id];
         var idx = ids.indexOf(id);
         if (idx >= 0)
@@ -78,17 +95,17 @@ var TableModel = (function () {
                 }
             });
         }
-        this.state = tslib_1.__assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
+        this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
     };
     TableModel.prototype.insertNormalized = function (table) {
         var _this = this;
-        this.state = tslib_1.__assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: tslib_1.__assign({}, this.state.byId, table.byId) });
+        this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
         return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
     };
     TableModel.prototype.updateNormalized = function (table) {
         var _this = this;
-        var state = tslib_1.__assign({}, this.state), dirty = false;
+        var state = __assign({}, this.state), dirty = false;
         var records = Object.keys(table.byId).map(function (id) {
             if (!_this.state.byId[id])
                 throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
@@ -96,7 +113,7 @@ var TableModel = (function () {
             var oldRecord = state.byId[id];
             var isModified = _this.schema.isModified(oldRecord, newRecord);
             if (isModified) {
-                state.byId[id] = tslib_1.__assign({}, oldRecord, newRecord);
+                state.byId[id] = __assign({}, oldRecord, newRecord);
                 dirty = true;
             }
             return ModelFactory.default.newRecord(id, _this);
@@ -264,7 +281,7 @@ var ModelFactory = (function () {
     };
     ModelFactory.prototype._createRecordModelClass = function (schema) {
         var Record = (function (_super) {
-            tslib_1.__extends(Record, _super);
+            __extends(Record, _super);
             function Record(id, table) {
                 var _this = _super.call(this, id, table) || this;
                 _this._fields = {};

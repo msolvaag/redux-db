@@ -1,6 +1,13 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = require("tslib");
 var utils = require("./utils");
 var PK = "PK", FK = "FK", NONE = "NONE";
 var TableSchema = (function () {
@@ -64,7 +71,7 @@ var TableSchema = (function () {
                     obj = { id: obj };
                 }
             }
-            return tslib_1.__assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
+            return __assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
             var _a, _b;
         });
     };
