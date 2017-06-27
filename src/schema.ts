@@ -153,7 +153,7 @@ export class TableSchema {
             const fks = this.getForeignKeys(obj);
             const tbl = output[this.name];
 
-            tbl.byId[pk] = obj;
+            const record = tbl.byId[pk] = { ...obj };
 
             fks.forEach(fk => {
                 if (!tbl.indexes[fk.name])
@@ -165,11 +165,11 @@ export class TableSchema {
 
             const relations: Record<string, any> = {};
             this.relations.forEach(rel => {
-                if (rel.relationName && data[rel.relationName]) {
-                    const normalizedRels = this.inferRelations(data[rel.relationName], rel, pk);
+                if (rel.relationName && record[rel.relationName]) {
+                    const normalizedRels = this.inferRelations(record[rel.relationName], rel, pk);
 
                     rel.table.normalize(normalizedRels, output);
-                    delete data[rel.relationName];
+                    delete record[rel.relationName];
                 }
             });
 
