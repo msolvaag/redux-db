@@ -193,7 +193,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             if (this._stampFields.length > 0)
                 return this._stampFields.reduce(function (p, n) { return p + (n.getValue(x) === n.getValue(y) ? 1 : 0); }, 0) !== this._stampFields.length;
             else
-                return utils.isEqual(x, y);
+                return !utils.isEqual(x, y);
         };
         return TableSchema;
     }());

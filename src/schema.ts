@@ -253,7 +253,7 @@ export class TableSchema {
         if (this._stampFields.length > 0)
             return this._stampFields.reduce((p, n) => p + (n.getValue(x) === n.getValue(y) ? 1 : 0), 0) !== this._stampFields.length;
         else
-            return utils.isEqual(x, y);
+            return !utils.isEqual(x, y);
     }
 }
 
