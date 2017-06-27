@@ -46,10 +46,9 @@ var TableSchema = (function () {
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
         var ctx = context || new NormalizeContext(this);
-        if (ctx.output[this.name])
-            throw new Error("Failed to normalize data. Circular reference detected.");
-        ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
-        ctx.output[this.name].ids = utils.ensureArray(data).map(function (obj) {
+        if (!ctx.output[this.name])
+            ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+        ctx.output[this.name].ids = ctx.output[this.name].ids.concat(utils.ensureArray(data).map(function (obj) {
             var normalizeHook = _this.db.normalizeHooks[_this.name];
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
@@ -73,7 +72,7 @@ var TableSchema = (function () {
                 }
             });
             return pk;
-        });
+        }));
         return ctx;
     };
     TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
