@@ -321,17 +321,16 @@ class ModelFactory {
             }
         }
 
-        schema.fields.concat(schema.relations).forEach(field => {
-            if (field.constraint != "PK") {
-                const name = field.table !== schema ? field.relationName : field.propName;
-                if (name)
-                    Object.defineProperty(Record.prototype, name, {
-                        get: function (this: Record) {
-                            return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
-                        }
-                    });
-            }
-        });
+        const defineProperty = (name: string, field: FieldSchema) => {
+            Object.defineProperty(Record.prototype, name, {
+                get: function (this: Record) {
+                    return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                }
+            });
+        };
+
+        schema.fields.forEach(f => f.constraint !== "PK" && defineProperty(f.propName, f));
+        schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f));
 
         return Record;
     }
