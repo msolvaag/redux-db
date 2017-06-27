@@ -83,7 +83,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var pk = _this.getPrimaryKey(obj);
                 var fks = _this.getForeignKeys(obj);
                 var tbl = output[_this.name];
-                tbl.byId[pk] = obj;
+                var record = tbl.byId[pk] = __assign({}, obj);
                 fks.forEach(function (fk) {
                     if (!tbl.indexes[fk.name])
                         tbl.indexes[fk.name] = {};
@@ -93,10 +93,10 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 });
                 var relations = {};
                 _this.relations.forEach(function (rel) {
-                    if (rel.relationName && data[rel.relationName]) {
-                        var normalizedRels = _this.inferRelations(data[rel.relationName], rel, pk);
+                    if (rel.relationName && record[rel.relationName]) {
+                        var normalizedRels = _this.inferRelations(record[rel.relationName], rel, pk);
                         rel.table.normalize(normalizedRels, output);
-                        delete data[rel.relationName];
+                        delete record[rel.relationName];
                     }
                 });
                 return pk;
