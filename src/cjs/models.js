@@ -144,9 +144,9 @@ var TableModel = (function () {
     };
     TableModel.prototype._normalizedAction = function (data, action) {
         var norm = this.schema.normalize(data);
-        var table = norm[this.schema.name];
+        var table = norm.output[this.schema.name];
         var records = table ? action.call(this, table) : [];
-        this.session.upsert(norm, this);
+        this.session.upsert(norm);
         return records;
     };
     TableModel.prototype._updateIndexes = function (table) {

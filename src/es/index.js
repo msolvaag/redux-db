@@ -18,7 +18,8 @@ var Database = (function () {
         var _this = this;
         this._cache = {};
         this.options = options;
-        this.tables = Object.keys(schema).map(function (tableName) { return new TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined); });
+        this.normalizeHooks = options.onNormalize || {};
+        this.tables = Object.keys(schema).map(function (tableName) { return new TableSchema(_this, tableName, schema[tableName]); });
         this.tables.forEach(function (table) { return table.connect(_this.tables); });
     }
     Database.prototype.combineReducers = function () {
@@ -64,13 +65,18 @@ var DatabaseSession = (function () {
         this.options = options;
         this.tables = utils.toObject(schema.tables.map(function (t) { return new TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
     }
-    DatabaseSession.prototype.upsert = function (state, from) {
+    DatabaseSession.prototype.upsert = function (ctx) {
         var _this = this;
         if (this.options.readOnly)
             throw new Error("Invalid attempt to alter a readonly session.");
-        Object.keys(state).forEach(function (name) {
-            if (!from || name !== from.schema.name) {
-                _this.tables[name].upsertNormalized(state[name]);
+        Object.keys(ctx.output).forEach(function (name) {
+            if (name !== ctx.schema.name) {
+                _this.tables[name].upsertNormalized(ctx.output[name]);
+            }
+        });
+        Object.keys(ctx.emits).forEach(function (name) {
+            if (name !== ctx.schema.name) {
+                _this.tables[name].upsert(ctx.emits[name]);
             }
         });
     };

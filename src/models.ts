@@ -170,9 +170,9 @@ export class TableModel<T extends TableRecord> implements Table {
 
     private _normalizedAction(data: any, action: (norm: TableState) => T[]): T[] {
         const norm = this.schema.normalize(data);
-        const table = norm[this.schema.name];
+        const table = norm.output[this.schema.name];
         const records = table ? action.call(this, table) : [];
-        this.session.upsert(norm, this);
+        this.session.upsert(norm);
         return records;
     }
 

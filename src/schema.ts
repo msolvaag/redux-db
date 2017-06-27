@@ -60,6 +60,8 @@ export type FieldType = "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
 
+    normalizeHooks: { [key: string]: Normalizer };
+
     cache<T>(key: string, valueFn?: () => T): T;
     clearCache(key: string): void;
 }
@@ -91,7 +93,7 @@ export interface RecordState {
 }
 
 export interface Normalizer {
-    (schema: TableSchema, record: any, context: NormalizedState): void;
+    (record: any, context: NormalizeContext): any;
 }
 
 export interface Schema {
@@ -105,7 +107,7 @@ export interface Session {
     state: DatabaseState;
     tables: any;
 
-    upsert(state: DatabaseState, from: Table): void;
+    upsert(ctx: NormalizeContext): void;
 }
 
 export interface NormalizedState {
@@ -120,7 +122,25 @@ export interface NormalizedState {
     };
 }
 
+export class NormalizeContext {
+    schema: TableSchema;
+    db: DatabaseSchema;
+    output: NormalizedState = {};
+    emits: { [key: string]: any[] } = {};
+
+    constructor(schema: TableSchema) {
+        this.schema = schema;
+        this.db = schema.db;
+    }
+
+    emit(tableName: string, record: any) {
+        this.emits[tableName] = this.emits[tableName] || [];
+        this.emits[tableName].push(record);
+    }
+}
+
 export class TableSchema {
+    readonly db: DatabaseSchema;
     readonly name: string;
     readonly fields: FieldSchema[];
 
@@ -129,12 +149,11 @@ export class TableSchema {
     private _primaryKeyFields: FieldSchema[];
     private _foreignKeyFields: FieldSchema[];
     private _stampFields: FieldSchema[];
-    private _normalizer: Normalizer | null;
 
-    constructor(name: string, schema: TableDDL, normalizer?: Normalizer) {
+    constructor(db: DatabaseSchema, name: string, schema: TableDDL) {
+        this.db = db;
         this.name = name;
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
-        this._normalizer = normalizer || null;
 
         this._primaryKeyFields = this.fields.filter(f => f.constraint === PK);
         this._foreignKeyFields = this.fields.filter(f => f.constraint === FK);
@@ -147,23 +166,26 @@ export class TableSchema {
         })
     }
 
-    normalize(data: any, output: NormalizedState = {}) {
+    normalize(data: any, context?: NormalizeContext) {
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
 
-        if (output[this.name])
+        const ctx = context || new NormalizeContext(this);
+
+        if (ctx.output[this.name])
             throw new Error("Failed to normalize data. Circular reference detected.");
 
-        output[this.name] = { ids: [], byId: {}, indexes: {} };
-        output[this.name].ids = utils.ensureArray(data).map(obj => {
+        ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+        ctx.output[this.name].ids = utils.ensureArray(data).map(obj => {
+            const normalizeHook = this.db.normalizeHooks[this.name];
+            if (normalizeHook)
+                obj = normalizeHook(obj, ctx);
+
             const pk = this.getPrimaryKey(obj);
             const fks = this.getForeignKeys(obj);
-            const tbl = output[this.name];
+            const tbl = ctx.output[this.name];
 
             const record = tbl.byId[pk] = { ...obj };
-
-            if (this._normalizer)
-                this._normalizer(this, record, output);
 
             fks.forEach(fk => {
                 if (!tbl.indexes[fk.name])
@@ -178,7 +200,7 @@ export class TableSchema {
                 if (rel.relationName && record[rel.relationName]) {
                     const normalizedRels = this.inferRelations(record[rel.relationName], rel, pk);
 
-                    rel.table.normalize(normalizedRels, output);
+                    rel.table.normalize(normalizedRels, ctx);
                     delete record[rel.relationName];
                 }
             });
@@ -186,7 +208,7 @@ export class TableSchema {
             return pk;
         });
 
-        return output;
+        return ctx;
     }
 
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {

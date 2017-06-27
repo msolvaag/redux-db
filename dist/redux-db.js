@@ -55,13 +55,27 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var PK = "PK", FK = "FK", NONE = "NONE";
+    var NormalizeContext = (function () {
+        function NormalizeContext(schema) {
+            this.output = {};
+            this.emits = {};
+            this.schema = schema;
+            this.db = schema.db;
+        }
+        NormalizeContext.prototype.emit = function (tableName, record) {
+            this.emits[tableName] = this.emits[tableName] || [];
+            this.emits[tableName].push(record);
+        };
+        return NormalizeContext;
+    }());
+    exports.NormalizeContext = NormalizeContext;
     var TableSchema = (function () {
-        function TableSchema(name, schema, normalizer) {
+        function TableSchema(db, name, schema) {
             var _this = this;
             this.relations = [];
+            this.db = db;
             this.name = name;
             this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
-            this._normalizer = normalizer || null;
             this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
             this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
@@ -72,21 +86,22 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 _this.relations = _this.relations.concat(schema.fields.filter(function (f) { return f.references === _this.name; }));
             });
         };
-        TableSchema.prototype.normalize = function (data, output) {
+        TableSchema.prototype.normalize = function (data, context) {
             var _this = this;
-            if (output === void 0) { output = {}; }
             if (typeof (data) !== "object" && !Array.isArray(data))
                 throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
-            if (output[this.name])
+            var ctx = context || new NormalizeContext(this);
+            if (ctx.output[this.name])
                 throw new Error("Failed to normalize data. Circular reference detected.");
-            output[this.name] = { ids: [], byId: {}, indexes: {} };
-            output[this.name].ids = utils.ensureArray(data).map(function (obj) {
+            ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+            ctx.output[this.name].ids = utils.ensureArray(data).map(function (obj) {
+                var normalizeHook = _this.db.normalizeHooks[_this.name];
+                if (normalizeHook)
+                    obj = normalizeHook(obj, ctx);
                 var pk = _this.getPrimaryKey(obj);
                 var fks = _this.getForeignKeys(obj);
-                var tbl = output[_this.name];
+                var tbl = ctx.output[_this.name];
                 var record = tbl.byId[pk] = __assign({}, obj);
-                if (_this._normalizer)
-                    _this._normalizer(_this, record, output);
                 fks.forEach(function (fk) {
                     if (!tbl.indexes[fk.name])
                         tbl.indexes[fk.name] = {};
@@ -98,13 +113,13 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 _this.relations.forEach(function (rel) {
                     if (rel.relationName && record[rel.relationName]) {
                         var normalizedRels = _this.inferRelations(record[rel.relationName], rel, pk);
-                        rel.table.normalize(normalizedRels, output);
+                        rel.table.normalize(normalizedRels, ctx);
                         delete record[rel.relationName];
                     }
                 });
                 return pk;
             });
-            return output;
+            return ctx;
         };
         TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
             if (!rel.relationName)
@@ -299,9 +314,9 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         };
         TableModel.prototype._normalizedAction = function (data, action) {
             var norm = this.schema.normalize(data);
-            var table = norm[this.schema.name];
+            var table = norm.output[this.schema.name];
             var records = table ? action.call(this, table) : [];
-            this.session.upsert(norm, this);
+            this.session.upsert(norm);
             return records;
         };
         TableModel.prototype._updateIndexes = function (table) {
@@ -476,7 +491,8 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             var _this = this;
             this._cache = {};
             this.options = options;
-            this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined); });
+            this.normalizeHooks = options.onNormalize || {};
+            this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(_this, tableName, schema[tableName]); });
             this.tables.forEach(function (table) { return table.connect(_this.tables); });
         }
         Database.prototype.combineReducers = function () {
@@ -522,13 +538,18 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             this.options = options;
             this.tables = utils.toObject(schema.tables.map(function (t) { return new models_1.TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
         }
-        DatabaseSession.prototype.upsert = function (state, from) {
+        DatabaseSession.prototype.upsert = function (ctx) {
             var _this = this;
             if (this.options.readOnly)
                 throw new Error("Invalid attempt to alter a readonly session.");
-            Object.keys(state).forEach(function (name) {
-                if (!from || name !== from.schema.name) {
-                    _this.tables[name].upsertNormalized(state[name]);
+            Object.keys(ctx.output).forEach(function (name) {
+                if (name !== ctx.schema.name) {
+                    _this.tables[name].upsertNormalized(ctx.output[name]);
+                }
+            });
+            Object.keys(ctx.emits).forEach(function (name) {
+                if (name !== ctx.schema.name) {
+                    _this.tables[name].upsert(ctx.emits[name]);
                 }
             });
         };

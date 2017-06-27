@@ -45,6 +45,9 @@ export declare type ConstraintType = "PK" | "FK" | "NONE";
 export declare type FieldType = "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
+    normalizeHooks: {
+        [key: string]: Normalizer;
+    };
     cache<T>(key: string, valueFn?: () => T): T;
     clearCache(key: string): void;
 }
@@ -75,7 +78,7 @@ export interface RecordState {
     state: any;
 }
 export interface Normalizer {
-    (schema: TableSchema, record: any, context: NormalizedState): void;
+    (record: any, context: NormalizeContext): any;
 }
 export interface Schema {
     name: string;
@@ -85,7 +88,7 @@ export interface Session {
     db: DatabaseSchema;
     state: DatabaseState;
     tables: any;
-    upsert(state: DatabaseState, from: Table): void;
+    upsert(ctx: NormalizeContext): void;
 }
 export interface NormalizedState {
     [key: string]: {
@@ -100,17 +103,27 @@ export interface NormalizedState {
         };
     };
 }
+export declare class NormalizeContext {
+    schema: TableSchema;
+    db: DatabaseSchema;
+    output: NormalizedState;
+    emits: {
+        [key: string]: any[];
+    };
+    constructor(schema: TableSchema);
+    emit(tableName: string, record: any): void;
+}
 export declare class TableSchema {
+    readonly db: DatabaseSchema;
     readonly name: string;
     readonly fields: FieldSchema[];
     relations: FieldSchema[];
     private _primaryKeyFields;
     private _foreignKeyFields;
     private _stampFields;
-    private _normalizer;
-    constructor(name: string, schema: TableDDL, normalizer?: Normalizer);
+    constructor(db: DatabaseSchema, name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
-    normalize(data: any, output?: NormalizedState): NormalizedState;
+    normalize(data: any, context?: NormalizeContext): NormalizeContext;
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     getPrimaryKey(record: any): string;
     getForeignKeys(record: any): {

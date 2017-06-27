@@ -1,4 +1,4 @@
-import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, Table, DatabaseOptions, SessionOptions, Session, DatabaseState, NormalizedState } from "./schema";
+import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, Table, DatabaseOptions, SessionOptions, Session, DatabaseState, NormalizeContext, NormalizedState, Normalizer } from "./schema";
 import { RecordModel, RecordSet, TableModel } from "./models";
 import * as utils from "./utils";
 
@@ -16,12 +16,14 @@ export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => 
 export class Database implements DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
+    normalizeHooks: { [key: string]: Normalizer };
 
     private _cache: any = {};
 
     constructor(schema: SchemaDDL, options: DatabaseOptions) {
         this.options = options;
-        this.tables = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined));
+        this.normalizeHooks = options.onNormalize || {};
+        this.tables = Object.keys(schema).map(tableName => new TableSchema(this, tableName, schema[tableName]));
         this.tables.forEach(table => table.connect(this.tables));
     }
 
@@ -71,12 +73,17 @@ export class DatabaseSession implements Session {
             schema.tables.map(t => new TableModel(this, state[t.name], t)), t => t.schema.name);
     }
 
-    upsert(state: NormalizedState, from?: Table) {
+    upsert(ctx: NormalizeContext) {
         if (this.options.readOnly) throw new Error("Invalid attempt to alter a readonly session.");
 
-        Object.keys(state).forEach(name => {
-            if (!from || name !== from.schema.name) {
-                this.tables[name].upsertNormalized(state[name]);
+        Object.keys(ctx.output).forEach(name => {
+            if (name !== ctx.schema.name) {
+                this.tables[name].upsertNormalized(ctx.output[name]);
+            }
+        });
+        Object.keys(ctx.emits).forEach(name => {
+            if (name !== ctx.schema.name) {
+                this.tables[name].upsert(ctx.emits[name]);
             }
         });
     }
