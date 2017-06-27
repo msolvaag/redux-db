@@ -65,6 +65,7 @@ export interface DatabaseSchema {
 }
 
 export interface DatabaseOptions {
+    onNormalize?: { [key: string]: Normalizer };
 }
 export interface SessionOptions {
     readOnly: boolean;
@@ -87,6 +88,10 @@ export interface TableState {
 export interface RecordState {
     id: string;
     state: any;
+}
+
+export interface Normalizer {
+    (schema: TableSchema, record: any, context: NormalizedState): void;
 }
 
 export interface Schema {
@@ -124,10 +129,12 @@ export class TableSchema {
     private _primaryKeyFields: FieldSchema[];
     private _foreignKeyFields: FieldSchema[];
     private _stampFields: FieldSchema[];
+    private _normalizer: Normalizer | null;
 
-    constructor(name: string, schema: TableDDL) {
+    constructor(name: string, schema: TableDDL, normalizer?: Normalizer) {
         this.name = name;
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
+        this._normalizer = normalizer || null;
 
         this._primaryKeyFields = this.fields.filter(f => f.constraint === PK);
         this._foreignKeyFields = this.fields.filter(f => f.constraint === FK);
@@ -154,6 +161,9 @@ export class TableSchema {
             const tbl = output[this.name];
 
             const record = tbl.byId[pk] = { ...obj };
+
+            if (this._normalizer)
+                this._normalizer(this, record, output);
 
             fks.forEach(fk => {
                 if (!tbl.indexes[fk.name])

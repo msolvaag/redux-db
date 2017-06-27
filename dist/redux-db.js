@@ -56,11 +56,12 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     Object.defineProperty(exports, "__esModule", { value: true });
     var PK = "PK", FK = "FK", NONE = "NONE";
     var TableSchema = (function () {
-        function TableSchema(name, schema) {
+        function TableSchema(name, schema, normalizer) {
             var _this = this;
             this.relations = [];
             this.name = name;
             this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
+            this._normalizer = normalizer || null;
             this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
             this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
@@ -84,6 +85,8 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var fks = _this.getForeignKeys(obj);
                 var tbl = output[_this.name];
                 var record = tbl.byId[pk] = __assign({}, obj);
+                if (_this._normalizer)
+                    _this._normalizer(_this, record, output);
                 fks.forEach(function (fk) {
                     if (!tbl.indexes[fk.name])
                         tbl.indexes[fk.name] = {};
@@ -473,7 +476,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             var _this = this;
             this._cache = {};
             this.options = options;
-            this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName]); });
+            this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined); });
             this.tables.forEach(function (table) { return table.connect(_this.tables); });
         }
         Database.prototype.combineReducers = function () {

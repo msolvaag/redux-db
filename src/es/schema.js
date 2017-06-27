@@ -9,11 +9,12 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 import * as utils from "./utils";
 var PK = "PK", FK = "FK", NONE = "NONE";
 var TableSchema = (function () {
-    function TableSchema(name, schema) {
+    function TableSchema(name, schema, normalizer) {
         var _this = this;
         this.relations = [];
         this.name = name;
         this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
+        this._normalizer = normalizer || null;
         this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
         this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
@@ -37,6 +38,8 @@ var TableSchema = (function () {
             var fks = _this.getForeignKeys(obj);
             var tbl = output[_this.name];
             var record = tbl.byId[pk] = __assign({}, obj);
+            if (_this._normalizer)
+                _this._normalizer(_this, record, output);
             fks.forEach(function (fk) {
                 if (!tbl.indexes[fk.name])
                     tbl.indexes[fk.name] = {};

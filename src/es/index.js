@@ -18,7 +18,7 @@ var Database = (function () {
         var _this = this;
         this._cache = {};
         this.options = options;
-        this.tables = Object.keys(schema).map(function (tableName) { return new TableSchema(tableName, schema[tableName]); });
+        this.tables = Object.keys(schema).map(function (tableName) { return new TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined); });
         this.tables.forEach(function (table) { return table.connect(_this.tables); });
     }
     Database.prototype.combineReducers = function () {

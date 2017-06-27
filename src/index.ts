@@ -21,7 +21,7 @@ export class Database implements DatabaseSchema {
 
     constructor(schema: SchemaDDL, options: DatabaseOptions) {
         this.options = options;
-        this.tables = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName]));
+        this.tables = Object.keys(schema).map(tableName => new TableSchema(tableName, schema[tableName], options.onNormalize ? options.onNormalize[tableName] : undefined));
         this.tables.forEach(table => table.connect(this.tables));
     }
 

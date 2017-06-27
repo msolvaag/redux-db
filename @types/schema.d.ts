@@ -49,6 +49,9 @@ export interface DatabaseSchema {
     clearCache(key: string): void;
 }
 export interface DatabaseOptions {
+    onNormalize?: {
+        [key: string]: Normalizer;
+    };
 }
 export interface SessionOptions {
     readOnly: boolean;
@@ -70,6 +73,9 @@ export interface TableState {
 export interface RecordState {
     id: string;
     state: any;
+}
+export interface Normalizer {
+    (schema: TableSchema, record: any, context: NormalizedState): void;
 }
 export interface Schema {
     name: string;
@@ -101,7 +107,8 @@ export declare class TableSchema {
     private _primaryKeyFields;
     private _foreignKeyFields;
     private _stampFields;
-    constructor(name: string, schema: TableDDL);
+    private _normalizer;
+    constructor(name: string, schema: TableDDL, normalizer?: Normalizer);
     connect(schemas: TableSchema[]): void;
     normalize(data: any, output?: NormalizedState): NormalizedState;
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
