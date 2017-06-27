@@ -50,6 +50,42 @@ define("utils", ["require", "exports"], function (require, exports) {
         }
         return Object.keys(hash);
     };
+    // Compares two objects for simple equality. 
+    // Arrays are compared only at first level.
+    exports.isEqual = function (a, b) {
+        if (a === b)
+            return true;
+        var aKeys = Object.keys(a);
+        var bKeys = Object.keys(b);
+        var len = aKeys.length;
+        if (bKeys.length !== len) {
+            return false;
+        }
+        for (var i = 0; i < len; i++) {
+            var key = aKeys[i];
+            if (Array.isArray(a[key]) && Array.isArray(b[key]) && arrayIsShallowEqual(a[key], b[key]))
+                continue;
+            if (a[key] !== b[key]) {
+                return false;
+            }
+        }
+        return true;
+    };
+    var arrayIsShallowEqual = function (a, b) {
+        if (a === b) {
+            return true;
+        }
+        var len = a.length;
+        if (b.length !== len) {
+            return false;
+        }
+        for (var i = 0; i < len; i++) {
+            if (a[i] !== b[i]) {
+                return false;
+            }
+        }
+        return true;
+    };
 });
 define("schema", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
@@ -157,7 +193,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             if (this._stampFields.length > 0)
                 return this._stampFields.reduce(function (p, n) { return p + (n.getValue(x) === n.getValue(y) ? 1 : 0); }, 0) !== this._stampFields.length;
             else
-                return true;
+                return utils.isEqual(x, y);
         };
         return TableSchema;
     }());

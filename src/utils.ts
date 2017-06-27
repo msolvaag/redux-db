@@ -34,3 +34,52 @@ export const arrayMerge = (a: string[], b: string[]) => {
     }
     return Object.keys(hash);
 };
+
+// Compares two objects for simple equality. 
+// Arrays are compared only at first level.
+export const isEqual = (a: any, b: any) => {
+
+    if (a === b)
+        return true;
+
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    var len = aKeys.length;
+
+    if (bKeys.length !== len) {
+        return false;
+    }
+
+    for (var i = 0; i < len; i++) {
+        var key = aKeys[i];
+
+        if (Array.isArray(a[key]) && Array.isArray(b[key]) && arrayIsShallowEqual(a[key], b[key]))
+            continue;
+
+        if (a[key] !== b[key]) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+const arrayIsShallowEqual = (a: any[], b: any[]) => {
+    if (a === b) {
+        return true;
+    }
+
+    var len = a.length;
+
+    if (b.length !== len) {
+        return false;
+    }
+
+    for (var i = 0; i < len; i++) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+
+    return true;
+};

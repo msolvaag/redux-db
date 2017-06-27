@@ -110,7 +110,7 @@ var TableSchema = (function () {
         if (this._stampFields.length > 0)
             return this._stampFields.reduce(function (p, n) { return p + (n.getValue(x) === n.getValue(y) ? 1 : 0); }, 0) !== this._stampFields.length;
         else
-            return true;
+            return utils.isEqual(x, y);
     };
     return TableSchema;
 }());
