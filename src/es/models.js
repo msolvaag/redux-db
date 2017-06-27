@@ -287,17 +287,15 @@ var ModelFactory = (function () {
             }
             return Record;
         }(RecordModel));
-        schema.fields.concat(schema.relations).forEach(function (field) {
-            if (field.constraint != "PK") {
-                var name_1 = field.table !== schema ? field.relationName : field.propName;
-                if (name_1)
-                    Object.defineProperty(Record.prototype, name_1, {
-                        get: function () {
-                            return this._fields[name_1] || (this._fields[name_1] = ModelFactory.default.newRecordField(field, this));
-                        }
-                    });
-            }
-        });
+        var defineProperty = function (name, field) {
+            Object.defineProperty(Record.prototype, name, {
+                get: function () {
+                    return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                }
+            });
+        };
+        schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f); });
+        schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f); });
         return Record;
     };
     return ModelFactory;
