@@ -296,18 +296,20 @@ class ModelFactory {
     }
 
     newRecordField(schema: FieldSchema, record: TableRecord) {
-        if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
-            const refTable = record.table.session.tables[schema.references] as Table;
-            if (!refTable)
-                throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
-
-            return refTable.getOrDefault(schema.getRecordValue(record));
-        } else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
-            const refTable = record.table.session.tables[schema.table.name] as Table;
-
-            return new RecordSet(refTable, schema, record);
-        } else
+        if (schema.constraint !== "FK")
             return new RecordField(schema, record);
+
+        const refTable = schema.references && record.table.session.tables[schema.references] as Table;
+        if (!refTable)
+            throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
+
+        return refTable.getOrDefault(schema.getRecordValue(record));
+    }
+
+    newRecordSet(schema: FieldSchema, record: TableRecord) {
+        const refTable = record.table.session.tables[schema.table.name] as Table;
+
+        return new RecordSet(refTable, schema, record);
     }
 
     protected _createRecordModelClass(schema: TableSchema) {
@@ -321,16 +323,16 @@ class ModelFactory {
             }
         }
 
-        const defineProperty = (name: string, field: FieldSchema) => {
+        const defineProperty = (name: string, field: FieldSchema, factory: (f: FieldSchema, ref: Record) => any) => {
             Object.defineProperty(Record.prototype, name, {
                 get: function (this: Record) {
-                    return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                    return this._fields[name] || (this._fields[name] = factory(field, this));
                 }
             });
         };
 
-        schema.fields.forEach(f => f.constraint !== "PK" && defineProperty(f.propName, f));
-        schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f));
+        schema.fields.forEach(f => f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
+        schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet));
 
         return Record;
     }

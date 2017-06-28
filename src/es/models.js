@@ -264,18 +264,16 @@ var ModelFactory = (function () {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     };
     ModelFactory.prototype.newRecordField = function (schema, record) {
-        if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
-            var refTable = record.table.session.tables[schema.references];
-            if (!refTable)
-                throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-            return refTable.getOrDefault(schema.getRecordValue(record));
-        }
-        else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
-            var refTable = record.table.session.tables[schema.table.name];
-            return new RecordSet(refTable, schema, record);
-        }
-        else
+        if (schema.constraint !== "FK")
             return new RecordField(schema, record);
+        var refTable = schema.references && record.table.session.tables[schema.references];
+        if (!refTable)
+            throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
+        return refTable.getOrDefault(schema.getRecordValue(record));
+    };
+    ModelFactory.prototype.newRecordSet = function (schema, record) {
+        var refTable = record.table.session.tables[schema.table.name];
+        return new RecordSet(refTable, schema, record);
     };
     ModelFactory.prototype._createRecordModelClass = function (schema) {
         var Record = (function (_super) {
@@ -287,15 +285,15 @@ var ModelFactory = (function () {
             }
             return Record;
         }(RecordModel));
-        var defineProperty = function (name, field) {
+        var defineProperty = function (name, field, factory) {
             Object.defineProperty(Record.prototype, name, {
                 get: function () {
-                    return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                    return this._fields[name] || (this._fields[name] = factory(field, this));
                 }
             });
         };
-        schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f); });
-        schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f); });
+        schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
+        schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
         return Record;
     };
     return ModelFactory;

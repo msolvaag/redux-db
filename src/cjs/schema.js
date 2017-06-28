@@ -48,7 +48,7 @@ var TableSchema = (function () {
         var ctx = context || new NormalizeContext(this);
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
-        ctx.output[this.name].ids = ctx.output[this.name].ids.concat(utils.ensureArray(data).map(function (obj) {
+        utils.ensureArray(data).forEach(function (obj) {
             var normalizeHook = _this.db.normalizeHooks[_this.name];
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
@@ -56,12 +56,15 @@ var TableSchema = (function () {
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             var record = tbl.byId[pk] = __assign({}, obj);
+            tbl.ids.push(pk);
             fks.forEach(function (fk) {
-                if (!tbl.indexes[fk.name])
-                    tbl.indexes[fk.name] = {};
-                if (!tbl.indexes[fk.name][fk.value])
-                    tbl.indexes[fk.name][fk.value] = [];
-                tbl.indexes[fk.name][fk.value].push(pk);
+                if (fk.value !== null && fk.value !== undefined) {
+                    if (!tbl.indexes[fk.name])
+                        tbl.indexes[fk.name] = {};
+                    if (!tbl.indexes[fk.name][fk.value])
+                        tbl.indexes[fk.name][fk.value] = [];
+                    tbl.indexes[fk.name][fk.value].push(pk);
+                }
             });
             var relations = {};
             _this.relations.forEach(function (rel) {
@@ -72,7 +75,7 @@ var TableSchema = (function () {
                 }
             });
             return pk;
-        }));
+        });
         return ctx;
     };
     TableSchema.prototype.inferRelations = function (data, rel, ownerId) {

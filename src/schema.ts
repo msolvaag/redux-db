@@ -175,38 +175,40 @@ export class TableSchema {
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
-        ctx.output[this.name].ids = ctx.output[this.name].ids.concat(
-            utils.ensureArray(data).map(obj => {
-                const normalizeHook = this.db.normalizeHooks[this.name];
-                if (normalizeHook)
-                    obj = normalizeHook(obj, ctx);
+        utils.ensureArray(data).forEach(obj => {
+            const normalizeHook = this.db.normalizeHooks[this.name];
+            if (normalizeHook)
+                obj = normalizeHook(obj, ctx);
 
-                const pk = this.getPrimaryKey(obj);
-                const fks = this.getForeignKeys(obj);
-                const tbl = ctx.output[this.name];
+            const pk = this.getPrimaryKey(obj);
+            const fks = this.getForeignKeys(obj);
+            const tbl = ctx.output[this.name];
 
-                const record = tbl.byId[pk] = { ...obj };
+            const record = tbl.byId[pk] = { ...obj };
+            tbl.ids.push(pk);
 
-                fks.forEach(fk => {
+            fks.forEach(fk => {
+                if (fk.value !== null && fk.value !== undefined) {
                     if (!tbl.indexes[fk.name])
                         tbl.indexes[fk.name] = {};
                     if (!tbl.indexes[fk.name][fk.value])
                         tbl.indexes[fk.name][fk.value] = [];
                     tbl.indexes[fk.name][fk.value].push(pk);
-                });
+                }
+            });
 
-                const relations: Record<string, any> = {};
-                this.relations.forEach(rel => {
-                    if (rel.relationName && record[rel.relationName]) {
-                        const normalizedRels = this.inferRelations(record[rel.relationName], rel, pk);
+            const relations: Record<string, any> = {};
+            this.relations.forEach(rel => {
+                if (rel.relationName && record[rel.relationName]) {
+                    const normalizedRels = this.inferRelations(record[rel.relationName], rel, pk);
 
-                        rel.table.normalize(normalizedRels, ctx);
-                        delete record[rel.relationName];
-                    }
-                });
+                    rel.table.normalize(normalizedRels, ctx);
+                    delete record[rel.relationName];
+                }
+            });
 
-                return pk;
-            }));
+            return pk;
+        });
 
         return ctx;
     }

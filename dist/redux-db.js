@@ -129,7 +129,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             var ctx = context || new NormalizeContext(this);
             if (!ctx.output[this.name])
                 ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
-            ctx.output[this.name].ids = ctx.output[this.name].ids.concat(utils.ensureArray(data).map(function (obj) {
+            utils.ensureArray(data).forEach(function (obj) {
                 var normalizeHook = _this.db.normalizeHooks[_this.name];
                 if (normalizeHook)
                     obj = normalizeHook(obj, ctx);
@@ -137,12 +137,15 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var fks = _this.getForeignKeys(obj);
                 var tbl = ctx.output[_this.name];
                 var record = tbl.byId[pk] = __assign({}, obj);
+                tbl.ids.push(pk);
                 fks.forEach(function (fk) {
-                    if (!tbl.indexes[fk.name])
-                        tbl.indexes[fk.name] = {};
-                    if (!tbl.indexes[fk.name][fk.value])
-                        tbl.indexes[fk.name][fk.value] = [];
-                    tbl.indexes[fk.name][fk.value].push(pk);
+                    if (fk.value !== null && fk.value !== undefined) {
+                        if (!tbl.indexes[fk.name])
+                            tbl.indexes[fk.name] = {};
+                        if (!tbl.indexes[fk.name][fk.value])
+                            tbl.indexes[fk.name][fk.value] = [];
+                        tbl.indexes[fk.name][fk.value].push(pk);
+                    }
                 });
                 var relations = {};
                 _this.relations.forEach(function (rel) {
@@ -153,7 +156,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                     }
                 });
                 return pk;
-            }));
+            });
             return ctx;
         };
         TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
@@ -471,18 +474,16 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
         };
         ModelFactory.prototype.newRecordField = function (schema, record) {
-            if (schema.constraint === "FK" && schema.table === record.table.schema && schema.references) {
-                var refTable = record.table.session.tables[schema.references];
-                if (!refTable)
-                    throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
-                return refTable.getOrDefault(schema.getRecordValue(record));
-            }
-            else if (schema.constraint === "FK" && schema.table !== record.table.schema && schema.relationName) {
-                var refTable = record.table.session.tables[schema.table.name];
-                return new RecordSet(refTable, schema, record);
-            }
-            else
+            if (schema.constraint !== "FK")
                 return new RecordField(schema, record);
+            var refTable = schema.references && record.table.session.tables[schema.references];
+            if (!refTable)
+                throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
+            return refTable.getOrDefault(schema.getRecordValue(record));
+        };
+        ModelFactory.prototype.newRecordSet = function (schema, record) {
+            var refTable = record.table.session.tables[schema.table.name];
+            return new RecordSet(refTable, schema, record);
         };
         ModelFactory.prototype._createRecordModelClass = function (schema) {
             var Record = (function (_super) {
@@ -494,15 +495,15 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 }
                 return Record;
             }(RecordModel));
-            var defineProperty = function (name, field) {
+            var defineProperty = function (name, field, factory) {
                 Object.defineProperty(Record.prototype, name, {
                     get: function () {
-                        return this._fields[name] || (this._fields[name] = ModelFactory.default.newRecordField(field, this));
+                        return this._fields[name] || (this._fields[name] = factory(field, this));
                     }
                 });
             };
-            schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f); });
-            schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f); });
+            schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
+            schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
             return Record;
         };
         return ModelFactory;
