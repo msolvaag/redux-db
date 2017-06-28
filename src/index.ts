@@ -10,7 +10,7 @@ const defaultOptions = {
 };
 
 export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => {
-    return new Database(schema, options || defaultOptions);
+    return new Database(schema, { ...defaultOptions, ...options });
 };
 
 export class Database implements DatabaseSchema {
@@ -40,14 +40,7 @@ export class Database implements DatabaseSchema {
     }
 
     createSession(state: any, options?: SessionOptions) {
-        return new DatabaseSession(state, this, options || { readOnly: false });
-    }
-
-    createSelector(dbName: string, selector: (session: any, props: any) => any) {
-        return (state: any, props: any) => {
-            const session = this.createSession(state[dbName], { readOnly: true });
-            return selector(session.tables, props);
-        };
+        return new DatabaseSession(state, this, { readOnly: false, ...options });
     }
 
     cache<T>(key: string, valueFn?: () => T) {

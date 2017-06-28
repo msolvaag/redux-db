@@ -43,14 +43,7 @@ var Database = (function () {
         };
     };
     Database.prototype.createSession = function (state, options) {
-        return new DatabaseSession(state, this, options || { readOnly: false });
-    };
-    Database.prototype.createSelector = function (dbName, selector) {
-        var _this = this;
-        return function (state, props) {
-            var session = _this.createSession(state[dbName], { readOnly: true });
-            return selector(session.tables, props);
-        };
+        return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
     };
     Database.prototype.cache = function (key, valueFn) {
         return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));

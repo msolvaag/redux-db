@@ -413,7 +413,6 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this.table = table;
             this.schema = schema;
             this.owner = owner;
-            this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
         }
         Object.defineProperty(RecordSet.prototype, "value", {
             get: function () {
@@ -431,7 +430,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         });
         Object.defineProperty(RecordSet.prototype, "length", {
             get: function () {
-                return this.all().length;
+                return this.ids.length;
             },
             enumerable: true,
             configurable: true
@@ -545,14 +544,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             };
         };
         Database.prototype.createSession = function (state, options) {
-            return new DatabaseSession(state, this, options || { readOnly: false });
-        };
-        Database.prototype.createSelector = function (dbName, selector) {
-            var _this = this;
-            return function (state, props) {
-                var session = _this.createSession(state[dbName], { readOnly: true });
-                return selector(session.tables, props);
-            };
+            return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
         };
         Database.prototype.cache = function (key, valueFn) {
             return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));

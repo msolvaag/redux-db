@@ -43,7 +43,6 @@ export declare class RecordSet<T extends TableRecord> {
     readonly table: Table;
     readonly schema: FieldSchema;
     readonly owner: TableRecord;
-    readonly key: string;
     constructor(table: Table, schema: FieldSchema, owner: TableRecord);
     readonly value: any[];
     readonly ids: string[];

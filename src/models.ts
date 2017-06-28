@@ -192,6 +192,7 @@ export class RecordModel<T> implements TableRecord {
     table: Table;
     id: string;
 
+
     constructor(id: string, table: Table) {
         this.id = id;
         this.table = table;
@@ -232,14 +233,12 @@ export class RecordSet<T extends TableRecord> {
     readonly table: Table;
     readonly schema: FieldSchema;
     readonly owner: TableRecord;
-    readonly key: string;
 
     constructor(table: Table, schema: FieldSchema, owner: TableRecord) {
 
         this.table = table;
         this.schema = schema;
         this.owner = owner;
-        this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
     }
 
     get value() {
@@ -251,7 +250,7 @@ export class RecordSet<T extends TableRecord> {
     }
 
     get length() {
-        return this.all().length;
+        return this.ids.length;
     }
 
     all() {

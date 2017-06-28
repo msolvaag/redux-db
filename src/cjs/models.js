@@ -205,7 +205,6 @@ var RecordSet = (function () {
         this.table = table;
         this.schema = schema;
         this.owner = owner;
-        this.key = this.schema.table.name + "." + this.schema.name + "." + this.owner.id;
     }
     Object.defineProperty(RecordSet.prototype, "value", {
         get: function () {
@@ -223,7 +222,7 @@ var RecordSet = (function () {
     });
     Object.defineProperty(RecordSet.prototype, "length", {
         get: function () {
-            return this.all().length;
+            return this.ids.length;
         },
         enumerable: true,
         configurable: true
