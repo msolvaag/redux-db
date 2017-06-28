@@ -47,8 +47,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'redux-db'
-copyright = '2017, redux-db'
-author = 'redux-db'
+copyright = '2017, msolvaag'
+author = 'msolvaag'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
