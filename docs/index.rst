@@ -15,6 +15,7 @@ redux-db will give a similiar workflow with a smaller footprint and no dependenc
     :caption: Contents:
 
     install
+    schema
 
 .. _redux: http://redux.js.org
 .. _normalizer: https://www.npmjs.com/package/normalizr
