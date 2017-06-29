@@ -1,4 +1,0 @@
-============
-Defining your schema
-============
-
