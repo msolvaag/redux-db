@@ -14,5 +14,8 @@ redux-db provides a normalized redux_ store and easy object management.
 
     install
     schema
+    reducers
+    store
+    connect
 
 .. _redux: http://redux.js.org

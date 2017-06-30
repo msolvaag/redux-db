@@ -49,6 +49,8 @@ Given the following data::
 
 You would define a schema like so::
 
+    /// schema.js
+
     import * as ReduxDB from "redux-db";
 
     const schema = {
@@ -66,7 +68,7 @@ You would define a schema like so::
         }
     };
     
-    const db = ReduxDB.createDatabase( schema, options );
+    export const db = ReduxDB.createDatabase( schema );
 
 Note we only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
 
