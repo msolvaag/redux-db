@@ -9,19 +9,37 @@ The TableModel helps to query and perform CRUD operations easily.
 
 To begin a new session and perform some action:
 
-.. code-block:: js
+.. literalinclude:: /example/session.js
+    :language: js
 
-    import {db} from "./schema";
+The TableModel object exposes the following methods and properties:
 
-    const session = db.createSession( state /* not defined here */ );
+get( id:string ) : RecordModel
+~~~~~~~~~~~~~~~~~
+Gets a single RecordModel from the table by it's primary key.
+If none is found "null" is returned.
 
-    // your TableModels are properties in the session "tables" object.
-    const { BlogPost, Comment, User } = session.tables;
+update( data ) : RecordModel
+~~~~~~~~~~~~~~~~~
+Updates one or more records (given they contain a valid PK). 
+Returns the first updated RecordModel;
 
-    // the "get" method retrives a RecordModel by it's primary key.
-    // the "update" method allows for partial updates of record data.
-    BlogPost.get("post1").update( { body: "new text" } );
+insert( data ) : RecordModel
+~~~~~~~~~~~~~~~~~
+Inserts one or more records (given they contain a valid PK). 
+Returns the first updated RecordModel;
 
-    // commit the session
-    const newState = session.commit();
+upsert( data ) : RecordModel
+~~~~~~~~~~~~~~~~~
+Updates or inserts one or more records (given they contain a valid PK). 
+Returns the first updated RecordModel; 
 
+all() : RecordModel[]
+~~~~~~~~~~~~~~~~~
+Returns all records in the table.
+
+filter( predicate: ( record: RecordModel ) => boolean ) : RecordModel[]
+~~~~~~~~~~~~~~~~~
+Filters all records in the table by a predicate.
+
+TBA: full api

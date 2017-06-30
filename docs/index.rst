@@ -18,5 +18,7 @@ redux-db provides a normalized redux_ store and easy object management.
     reducers
     store
     connect
+    selectors
+    advanced
 
 .. _redux: http://redux.js.org
