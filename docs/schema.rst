@@ -77,26 +77,31 @@ Using this schema definition, the example data would be normalized out in the fo
     {
         User: {
             ids: [ "user1", "user2", "user3" ],
-            byIDs: {
+            byId: {
                 "user1": {
+                    username: "user1",
                     name: "User 1"
                 },
                 "user2": {
+                    username: "user2",
                     name: "User 2"
                 },
                 "user3": {
+                    username: "user3",
                     name: "User 3"
                 }
             }
         },
         BlogPost: {
             ids: [ "post1", "post2" ],
-            byIDs: {
+            byId: {
                 "post1": {
+                    id: "post1",
                     author: "user1",
                     body: "....."
                 },
                 "post2": {
+                    id: "post2",
                     author: "user2",
                     body: "....."
                 }
@@ -104,14 +109,16 @@ Using this schema definition, the example data would be normalized out in the fo
         },
         Comment: {
             ids: [ "comment1", ..., "comment3", ... ],
-            byIDs: {
+            byId: {
                 "comment1": {
+                    id: "comment1",
                     post: "post1",
                     author: "user2",
                     comment: "....."
                 },
                 ...
                 "comment3": {
+                    id: "comment3",
                     post: "post2",
                     author: "user3",
                     comment: "....."
