@@ -16,6 +16,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
+import { NormalizeContext } from "./schema";
 import * as utils from "./utils";
 var TableModel = (function () {
     function TableModel(session, state, schema) {
@@ -141,7 +142,8 @@ var TableModel = (function () {
         return refs;
     };
     TableModel.prototype._normalizedAction = function (data, action) {
-        var norm = this.schema.normalize(data);
+        var norm = new NormalizeContext(this.schema);
+        this.schema.normalize(data, norm);
         var table = norm.output[this.schema.name];
         var records = table ? action.call(this, table) : [];
         this.session.upsert(norm);

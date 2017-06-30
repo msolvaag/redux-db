@@ -122,12 +122,13 @@ export declare class TableSchema {
     private _stampFields;
     constructor(db: DatabaseSchema, name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
-    normalize(data: any, context?: NormalizeContext): NormalizeContext;
+    normalize(data: any, context: NormalizeContext): string[];
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     getPrimaryKey(record: any): string;
     getForeignKeys(record: any): {
         name: string;
         value: any;
+        refTable: TableSchema | undefined;
     }[];
     isModified(x: any, y: any): boolean;
 }
@@ -138,6 +139,7 @@ export declare class FieldSchema {
     readonly type: FieldType;
     readonly references?: string;
     readonly relationName?: string;
+    refTable?: TableSchema;
     private _valueFn?;
     constructor(table: TableSchema, name: string, schema: FieldDDL);
     getValue(data: any, record?: TableRecord): any;

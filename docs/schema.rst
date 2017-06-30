@@ -2,9 +2,121 @@
 Defining your schema
 ============
 
-* :ref:`normalization`
+To make redux-db normalize your nested data, you must define a schema.
+Given the following data:: 
 
-.. _normalization:
+    const blogPosts = [
+        {
+            id : "post1",
+            author : {username : "user1", name : "User 1"},
+            body : "......",
+            comments : [
+                {
+                    id : "comment1",
+                    author : {username : "user2", name : "User 2"},
+                    comment : ".....",
+                },
+                {
+                    id : "comment2",
+                    author : {username : "user3", name : "User 3"},
+                    comment : ".....",
+                }
+            ]    
+        },
+        {
+            id : "post2",
+            author : {username : "user2", name : "User 2"},
+            body : "......",
+            comments : [
+                {
+                    id : "comment3",
+                    author : {username : "user3", name : "User 3"},
+                    comment : ".....",
+                },
+                {
+                    id : "comment4",
+                    author : {username : "user1", name : "User 1"},
+                    comment : ".....",
+                },
+                {
+                    id : "comment5",
+                    author : {username : "user3", name : "User 3"},
+                    comment : ".....",
+                }
+            ]    
+        }
+    ]
 
-Normalization
-~~~~~~~~~~~~~
+You would define a schema like so::
+
+    import * as ReduxDB from "redux-db";
+
+    const schema = {
+        User: {
+            username: { type: "PK" }
+        },
+        BlogPost: {
+            id: { type: "PK" },
+            author: { type: "FK", references: "User", relationName: "posts" }
+        },
+        Comment: {
+            id: { type: "PK" },
+            post: { type: "FK", references: "BlogPost", relationName: "comments" },
+            author: { type: "FK", references: "User", relationName: "comments" }
+        }
+    };
+    
+    const db = ReduxDB.createDatabase( schema, options );
+
+Note we only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
+
+``Tip. you do not have to specify type: "FK" when using the "references" property.``
+
+Using this schema definition, the example data would be normalized out in the following manner::
+
+    {
+        User: {
+            ids: [ "user1", "user2", "user3" ],
+            byIDs: {
+                "user1": {
+                    name: "User 1"
+                },
+                "user2": {
+                    name: "User 2"
+                },
+                "user3": {
+                    name: "User 3"
+                }
+            }
+        },
+        BlogPost: {
+            ids: [ "post1", "post2" ],
+            byIDs: {
+                "post1": {
+                    author: "user1",
+                    body: "....."
+                },
+                "post2": {
+                    author: "user2",
+                    body: "....."
+                }
+            }
+        },
+        Comment: {
+            ids: [ "comment1", ..., "comment3", ... ],
+            byIDs: {
+                "comment1": {
+                    post: "post1",
+                    author: "user2",
+                    comment: "....."
+                },
+                ...
+                "comment3": {
+                    post: "post2",
+                    author: "user3",
+                    comment: "....."
+                },
+                ...
+            }
+        }
+    }

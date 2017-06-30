@@ -159,13 +159,22 @@ export class TableSchema {
         this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
     }
 
+    /// Connects this schema's fields with other tables.
     connect(schemas: TableSchema[]) {
         schemas.forEach(schema => {
-            this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
-        })
+            if (schema !== this)
+                this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
+        });
+        this._foreignKeyFields.forEach(fk => {
+            if (fk.references) {
+                fk.refTable = schemas.filter(tbl => tbl.name === fk.references)[0];
+            }
+        });
     }
 
-    normalize(data: any, context?: NormalizeContext) {
+    /// Normalizes the given data and outputs to context.
+    /// Returns the PKs for the normalized records.
+    normalize(data: any, context: NormalizeContext) {
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
 
@@ -174,7 +183,7 @@ export class TableSchema {
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
-        utils.ensureArray(data).forEach(obj => {
+        return utils.ensureArray(data).map(obj => {
             const normalizeHook = this.db.normalizeHooks[this.name];
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
@@ -187,6 +196,17 @@ export class TableSchema {
             tbl.ids.push(pk);
 
             fks.forEach(fk => {
+
+                // if the FK is an object, then normalize it and replace object with it's PK.
+                if (typeof fk.value === "object" && fk.refTable) {
+                    const fkPks = fk.refTable.normalize(fk.value, ctx);
+                    if (fkPks.length > 1)
+                        throw new Error(`Invalid schema definition. The field "${this.name}.${fk.name}" is referencing table "${fk.refTable.name}", but the given data is an array.`);
+
+                    record[fk.name] = fkPks[0];
+                }
+
+                // all FK's are auto indexed
                 if (fk.value !== null && fk.value !== undefined) {
                     if (!tbl.indexes[fk.name])
                         tbl.indexes[fk.name] = {};
@@ -197,6 +217,8 @@ export class TableSchema {
             });
 
             const relations: Record<string, any> = {};
+            // Normalize foreign relations, FKs from other tables referencing this table.
+            // Then remove the nested relations from the record.
             this.relations.forEach(rel => {
                 if (rel.relationName && record[rel.relationName]) {
                     const normalizedRels = this.inferRelations(record[rel.relationName], rel, pk);
@@ -208,10 +230,9 @@ export class TableSchema {
 
             return pk;
         });
-
-        return ctx;
     }
 
+    /// Infers the owner PK into the given nested relations
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {
         if (!rel.relationName) return data;
 
@@ -222,13 +243,14 @@ export class TableSchema {
                 if (otherFks.length === 1) {
                     obj = { [otherFks[0].name]: obj };
                 } else {
-                    obj = { id: obj };
+                    obj = { id: obj }; // TODO: this may be quite wrong..
                 }
             }
             return { ...obj, [rel.name]: ownerId };
         });
     }
 
+    /// Gets the value of the PK for the given record.
     getPrimaryKey(record: any) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
 
@@ -246,15 +268,17 @@ export class TableSchema {
         return pk;
     }
 
+    /// Gets the values of the FK's for the given record.
     getForeignKeys(record: any) {
-        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name] }));
+        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable }));
     }
 
+    /// Determines wether two records are equal, not modified.
     isModified(x: any, y: any) {
         if (this._stampFields.length > 0)
             return this._stampFields.reduce((p, n) => p + (n.getValue(x) === n.getValue(y) ? 1 : 0), 0) !== this._stampFields.length;
         else
-            return !utils.isEqual(x, y);
+            return !utils.isEqual(x, y); // TODO: make this customizable
     }
 }
 
@@ -267,6 +291,8 @@ export class FieldSchema {
 
     readonly references?: string;
     readonly relationName?: string;
+
+    refTable?: TableSchema;
 
     private _valueFn?: (record: any, context?: ComputeContext) => any;
 

@@ -18,6 +18,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var schema_1 = require("./schema");
 var utils = require("./utils");
 var TableModel = (function () {
     function TableModel(session, state, schema) {
@@ -143,7 +144,8 @@ var TableModel = (function () {
         return refs;
     };
     TableModel.prototype._normalizedAction = function (data, action) {
-        var norm = this.schema.normalize(data);
+        var norm = new schema_1.NormalizeContext(this.schema);
+        this.schema.normalize(data, norm);
         var table = norm.output[this.schema.name];
         var records = table ? action.call(this, table) : [];
         this.session.upsert(norm);
