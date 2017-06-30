@@ -90,7 +90,7 @@ Having a normalized state is a good strategy if your data is nested in different
 Head over to [http://redux-db.readthedocs.io](http://redux-db.readthedocs.io/en/latest/).
 
 ## Contact / feedback
-Feel free to create PR's and comment on the gitter channel: [https://gitter.im/redux-db](https://gitter.im/redux-db).
+Feel free to create issues and PR's. You may also comment/ask questions on the gitter channel: [https://gitter.im/redux-db](https://gitter.im/redux-db).
 
 ## Dependencies
 * none
