@@ -3,7 +3,9 @@ Connect your components
 ============
 
 As the state tree is now normalized you are likely to denormalize your data for your views.
-Example with react::
+Example with react:
+
+.. code-block:: js
 
     import {Component} from "react";
     import {connect} from "react-redux";
@@ -37,7 +39,7 @@ Example with react::
         };
     };
 
-    export const PostList = connect( mapStateToProps )(PostListComponent);
+    export const PostList = connect( mapStateToProps )( PostListComponent );
 
 NB! This is all well and good, but as your state tree and application grows you should definitely switch to using memoized selectors (eg. reselect_ ).
 

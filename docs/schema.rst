@@ -3,7 +3,9 @@ Defining your schema
 ============
 
 To make redux-db normalize your nested data, you must define a schema.
-Given the following data:: 
+Given the following data:
+
+.. code-block:: js
 
     const blogPosts = [
         {
@@ -47,7 +49,9 @@ Given the following data::
         }
     ]
 
-You would define a schema like so::
+You would define a schema like so:
+
+.. code-block:: js
 
     /// schema.js
 
@@ -70,12 +74,13 @@ You would define a schema like so::
     
     export const db = ReduxDB.createDatabase( schema );
 
-Note we only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
+Note you only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
 
 ``Tip. you do not have to specify type: "FK" when using the "references" property.``
 
-Using this schema definition, the example data would be normalized out in the following manner::
+Using this schema definition, the example data would be normalized out in the following manner:
 
+.. code-block:: js
     {
         User: {
             ids: [ "user1", "user2", "user3" ],
