@@ -96,4 +96,4 @@ Feel free to create issues and PR's. You may also comment/ask questions on the g
 * none
 
 ## Credits
-This project is greatly inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm). redux-db is however a completly rewrite and only lends it's basic consepts.
+This project is greatly inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm). redux-db is however a complete rewrite and only lends it's basic consepts.
