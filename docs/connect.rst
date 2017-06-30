@@ -5,7 +5,7 @@ Connect your components
 As the state tree is now normalized you are likely to denormalize your data for your views.
 Example given in react:
 
-.. literalinclude:: /example/PostListComponent.jsx
+.. literalinclude:: /example/postListComponent.jsx
     :language: js
 
 .. warning::
