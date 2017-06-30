@@ -1,6 +1,6 @@
 # redux-db
 
-redux-db provides a normalized [redux](http://redux.js.org) store and easy object management. Inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm), redux-db will give a similiar workflow with a smaller footprint and no dependencies.
+redux-db provides a normalized [redux](http://redux.js.org) store and easy object management.
 
 **NB! Current release is in BETA**
 
@@ -24,15 +24,15 @@ import ReduxDB from "redux-db";
 
 const db = ReduxDB.createDatabase( {
     "user": {
-        "id": { constraint: "PK" }
+        "id": { type: "PK" }
     },
     "task": {
-        "id": { constraint: "PK" },
-        "createdBy": { constraint: "FK", references: "user" }
+        "id": { type: "PK" },
+        "createdBy": { references: "user" }
     },
     "userTask":{
-        "user": { constraint: "FK", references: "user", relationName: "tasks" },
-        "task": { constraint: "FK", references: "task", relationName: "users"}
+        "user": { references: "user", relationName: "tasks" },
+        "task": { references: "task", relationName: "users"}
     }
 });
 
@@ -86,14 +86,14 @@ const reducer = db.combineReducers(
 ## Why
 Having a normalized state is a good strategy if your data is nested in different ways. The redux documentation has a nice explanation [here](http://redux.js.org/docs/recipes/reducers/NormalizingStateShape.html).
 
-## Defining your schema
-..
+## Documentation
+Head over to [http://redux-db.readthedocs.io](http://redux-db.readthedocs.io/en/latest/).
 
-## Reducers
-..
+## Contact / feedback
+Feel free to create PR's and comment on the gitter channel: [https://gitter.im/redux-db](https://gitter.im/redux-db).
 
-## Selectors
-.. 
-
-### Dependencies
+## Dependencies
 * none
+
+## Credits
+This project is greatly inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm). redux-db is however a completly rewrite and only lends it's basic consepts.
