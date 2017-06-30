@@ -112,8 +112,8 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             this.db = db;
             this.name = name;
             this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
-            this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
-            this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
+            this._primaryKeyFields = this.fields.filter(function (f) { return f.type === PK; });
+            this._foreignKeyFields = this.fields.filter(function (f) { return f.type === FK; });
             this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
         }
         TableSchema.prototype.connect = function (schemas) {
@@ -162,7 +162,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
             if (!rel.relationName)
                 return data;
-            var otherFks = rel.table.fields.filter(function (f) { return f.constraint === FK && f !== rel; });
+            var otherFks = rel.table.fields.filter(function (f) { return f.type === FK && f !== rel; });
             return utils.ensureArray(data).map(function (obj) {
                 if (typeof obj === "number" || typeof obj === "string") {
                     if (otherFks.length === 1) {
@@ -205,8 +205,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             this.table = table;
             this.name = name;
             this.propName = schema.propName || name;
-            this.type = schema.type || "ATTR";
-            this.constraint = schema.constraint || "NONE";
+            this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
             this.references = schema.references;
             this.relationName = schema.relationName;
             this._valueFn = schema.value ? schema.value.bind(this) : null;
@@ -473,7 +472,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
         };
         ModelFactory.prototype.newRecordField = function (schema, record) {
-            if (schema.constraint !== "FK")
+            if (schema.type !== "FK")
                 return new RecordField(schema, record);
             var refTable = schema.references && record.table.session.tables[schema.references];
             if (!refTable)
@@ -501,7 +500,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                     }
                 });
             };
-            schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
+            schema.fields.forEach(function (f) { return f.type !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
             schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
             return Record;
         };
@@ -517,7 +516,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
     exports.Table = models_1.TableModel;
     var defaultOptions = {};
     exports.createDatabase = function (schema, options) {
-        return new Database(schema, options || defaultOptions);
+        return new Database(schema, __assign({}, defaultOptions, options));
     };
     var Database = (function () {
         function Database(schema, options) {

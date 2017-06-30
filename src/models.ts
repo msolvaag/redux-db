@@ -295,7 +295,7 @@ class ModelFactory {
     }
 
     newRecordField(schema: FieldSchema, record: TableRecord) {
-        if (schema.constraint !== "FK")
+        if (schema.type !== "FK")
             return new RecordField(schema, record);
 
         const refTable = schema.references && record.table.session.tables[schema.references] as Table;
@@ -330,7 +330,7 @@ class ModelFactory {
             });
         };
 
-        schema.fields.forEach(f => f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
+        schema.fields.forEach(f => f.type !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
         schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet));
 
         return Record;

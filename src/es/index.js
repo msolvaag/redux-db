@@ -11,7 +11,7 @@ import { RecordModel, RecordSet, TableModel } from "./models";
 import * as utils from "./utils";
 var defaultOptions = {};
 export var createDatabase = function (schema, options) {
-    return new Database(schema, options || defaultOptions);
+    return new Database(schema, __assign({}, defaultOptions, options));
 };
 var Database = (function () {
     function Database(schema, options) {

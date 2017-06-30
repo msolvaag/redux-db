@@ -26,23 +26,22 @@ export interface TableRecord {
 export interface SchemaDDL {
     [key: string]: TableDDL;
 }
+export interface TableDDL {
+    [key: string]: FieldDDL;
+}
 export interface FieldDDL {
     type?: FieldType;
-    constraint?: ConstraintType;
     references?: string;
     relationName?: string;
     propName?: string;
     value?: (record: any, context?: ComputeContext) => any;
+    constraint?: "PK" | "FK";
 }
 export interface ComputeContext {
     schema: FieldSchema;
     record?: TableRecord;
 }
-export interface TableDDL {
-    [key: string]: FieldDDL;
-}
-export declare type ConstraintType = "PK" | "FK" | "NONE";
-export declare type FieldType = "ATTR" | "MODIFIED";
+export declare type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
     normalizeHooks: {
@@ -137,7 +136,6 @@ export declare class FieldSchema {
     readonly name: string;
     readonly propName: string;
     readonly type: FieldType;
-    readonly constraint: ConstraintType;
     readonly references?: string;
     readonly relationName?: string;
     private _valueFn?;

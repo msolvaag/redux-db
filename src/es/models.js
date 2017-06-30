@@ -263,7 +263,7 @@ var ModelFactory = (function () {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     };
     ModelFactory.prototype.newRecordField = function (schema, record) {
-        if (schema.constraint !== "FK")
+        if (schema.type !== "FK")
             return new RecordField(schema, record);
         var refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
@@ -291,7 +291,7 @@ var ModelFactory = (function () {
                 }
             });
         };
-        schema.fields.forEach(function (f) { return f.constraint !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
+        schema.fields.forEach(function (f) { return f.type !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
         schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
         return Record;
     };

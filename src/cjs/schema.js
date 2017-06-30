@@ -31,8 +31,8 @@ var TableSchema = (function () {
         this.db = db;
         this.name = name;
         this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
-        this._primaryKeyFields = this.fields.filter(function (f) { return f.constraint === PK; });
-        this._foreignKeyFields = this.fields.filter(function (f) { return f.constraint === FK; });
+        this._primaryKeyFields = this.fields.filter(function (f) { return f.type === PK; });
+        this._foreignKeyFields = this.fields.filter(function (f) { return f.type === FK; });
         this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
     }
     TableSchema.prototype.connect = function (schemas) {
@@ -81,7 +81,7 @@ var TableSchema = (function () {
     TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
         if (!rel.relationName)
             return data;
-        var otherFks = rel.table.fields.filter(function (f) { return f.constraint === FK && f !== rel; });
+        var otherFks = rel.table.fields.filter(function (f) { return f.type === FK && f !== rel; });
         return utils.ensureArray(data).map(function (obj) {
             if (typeof obj === "number" || typeof obj === "string") {
                 if (otherFks.length === 1) {
@@ -124,8 +124,7 @@ var FieldSchema = (function () {
         this.table = table;
         this.name = name;
         this.propName = schema.propName || name;
-        this.type = schema.type || "ATTR";
-        this.constraint = schema.constraint || "NONE";
+        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
         this.references = schema.references;
         this.relationName = schema.relationName;
         this._valueFn = schema.value ? schema.value.bind(this) : null;

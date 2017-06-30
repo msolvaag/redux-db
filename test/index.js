@@ -9,8 +9,8 @@ const db = reduxDB.createDatabase({
         "computed": { value: (o) => o.id + "test" }
     },
     "testRef": {
-        "id": { constraint: "PK" },
-        "test": { constraint: "FK", references: "testTable", relationName: "refs" }
+        "id": { type: "PK" },
+        "test": { references: "testTable", relationName: "refs" }
     }
 });
 

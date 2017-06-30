@@ -33,14 +33,18 @@ export interface TableRecord {
 export interface SchemaDDL {
     [key: string]: TableDDL;
 }
-
+export interface TableDDL {
+    [key: string]: FieldDDL;
+}
 export interface FieldDDL {
     type?: FieldType,
-    constraint?: ConstraintType;
     references?: string;
     relationName?: string;
     propName?: string;
     value?: (record: any, context?: ComputeContext) => any;
+
+    // deprecated. use type instead.
+    constraint?: "PK" | "FK";
 }
 
 export interface ComputeContext {
@@ -48,14 +52,9 @@ export interface ComputeContext {
     record?: TableRecord;
 }
 
-export interface TableDDL {
-    [key: string]: FieldDDL;
-}
-
 const PK = "PK", FK = "FK", NONE = "NONE";
 
-export type ConstraintType = "PK" | "FK" | "NONE";
-export type FieldType = "ATTR" | "MODIFIED";
+export type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 
 export interface DatabaseSchema {
     tables: TableSchema[];
@@ -155,8 +154,8 @@ export class TableSchema {
         this.name = name;
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
 
-        this._primaryKeyFields = this.fields.filter(f => f.constraint === PK);
-        this._foreignKeyFields = this.fields.filter(f => f.constraint === FK);
+        this._primaryKeyFields = this.fields.filter(f => f.type === PK);
+        this._foreignKeyFields = this.fields.filter(f => f.type === FK);
         this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
     }
 
@@ -216,7 +215,7 @@ export class TableSchema {
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {
         if (!rel.relationName) return data;
 
-        const otherFks = rel.table.fields.filter(f => f.constraint === FK && f !== rel);
+        const otherFks = rel.table.fields.filter(f => f.type === FK && f !== rel);
 
         return utils.ensureArray(data).map(obj => {
             if (typeof obj === "number" || typeof obj === "string") {
@@ -265,7 +264,6 @@ export class FieldSchema {
     readonly propName: string;
 
     readonly type: FieldType;
-    readonly constraint: ConstraintType;
 
     readonly references?: string;
     readonly relationName?: string;
@@ -276,8 +274,7 @@ export class FieldSchema {
         this.table = table;
         this.name = name;
         this.propName = schema.propName || name;
-        this.type = schema.type || "ATTR";
-        this.constraint = schema.constraint || "NONE";
+        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
         this.references = schema.references;
         this.relationName = schema.relationName;
         this._valueFn = schema.value ? schema.value.bind(this) : null;
