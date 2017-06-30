@@ -6,7 +6,7 @@ class PostListComponent extends Component {
     render() {
         return <table>
             <tbody>
-                { this.props.posts.map(post => (
+                {this.props.posts.map(post => (
                     <tr>
                         <td>{post.title}</td>
                         <td>{post.author}</td>
@@ -19,7 +19,7 @@ class PostListComponent extends Component {
 }
 
 const mapStateToProps = (state, ownProps) => {
-    const { BlogPost } = db.createSession(state.db);
+    const { BlogPost } = db.createSession(state.db).tables;
 
     return {
         posts: BlogPost.all().map(post => ({
