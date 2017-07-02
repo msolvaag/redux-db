@@ -162,8 +162,7 @@ export class TableSchema {
     /// Connects this schema's fields with other tables.
     connect(schemas: TableSchema[]) {
         schemas.forEach(schema => {
-            if (schema !== this)
-                this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
+            this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
         });
         this._foreignKeyFields.forEach(fk => {
             if (fk.references) {
