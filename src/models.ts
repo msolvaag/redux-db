@@ -277,6 +277,7 @@ export class RecordSet<T extends TableRecord> {
 
     update(data: any) {
         this.table.update(this._normalize(data));
+        return this;
     }
 
     delete() {

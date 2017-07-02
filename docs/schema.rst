@@ -1,25 +1,99 @@
-============
-Defining your schema
-============
+==========
+The schema
+==========
 
-To make redux-db normalize your nested data, you must define a schema.
-Given the following data:
+To make redux-db know how to tie your records together and how to normalize given data, you must define a schema.
+The schema is defined using a simple nested JSON object. Each property in the schema object defines a table name.
+Each table name must again define a new object for it's keys.
 
-.. literalinclude:: /example/data.js
-    :language: js
+:: 
 
-You would define a schema like so:
+    {
+        "TableName": {
+            "FieldName": { ... fieldProperties }
+        }
+    }
 
-.. literalinclude:: /example/schema.js
-    :language: js
+The table name is up to you, but the field names must match your data model.
 
-Note you only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
+.. note::
+    It is not really required, but the table name should be written using pascal casing. This helps you seperate Table_ class instances later on.
 
-.. tip::
+Primary keys
+------------
 
-    You do not have to specify type: "FK" when using the "references" property.``
+If a table represents a single entity you should define a primary key::
 
-Using this schema definition, the example data would be normalized out in the following manner:
+    {
+        "Table" : {
+            "id": { type: "PK" }
+        }
+    }
 
-.. literalinclude:: /example/data-normalized.js
-    :language: js
+Foreign keys
+------------
+
+You connect your tables using foreign keys. Foreign keys are noted using the "references" property.
+
+:: 
+
+    {
+        "Table1" : {
+            "ref": { references: "Table2", relationName: "refs" }
+        },
+        "Table2": {
+            id: { type: "PK" }
+        }
+    }
+
+The "relationName" property is required if you wish to access the relationship on the Records of "Table2".
+
+
+Self referencing tables
+-----------------------
+
+It's perfectly fine to add a self referencing table field:: 
+
+    "Table": {
+        parent: { references: "Table", relationName: "children" }
+    }
+
+
+Custom normalization
+--------------------
+During data normalization you may have the need to transform the data.
+redux-db provides a basic normalization hook for each table.
+
+::
+
+    ReduxDB.createDatabase( schema, {
+        onNormalize: {
+            "Table1": ( item, context ) => {
+                const { id, name, ...rest } = item;
+
+                // We split the given data and emits to "Table2" for normalization.
+                context.emit( "Table2", rest );
+
+                // returns the data for "Table1"
+                return { id, name };
+            }
+        }
+    });
+
+Schema reference
+------------------------
+All supported definitions
+
+::
+
+    {
+        "Table" : {
+            "Field": {
+                type: "PK" | "FK" | "MODIFIED" | "ATTR",
+                references: string,
+                relationName: string,
+                propName: string,
+                value: ( record: Record ) => any
+            }
+        }
+    }

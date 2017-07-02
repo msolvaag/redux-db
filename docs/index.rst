@@ -10,15 +10,20 @@ redux-db provides a normalized redux_ store and easy object management.
 
 .. toctree::
     :maxdepth: 2
-    :caption: Contents:
+    :caption: Basics:
 
     install
     schema
     models
-    reducers
-    store
-    connect
-    selectors
-    advanced
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Guide:
+
+    guide/schema
+    guide/reducers
+    guide/store
+    guide/connect
+    guide/selectors
 
 .. _redux: http://redux.js.org

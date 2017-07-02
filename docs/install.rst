@@ -2,7 +2,7 @@
 Installation
 ============
 
-node npm::
+npm::
 
     npm install redux-db --save
 
