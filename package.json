@@ -1,6 +1,6 @@
 {
   "name": "redux-db",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "A state normalizer and orm for redux",
   "main": "src/cjs/index.js",
   "module": "src/es/index.js",
