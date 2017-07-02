@@ -37,8 +37,7 @@ var TableSchema = (function () {
     TableSchema.prototype.connect = function (schemas) {
         var _this = this;
         schemas.forEach(function (schema) {
-            if (schema !== _this)
-                _this.relations = _this.relations.concat(schema.fields.filter(function (f) { return f.references === _this.name; }));
+            _this.relations = _this.relations.concat(schema.fields.filter(function (f) { return f.references === _this.name; }));
         });
         this._foreignKeyFields.forEach(function (fk) {
             if (fk.references) {
