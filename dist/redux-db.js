@@ -323,6 +323,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                     }
                     else {
                         delete indexes[fk.name][id];
+                        if (Object.keys(indexes[fk.name]).length === 0)
+                            delete indexes[fk.name];
                     }
                 });
             }

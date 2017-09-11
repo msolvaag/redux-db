@@ -105,6 +105,8 @@ export class TableModel<T extends TableRecord> implements Table {
                     indexes[fk.name][fk.value] = idxBucket;
                 } else {
                     delete indexes[fk.name][id];
+                    if (Object.keys(indexes[fk.name]).length === 0)
+                        delete indexes[fk.name];
                 }
             });
         }

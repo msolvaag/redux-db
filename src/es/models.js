@@ -94,6 +94,8 @@ var TableModel = /** @class */ (function () {
                 }
                 else {
                     delete indexes[fk.name][id];
+                    if (Object.keys(indexes[fk.name]).length === 0)
+                        delete indexes[fk.name];
                 }
             });
         }
