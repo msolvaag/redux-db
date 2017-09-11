@@ -321,7 +321,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                         idxBucket.splice(fkIdx, 1);
                         indexes[fk.name][fk.value] = idxBucket;
                     }
-                    else {
+                    else if (indexes[fk.name]) {
                         delete indexes[fk.name][id];
                         if (Object.keys(indexes[fk.name]).length === 0)
                             delete indexes[fk.name];
