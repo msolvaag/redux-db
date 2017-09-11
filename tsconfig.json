@@ -16,12 +16,12 @@
     "strictNullChecks": true,
     "alwaysStrict": true,
     "declaration": true,
-    "declarationDir": "./@types"
+    "declarationDir": "./types"
   },
   "exclude": [
     "node_modules",
     "wwwroot",
-    "@types",
+    "types",
     "test"
   ]
 }

@@ -4,7 +4,7 @@
   "description": "A state normalizer and orm for redux",
   "main": "src/cjs/index.js",
   "module": "src/es/index.js",
-  "typings": "./@types/index.d.ts",
+  "typings": "./types/index.d.ts",
   "scripts": {
     "test": "tape test/*.js | \"node_modules/.bin/tap-spec\"",
     "build": "tsc && tsc -p tsconfig.cjs.json && tsc -p tsconfig.dist.json && gulp compress",
