@@ -321,6 +321,9 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                         idxBucket.splice(fkIdx, 1);
                         indexes[fk.name][fk.value] = idxBucket;
                     }
+                    else {
+                        delete indexes[fk.name][id];
+                    }
                 });
             }
             this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
