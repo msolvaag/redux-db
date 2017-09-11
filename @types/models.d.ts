@@ -51,7 +51,7 @@ export declare class RecordSet<T extends TableRecord> {
     map<M>(callback: (record: T) => M): M[];
     add(data: any): void;
     remove(data: any): void;
-    update(data: any): void;
+    update(data: any): this;
     delete(): void;
     private _normalize(data);
 }

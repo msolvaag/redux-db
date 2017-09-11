@@ -18,7 +18,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 import { NormalizeContext } from "./schema";
 import * as utils from "./utils";
-var TableModel = (function () {
+var TableModel = /** @class */ (function () {
     function TableModel(session, state, schema) {
         if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
         this.session = session;
@@ -86,7 +86,7 @@ var TableModel = (function () {
         if (ref) {
             var fks = this.schema.getForeignKeys(ref);
             fks.forEach(function (fk) {
-                var fkIdx = indexes[fk.name][fk.value].indexOf(id);
+                var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
                 if (fkIdx >= 0) {
                     var idxBucket = indexes[fk.name][fk.value].slice();
                     idxBucket.splice(fkIdx, 1);
@@ -162,7 +162,7 @@ var TableModel = (function () {
     return TableModel;
 }());
 export { TableModel };
-var RecordModel = (function () {
+var RecordModel = /** @class */ (function () {
     function RecordModel(id, table) {
         this.id = id;
         this.table = table;
@@ -184,7 +184,7 @@ var RecordModel = (function () {
     return RecordModel;
 }());
 export { RecordModel };
-var RecordField = (function () {
+var RecordField = /** @class */ (function () {
     function RecordField(schema, record) {
         this.name = schema.name;
         this.schema = schema;
@@ -200,7 +200,7 @@ var RecordField = (function () {
     return RecordField;
 }());
 export { RecordField };
-var RecordSet = (function () {
+var RecordSet = /** @class */ (function () {
     function RecordSet(table, schema, owner) {
         this.table = table;
         this.schema = schema;
@@ -246,6 +246,7 @@ var RecordSet = (function () {
     };
     RecordSet.prototype.update = function (data) {
         this.table.update(this._normalize(data));
+        return this;
     };
     RecordSet.prototype.delete = function () {
         var _this = this;
@@ -257,7 +258,7 @@ var RecordSet = (function () {
     return RecordSet;
 }());
 export { RecordSet };
-var ModelFactory = (function () {
+var ModelFactory = /** @class */ (function () {
     function ModelFactory() {
         this._recordClass = {};
     }
@@ -277,7 +278,7 @@ var ModelFactory = (function () {
         return new RecordSet(refTable, schema, record);
     };
     ModelFactory.prototype._createRecordModelClass = function (schema) {
-        var Record = (function (_super) {
+        var Record = /** @class */ (function (_super) {
             __extends(Record, _super);
             function Record(id, table) {
                 var _this = _super.call(this, id, table) || this;
@@ -297,6 +298,6 @@ var ModelFactory = (function () {
         schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
         return Record;
     };
+    ModelFactory.default = new ModelFactory();
     return ModelFactory;
 }());
-ModelFactory.default = new ModelFactory();

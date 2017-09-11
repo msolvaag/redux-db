@@ -10,7 +10,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var utils = require("./utils");
 var PK = "PK", FK = "FK", NONE = "NONE";
-var NormalizeContext = (function () {
+var NormalizeContext = /** @class */ (function () {
     function NormalizeContext(schema) {
         this.output = {};
         this.emits = {};
@@ -24,7 +24,7 @@ var NormalizeContext = (function () {
     return NormalizeContext;
 }());
 exports.NormalizeContext = NormalizeContext;
-var TableSchema = (function () {
+var TableSchema = /** @class */ (function () {
     function TableSchema(db, name, schema) {
         var _this = this;
         this.relations = [];
@@ -140,7 +140,7 @@ var TableSchema = (function () {
     return TableSchema;
 }());
 exports.TableSchema = TableSchema;
-var FieldSchema = (function () {
+var FieldSchema = /** @class */ (function () {
     function FieldSchema(table, name, schema) {
         this.table = table;
         this.name = name;

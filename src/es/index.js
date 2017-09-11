@@ -13,7 +13,7 @@ var defaultOptions = {};
 export var createDatabase = function (schema, options) {
     return new Database(schema, __assign({}, defaultOptions, options));
 };
-var Database = (function () {
+var Database = /** @class */ (function () {
     function Database(schema, options) {
         var _this = this;
         this._cache = {};
@@ -49,7 +49,7 @@ var Database = (function () {
     return Database;
 }());
 export { Database };
-var DatabaseSession = (function () {
+var DatabaseSession = /** @class */ (function () {
     function DatabaseSession(state, schema, options) {
         if (state === void 0) { state = {}; }
         var _this = this;

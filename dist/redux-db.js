@@ -91,7 +91,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var PK = "PK", FK = "FK", NONE = "NONE";
-    var NormalizeContext = (function () {
+    var NormalizeContext = /** @class */ (function () {
         function NormalizeContext(schema) {
             this.output = {};
             this.emits = {};
@@ -105,7 +105,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         return NormalizeContext;
     }());
     exports.NormalizeContext = NormalizeContext;
-    var TableSchema = (function () {
+    var TableSchema = /** @class */ (function () {
         function TableSchema(db, name, schema) {
             var _this = this;
             this.relations = [];
@@ -221,7 +221,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         return TableSchema;
     }());
     exports.TableSchema = TableSchema;
-    var FieldSchema = (function () {
+    var FieldSchema = /** @class */ (function () {
         function FieldSchema(table, name, schema) {
             this.table = table;
             this.name = name;
@@ -247,7 +247,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
 define("models", ["require", "exports", "schema", "utils"], function (require, exports, schema_1, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var TableModel = (function () {
+    var TableModel = /** @class */ (function () {
         function TableModel(session, state, schema) {
             if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
             this.session = session;
@@ -315,7 +315,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             if (ref) {
                 var fks = this.schema.getForeignKeys(ref);
                 fks.forEach(function (fk) {
-                    var fkIdx = indexes[fk.name][fk.value].indexOf(id);
+                    var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
                     if (fkIdx >= 0) {
                         var idxBucket = indexes[fk.name][fk.value].slice();
                         idxBucket.splice(fkIdx, 1);
@@ -391,7 +391,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         return TableModel;
     }());
     exports.TableModel = TableModel;
-    var RecordModel = (function () {
+    var RecordModel = /** @class */ (function () {
         function RecordModel(id, table) {
             this.id = id;
             this.table = table;
@@ -413,7 +413,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         return RecordModel;
     }());
     exports.RecordModel = RecordModel;
-    var RecordField = (function () {
+    var RecordField = /** @class */ (function () {
         function RecordField(schema, record) {
             this.name = schema.name;
             this.schema = schema;
@@ -429,7 +429,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         return RecordField;
     }());
     exports.RecordField = RecordField;
-    var RecordSet = (function () {
+    var RecordSet = /** @class */ (function () {
         function RecordSet(table, schema, owner) {
             this.table = table;
             this.schema = schema;
@@ -475,6 +475,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         };
         RecordSet.prototype.update = function (data) {
             this.table.update(this._normalize(data));
+            return this;
         };
         RecordSet.prototype.delete = function () {
             var _this = this;
@@ -486,7 +487,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         return RecordSet;
     }());
     exports.RecordSet = RecordSet;
-    var ModelFactory = (function () {
+    var ModelFactory = /** @class */ (function () {
         function ModelFactory() {
             this._recordClass = {};
         }
@@ -506,7 +507,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return new RecordSet(refTable, schema, record);
         };
         ModelFactory.prototype._createRecordModelClass = function (schema) {
-            var Record = (function (_super) {
+            var Record = /** @class */ (function (_super) {
                 __extends(Record, _super);
                 function Record(id, table) {
                     var _this = _super.call(this, id, table) || this;
@@ -526,9 +527,9 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
             return Record;
         };
+        ModelFactory.default = new ModelFactory();
         return ModelFactory;
     }());
-    ModelFactory.default = new ModelFactory();
 });
 define("index", ["require", "exports", "schema", "models", "utils"], function (require, exports, schema_2, models_1, utils) {
     "use strict";
@@ -540,7 +541,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
     exports.createDatabase = function (schema, options) {
         return new Database(schema, __assign({}, defaultOptions, options));
     };
-    var Database = (function () {
+    var Database = /** @class */ (function () {
         function Database(schema, options) {
             var _this = this;
             this._cache = {};
@@ -576,7 +577,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
         return Database;
     }());
     exports.Database = Database;
-    var DatabaseSession = (function () {
+    var DatabaseSession = /** @class */ (function () {
         function DatabaseSession(state, schema, options) {
             if (state === void 0) { state = {}; }
             var _this = this;

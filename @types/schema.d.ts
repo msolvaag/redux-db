@@ -122,9 +122,9 @@ export declare class TableSchema {
     private _stampFields;
     constructor(db: DatabaseSchema, name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
-    normalize(data: any, context: NormalizeContext): string[];
+    normalize(data: any, context: NormalizeContext): any[];
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
-    getPrimaryKey(record: any): string;
+    getPrimaryKey(record: any): any;
     getForeignKeys(record: any): {
         name: string;
         value: any;

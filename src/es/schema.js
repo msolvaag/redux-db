@@ -8,7 +8,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 import * as utils from "./utils";
 var PK = "PK", FK = "FK", NONE = "NONE";
-var NormalizeContext = (function () {
+var NormalizeContext = /** @class */ (function () {
     function NormalizeContext(schema) {
         this.output = {};
         this.emits = {};
@@ -22,7 +22,7 @@ var NormalizeContext = (function () {
     return NormalizeContext;
 }());
 export { NormalizeContext };
-var TableSchema = (function () {
+var TableSchema = /** @class */ (function () {
     function TableSchema(db, name, schema) {
         var _this = this;
         this.relations = [];
@@ -138,7 +138,7 @@ var TableSchema = (function () {
     return TableSchema;
 }());
 export { TableSchema };
-var FieldSchema = (function () {
+var FieldSchema = /** @class */ (function () {
     function FieldSchema(table, name, schema) {
         this.table = table;
         this.name = name;
