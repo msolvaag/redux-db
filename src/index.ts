@@ -43,7 +43,7 @@ export class Database implements DatabaseSchema {
         return new DatabaseSession(state, this, { readOnly: false, ...options });
     }
 
-    selectTables(state: DatabaseState) {
+    selectTables(state: any) {
         const tableSchemas = Object.keys(state).map(tableName => {
 
             const tableSchema = this.tables.filter(s => s.name === tableName)[0];
@@ -55,10 +55,10 @@ export class Database implements DatabaseSchema {
 
         var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
 
-        return partialSession.tables;
+        return partialSession.tables as { [key: string]: TableModel<any> };
     }
 
-    selectTable(name: string, tableState: any) {
+    selectTable<T=any>(name: string, tableState: any) {
         return this.selectTables({ [name]: tableState })[name];
     }
 
