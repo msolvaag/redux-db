@@ -43,6 +43,25 @@ export class Database implements DatabaseSchema {
         return new DatabaseSession(state, this, { readOnly: false, ...options });
     }
 
+    selectTables(state: DatabaseState) {
+        const tableSchemas = Object.keys(state).map(tableName => {
+
+            const tableSchema = this.tables.filter(s => s.name === tableName)[0];
+            if (!tableSchema)
+                throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
+
+            return tableSchema;
+        });
+
+        var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+
+        return partialSession.tables;
+    }
+
+    selectTable(name: string, tableState: any) {
+        return this.selectTables({ [name]: tableState })[name];
+    }
+
     cache<T>(key: string, valueFn?: () => T) {
         return (this._cache[key] || (valueFn && (this._cache[key] = valueFn()))) as T;
     }

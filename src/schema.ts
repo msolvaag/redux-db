@@ -59,10 +59,7 @@ export type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
 
-    normalizeHooks: { [key: string]: Normalizer };
-
-    cache<T>(key: string, valueFn?: () => T): T;
-    clearCache(key: string): void;
+    normalizeHooks?: { [key: string]: Normalizer };
 }
 
 export interface DatabaseOptions {
@@ -183,7 +180,7 @@ export class TableSchema {
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
         return utils.ensureArray(data).map(obj => {
-            const normalizeHook = this.db.normalizeHooks[this.name];
+            const normalizeHook = this.db.normalizeHooks ? this.db.normalizeHooks[this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
 
