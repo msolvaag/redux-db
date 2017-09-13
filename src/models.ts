@@ -21,6 +21,8 @@ export class TableModel<T extends TableRecord> implements Table {
         this.session = session;
         this.state = state;
         this.schema = schema;
+        if (!this.state.name)
+            this.state.name = schema.name;
     }
 
     all(): T[] {

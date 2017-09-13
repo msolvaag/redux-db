@@ -253,6 +253,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             this.session = session;
             this.state = state;
             this.schema = schema;
+            if (!this.state.name)
+                this.state.name = schema.name;
         }
         TableModel.prototype.all = function () {
             var _this = this;
@@ -591,7 +593,10 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
             return partialSession.tables;
         };
-        Database.prototype.selectTable = function (name, tableState) {
+        Database.prototype.selectTable = function (tableState, schemaName) {
+            var name = schemaName || tableState["name"];
+            if (!name)
+                throw new Error("Failed to select table. Could not identify table schema.");
             return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
             var _a;
         };

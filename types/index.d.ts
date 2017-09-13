@@ -17,7 +17,7 @@ export declare class Database implements DatabaseSchema {
     selectTables(state: any): {
         [key: string]: TableModel<any>;
     };
-    selectTable<T = any>(name: string, tableState: any): TableModel<any>;
+    selectTable<T = any>(tableState: any, schemaName?: string): TableModel<any>;
     cache<T>(key: string, valueFn?: () => T): T;
     clearCache(key: string): void;
 }

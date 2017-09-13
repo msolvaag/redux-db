@@ -51,7 +51,10 @@ var Database = /** @class */ (function () {
         var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
         return partialSession.tables;
     };
-    Database.prototype.selectTable = function (name, tableState) {
+    Database.prototype.selectTable = function (tableState, schemaName) {
+        var name = schemaName || tableState["name"];
+        if (!name)
+            throw new Error("Failed to select table. Could not identify table schema.");
         return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
         var _a;
     };

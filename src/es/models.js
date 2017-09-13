@@ -24,6 +24,8 @@ var TableModel = /** @class */ (function () {
         this.session = session;
         this.state = state;
         this.schema = schema;
+        if (!this.state.name)
+            this.state.name = schema.name;
     }
     TableModel.prototype.all = function () {
         var _this = this;

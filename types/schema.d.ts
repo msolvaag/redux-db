@@ -60,6 +60,7 @@ export interface DatabaseState {
     [key: string]: TableState;
 }
 export interface TableState {
+    name?: string;
     byId: {
         [key: string]: any;
     };

@@ -74,6 +74,7 @@ export interface DatabaseState {
 }
 
 export interface TableState {
+    name?: string;
     byId: { [key: string]: any };
     ids: string[];
     indexes: {

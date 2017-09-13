@@ -58,7 +58,11 @@ export class Database implements DatabaseSchema {
         return partialSession.tables as { [key: string]: TableModel<any> };
     }
 
-    selectTable<T=any>(name: string, tableState: any) {
+    selectTable<T=any>(tableState: any, schemaName?: string) {
+        let name = schemaName || tableState["name"];
+        if (!name)
+            throw new Error("Failed to select table. Could not identify table schema.");
+
         return this.selectTables({ [name]: tableState })[name];
     }
 
