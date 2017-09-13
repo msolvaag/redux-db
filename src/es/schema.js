@@ -55,7 +55,7 @@ var TableSchema = /** @class */ (function () {
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
         return utils.ensureArray(data).map(function (obj) {
-            var normalizeHook = _this.db.normalizeHooks[_this.name];
+            var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
             var pk = _this.getPrimaryKey(obj);

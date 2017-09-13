@@ -14,6 +14,8 @@ export declare class Database implements DatabaseSchema {
     constructor(schema: SchemaDDL, options: DatabaseOptions);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;
     createSession(state: any, options?: SessionOptions): DatabaseSession;
+    selectTables(state: DatabaseState): any;
+    selectTable(name: string, tableState: any): any;
     cache<T>(key: string, valueFn?: () => T): T;
     clearCache(key: string): void;
 }

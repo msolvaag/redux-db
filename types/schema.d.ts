@@ -44,11 +44,9 @@ export interface ComputeContext {
 export declare type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
-    normalizeHooks: {
+    normalizeHooks?: {
         [key: string]: Normalizer;
     };
-    cache<T>(key: string, valueFn?: () => T): T;
-    clearCache(key: string): void;
 }
 export interface DatabaseOptions {
     onNormalize?: {

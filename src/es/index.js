@@ -40,6 +40,21 @@ var Database = /** @class */ (function () {
     Database.prototype.createSession = function (state, options) {
         return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
     };
+    Database.prototype.selectTables = function (state) {
+        var _this = this;
+        var tableSchemas = Object.keys(state).map(function (tableName) {
+            var tableSchema = _this.tables.filter(function (s) { return s.name === tableName; })[0];
+            if (!tableSchema)
+                throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
+            return tableSchema;
+        });
+        var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+        return partialSession.tables;
+    };
+    Database.prototype.selectTable = function (name, tableState) {
+        return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
+        var _a;
+    };
     Database.prototype.cache = function (key, valueFn) {
         return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));
     };
