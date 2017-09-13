@@ -1,6 +1,6 @@
 {
   "name": "redux-db",
-  "version": "0.3.18",
+  "version": "0.3.17",
   "description": "A state normalizer and orm for redux",
   "main": "src/cjs/index.js",
   "module": "src/es/index.js",
@@ -10,7 +10,7 @@
     "build": "tsc && tsc -p tsconfig.cjs.json && tsc -p tsconfig.dist.json && gulp compress",
     "build-cjs": "tsc -p tsconfig.cjs.json",
     "docs": "rimraf \"docs/_build/\" && python -msphinx -b html \"docs\" \"docs/_build/html\"",
-    "deploy": "npm run build && git add . && git commit && npm run version patch && npm publish"
+    "deploy": "npm run build && git add . && git commit && npm version patch && npm publish"
   },
   "repository": {
     "type": "git",

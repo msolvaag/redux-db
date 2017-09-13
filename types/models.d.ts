@@ -6,6 +6,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     constructor(session: Session, state: TableState | undefined, schema: TableSchema);
     all(): T[];
     readonly length: number;
+    readonly values: any[];
     filter(predicate: (record: T, index: number) => boolean): T[];
     index(name: string, fk: string): string[];
     get(id: number | string): T;

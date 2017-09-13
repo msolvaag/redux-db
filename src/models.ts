@@ -31,6 +31,10 @@ export class TableModel<T extends TableRecord> implements Table {
         return this.state.ids.length;
     }
 
+    get values() {
+        return this.all().map(r => r.value);
+    }
+
     filter(predicate: (record: T, index: number) => boolean) {
         return this.all().filter(predicate);
     }

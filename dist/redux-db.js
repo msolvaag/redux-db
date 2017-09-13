@@ -265,6 +265,13 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(TableModel.prototype, "values", {
+            get: function () {
+                return this.all().map(function (r) { return r.value; });
+            },
+            enumerable: true,
+            configurable: true
+        });
         TableModel.prototype.filter = function (predicate) {
             return this.all().filter(predicate);
         };
