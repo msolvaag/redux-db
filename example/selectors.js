@@ -7,7 +7,7 @@ import { createSelector, createStructuredSelector } from 'reselect';
 export const selectAllPosts = createSelector(
     ({ db }) => db.BlogPost,
     (table) => {
-        return reduxDb.selectTable(table).values;
+        return myDb.selectTable(table).values;
     }
 );
 
@@ -23,7 +23,7 @@ export const selectAllPosts = createSelector(
     blogPostAndRels,
     (tables) => {
         // get the TableModel
-        const { BlogPost } = reduxDb.selectTables(tables);
+        const { BlogPost } = myDb.selectTables(tables);
 
         return BlogPost.all().map(_serializePost);
     }
@@ -35,7 +35,7 @@ export const selectPost = createSelector(
     (state, props) => props.postId,
     (tables, id) => {
         // get the TableModel
-        const { BlogPost } = reduxDb.selectTables(tables);
+        const { BlogPost } = myDb.selectTables(tables);
 
         // get the Record by id
         const postModel = BlogPost.get(id);
