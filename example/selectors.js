@@ -1,7 +1,7 @@
 /// selectors.js
 
 import { db as myDb } from './schema';
-import { createSelector } from 'reselect';
+import { createSelector, createStructuredSelector } from 'reselect';
 
 // Single table, all records, no relations
 export const selectAllPosts = createSelector(
