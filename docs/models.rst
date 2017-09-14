@@ -28,11 +28,24 @@ Methods and propertes:
     /// gets the number of records in the table.
     length : number;
 
+    /// gets all raw record values
+    /// equivalent to all().map( r => r.value )
+    values: any[];
+
     /// returns all records in table.
     all() : Record[];
 
     /// returns all records matching a given filter.
     filter( predicate: ( record: Record ) => boolean ) : Record[];
+
+    /// returns a single record by id.
+    get( id:string|number ) : Record;
+
+    /// returns a single record by id. null if not found.
+    getOrDefault(id: number | string) : Record | null;
+
+    /// checks whether a record exists.
+    exists(id: number | string) : bool;
 
     /// inserts one or more records. 
     /// returns the first inserted record.
@@ -48,6 +61,9 @@ Methods and propertes:
 
     /// deletes a single record by it's primary key.
     delete( id: string ) : void;
+
+    /// get a single the record value
+    value( id:number | string ) : any | undefined;
 
 .. note::
 

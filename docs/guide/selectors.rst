@@ -2,4 +2,12 @@
 Improving performance with selectors
 ====================================
 
-TBA very soon....
+Example using reselect:
+
+.. literalinclude:: ../../example/selectors.js
+    :language: js
+
+
+Using selectors we can improve the previous example:
+
+.. literalinclude:: ../../example/postListComponentWithSelectors.jsx

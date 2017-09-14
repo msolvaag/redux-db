@@ -1,6 +1,7 @@
 import { Component } from "react";
 import { connect } from "react-redux";
 import { db } from "./schema";
+import { selectAllPosts } from "./selectors";
 
 class PostListComponent extends Component {
     render() {
@@ -19,14 +20,8 @@ class PostListComponent extends Component {
 }
 
 const mapStateToProps = (state, ownProps) => {
-    const { BlogPost } = db.selectTables(state.db);
-
     return {
-        posts: BlogPost.all().map(post => ({
-            ...post.value,
-            numComments: post.comments.length,
-            author: post.author.value.name
-        }))
+        posts: selectAllPosts( state )
     };
 };
 

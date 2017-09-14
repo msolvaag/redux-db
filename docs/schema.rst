@@ -17,7 +17,7 @@ Each table name must again define a new object for it's keys.
 The table name is up to you, but the field names must match your data model.
 
 .. note::
-    It is not really required, but the table name should be written using pascal casing. This helps you seperate Table_ class instances later on.
+    It is not really required, but the table name should be written using pascal casing. This helps you seperate Table class instances later on.
 
 Primary keys
 ------------
