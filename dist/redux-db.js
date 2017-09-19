@@ -284,7 +284,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 return [];
         };
         TableModel.prototype.get = function (id) {
-            id = id.toString();
+            if (typeof id === "number")
+                id = id.toString();
             if (!this.exists(id))
                 throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
             return ModelFactory.default.newRecord(id, this);
@@ -298,6 +299,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this.exists(id) ? this.get(id) : null;
         };
         TableModel.prototype.exists = function (id) {
+            if (typeof id === "number")
+                id = id.toString();
             return this.state.byId[id] !== undefined;
         };
         TableModel.prototype.insert = function (data) {
@@ -316,7 +319,9 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this._normalizedAction(data, this.upsertNormalized)[0];
         };
         TableModel.prototype.delete = function (id) {
-            var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), ref = byId[id];
+            if (typeof id === "number")
+                id = id.toString();
+            var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), ref = byId[id], sid = id;
             delete byId[id];
             var idx = ids.indexOf(id);
             if (idx >= 0)
@@ -324,7 +329,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             if (ref) {
                 var fks = this.schema.getForeignKeys(ref);
                 fks.forEach(function (fk) {
-                    var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
+                    var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(sid);
                     if (fkIdx >= 0) {
                         var idxBucket = indexes[fk.name][fk.value].slice();
                         idxBucket.splice(fkIdx, 1);

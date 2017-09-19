@@ -18,7 +18,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     update(data: any): T;
     updateMany(data: any): T[];
     upsert(data: any): T;
-    delete(id: string): void;
+    delete(id: string | number): void;
     insertNormalized(table: TableState): T[];
     updateNormalized(table: TableState): T[];
     upsertNormalized(norm: TableState): T[];

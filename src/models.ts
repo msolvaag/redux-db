@@ -49,7 +49,8 @@ export class TableModel<T extends TableRecord> implements Table {
     }
 
     get(id: number | string): T {
-        id = id.toString();
+        if (typeof id === "number") id = id.toString();
+
         if (!this.exists(id))
             throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
 
@@ -57,8 +58,7 @@ export class TableModel<T extends TableRecord> implements Table {
     }
 
     value(id: number | string) {
-        if (typeof id === "number")
-            id = id.toString();
+        if (typeof id === "number") id = id.toString();
         return this.state.byId[id];
     }
 
@@ -67,6 +67,8 @@ export class TableModel<T extends TableRecord> implements Table {
     }
 
     exists(id: number | string) {
+        if (typeof id === "number") id = id.toString();
+
         return this.state.byId[id] !== undefined;
     }
 
@@ -90,11 +92,15 @@ export class TableModel<T extends TableRecord> implements Table {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     }
 
-    delete(id: string) {
+    delete(id: string | number) {
+        if (typeof id === "number") id = id.toString();
+
         const byId = { ...this.state.byId },
             ids = this.state.ids.slice(),
             indexes = { ...this.state.indexes },
-            ref = byId[id];
+            ref = byId[id],
+            sid = id;
+
         delete byId[id];
         const idx = ids.indexOf(id);
         if (idx >= 0)
@@ -103,7 +109,7 @@ export class TableModel<T extends TableRecord> implements Table {
         if (ref) {
             const fks = this.schema.getForeignKeys(ref);
             fks.forEach(fk => {
-                const fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
+                const fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(sid);
                 if (fkIdx >= 0) {
                     const idxBucket = indexes[fk.name][fk.value].slice();
                     idxBucket.splice(fkIdx, 1);

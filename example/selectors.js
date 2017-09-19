@@ -7,7 +7,7 @@ import { createSelector, createStructuredSelector } from 'reselect';
 export const selectAllPosts = createSelector(
     ({ db }) => db.BlogPost,
     (table) => {
-        return myDb.selectTable(table).values;
+        return myDb.selectTable(table).values; // NB. should be converted to a view model.
     }
 );
 
