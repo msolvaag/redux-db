@@ -71,7 +71,7 @@ var TableSchema = /** @class */ (function () {
                     var fkPks = fk.refTable.normalize(fk.value, ctx);
                     if (fkPks.length > 1)
                         throw new Error("Invalid schema definition. The field \"" + _this.name + "." + fk.name + "\" is referencing table \"" + fk.refTable.name + "\", but the given data is an array.");
-                    record[fk.name] = fkPks[0];
+                    record[fk.name] = fk.value = fkPks[0];
                 }
                 // all FK's are auto indexed
                 if (fk.value !== null && fk.value !== undefined) {

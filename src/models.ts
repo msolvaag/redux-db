@@ -103,7 +103,7 @@ export class TableModel<T extends TableRecord> implements Table {
         if (ref) {
             const fks = this.schema.getForeignKeys(ref);
             fks.forEach(fk => {
-                const fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
+                const fkIdx = fk.value && indexes[fk.name] && indexes[fk.name][fk.value] && indexes[fk.name][fk.value].indexOf(id);
                 if (fkIdx >= 0) {
                     const idxBucket = indexes[fk.name][fk.value].slice();
                     idxBucket.splice(fkIdx, 1);
@@ -137,12 +137,13 @@ export class TableModel<T extends TableRecord> implements Table {
             if (!this.state.byId[id])
                 throw new Error(`Failed to apply update. No \"${this.schema.name}\" record with id: ${id} exists.`);
 
-            const newRecord = table.byId[id];
             const oldRecord = state.byId[id];
+            const newRecord = { ...oldRecord, ...table.byId[id] };
+
             const isModified = this.schema.isModified(oldRecord, newRecord);
 
             if (isModified) {
-                state.byId[id] = { ...oldRecord, ...newRecord };
+                state.byId[id] = newRecord;
                 dirty = true;
             }
 

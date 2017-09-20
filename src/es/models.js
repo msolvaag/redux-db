@@ -95,7 +95,7 @@ var TableModel = /** @class */ (function () {
         if (ref) {
             var fks = this.schema.getForeignKeys(ref);
             fks.forEach(function (fk) {
-                var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(id);
+                var fkIdx = fk.value && indexes[fk.name] && indexes[fk.name][fk.value] && indexes[fk.name][fk.value].indexOf(id);
                 if (fkIdx >= 0) {
                     var idxBucket = indexes[fk.name][fk.value].slice();
                     idxBucket.splice(fkIdx, 1);
@@ -122,11 +122,11 @@ var TableModel = /** @class */ (function () {
         var records = Object.keys(table.byId).map(function (id) {
             if (!_this.state.byId[id])
                 throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
-            var newRecord = table.byId[id];
             var oldRecord = state.byId[id];
+            var newRecord = __assign({}, oldRecord, table.byId[id]);
             var isModified = _this.schema.isModified(oldRecord, newRecord);
             if (isModified) {
-                state.byId[id] = __assign({}, oldRecord, newRecord);
+                state.byId[id] = newRecord;
                 dirty = true;
             }
             return ModelFactory.default.newRecord(id, _this);
