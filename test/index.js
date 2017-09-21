@@ -1,5 +1,5 @@
 var test = require('tape');
-var reduxDB = require("../src/cjs");
+var reduxDB = require("../cjs");
 
 let state = {};
 const blogPosts = [
@@ -147,4 +147,15 @@ test('computed property', function (t) {
     const recordModel = BlogPost.get(1);
 
     t.equal(recordModel.computed.value, "User 1", "computed property exists");
+});
+
+test('get by foreign key', function (t) {
+    t.plan(1);
+
+    const session = db.createSession(state);
+    const { Comment, BlogPost } = session.tables;
+    const post = BlogPost.get(1);
+    const commentsByPost = Comment.getByFk( "post", 1);
+
+    t.deepEqual(commentsByPost.value, post.comments.value, "getByFk is equivalent to get by owner property");
 });

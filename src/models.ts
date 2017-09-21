@@ -9,6 +9,7 @@ import {
     NormalizeContext,
     Table,
     TableRecord,
+    TableRecordSet,
     Session
 } from "./schema";
 import * as utils from "./utils";
@@ -59,13 +60,19 @@ export class TableModel<T extends TableRecord> implements Table {
         return ModelFactory.default.newRecord<T>(id, this);
     }
 
+    getOrDefault(id: number | string) {
+        return this.exists(id) ? this.get(id) : null;
+    }
+
+    getByFk(fieldName: string, value: number | string): RecordSet<T> {
+        const field = this.schema.fields.filter(f => f.type === "FK" && f.name === fieldName)[0];
+        if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
+        return new RecordSet<T>(this, field, { id: value.toString() });
+    }
+
     value(id: number | string) {
         if (typeof id === "number") id = id.toString();
         return this.state.byId[id];
-    }
-
-    getOrDefault(id: number | string) {
-        return this.exists(id) ? this.get(id) : null;
     }
 
     exists(id: number | string) {
@@ -260,13 +267,13 @@ export class RecordField {
     }
 }
 
-export class RecordSet<T extends TableRecord> {
+export class RecordSet<T extends TableRecord> implements TableRecordSet {
 
     readonly table: Table;
     readonly schema: FieldSchema;
-    readonly owner: TableRecord;
+    readonly owner: { id: string };
 
-    constructor(table: Table, schema: FieldSchema, owner: TableRecord) {
+    constructor(table: Table, schema: FieldSchema, owner: { id: string }) {
 
         this.table = table;
         this.schema = schema;

@@ -1,4 +1,4 @@
-import { TableSchema, FieldSchema, TableState, Table, TableRecord, Session } from "./schema";
+import { TableSchema, FieldSchema, TableState, Table, TableRecord, TableRecordSet, Session } from "./schema";
 export declare class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
@@ -11,8 +11,9 @@ export declare class TableModel<T extends TableRecord> implements Table {
     filter(predicate: (record: T, index: number) => boolean): T[];
     index(name: string, fk: string): string[];
     get(id: number | string): T;
-    value(id: number | string): any;
     getOrDefault(id: number | string): T | null;
+    getByFk(fieldName: string, value: number | string): RecordSet<T>;
+    value(id: number | string): any;
     exists(id: number | string): boolean;
     insert(data: any): T;
     insertMany(data: any): T[];
@@ -42,11 +43,15 @@ export declare class RecordField {
     constructor(schema: FieldSchema, record: TableRecord);
     readonly value: any;
 }
-export declare class RecordSet<T extends TableRecord> {
+export declare class RecordSet<T extends TableRecord> implements TableRecordSet {
     readonly table: Table;
     readonly schema: FieldSchema;
-    readonly owner: TableRecord;
-    constructor(table: Table, schema: FieldSchema, owner: TableRecord);
+    readonly owner: {
+        id: string;
+    };
+    constructor(table: Table, schema: FieldSchema, owner: {
+        id: string;
+    });
     readonly value: any[];
     readonly ids: string[];
     readonly length: number;

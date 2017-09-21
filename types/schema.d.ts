@@ -5,6 +5,7 @@ export interface Table {
     dirty: boolean;
     get: (id: string | number) => TableRecord;
     getOrDefault: (id: string | number) => TableRecord | null;
+    getByFk: (fieldName: string, id: string | number) => TableRecordSet;
     all(): TableRecord[];
     filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
     exists: (id: string | number) => boolean;
@@ -23,6 +24,17 @@ export interface TableRecord {
     value: any;
     update(data: any): TableRecord;
     delete(): void;
+}
+export interface TableRecordSet {
+    value: any[];
+    ids: string[];
+    length: number;
+    all(): TableRecord[];
+    add(data: any): void;
+    remove(data: any): void;
+    update(data: any): TableRecordSet;
+    delete(): void;
+    map<M>(callback: (record: TableRecord) => M): M[];
 }
 export interface SchemaDDL {
     [key: string]: TableDDL;
