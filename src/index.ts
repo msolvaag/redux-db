@@ -97,13 +97,11 @@ export class DatabaseSession implements Session {
         if (this.options.readOnly) throw new Error("Invalid attempt to alter a readonly session.");
 
         Object.keys(this.tables).forEach(table => {
-            if (this.tables[table].dirty) {
-                const oldState = this.state[table];
-                const newState = this.tables[table].state;
+            const oldState = this.state[table];
+            const newState = this.tables[table].state;
 
-                if (oldState !== newState)
-                    this.state = { ...this.state, [table]: newState };
-            }
+            if (oldState !== newState)
+                this.state = { ...this.state, [table]: newState };
         });
         return this.state as any;
     }

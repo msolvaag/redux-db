@@ -340,13 +340,15 @@ class ModelFactory {
 
         const refTable = schema.references && record.table.session.tables[schema.references] as Table;
         if (!refTable)
-            throw new Error(`The foreign key ${schema.name} references an unregistered table: ${schema.table.name}`);
+            throw new Error(`The foreign key: "${schema.name}" references an unregistered table: "${schema.references}" in the current session.`);
 
         return refTable.getOrDefault(schema.getRecordValue(record));
     }
 
     newRecordSet(schema: FieldSchema, record: TableRecord) {
         const refTable = record.table.session.tables[schema.table.name] as Table;
+        if (!refTable)
+            throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
         return new RecordSet(refTable, schema, record);
     }
