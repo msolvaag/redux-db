@@ -13,5 +13,8 @@ Feel free to create issues and PR's. You may also comment/ask questions on the g
 ## Dependencies
 * none
 
+## Performance & size
+redux-db uses internal indexes to speed up lookups and is quite fast at the current state. However, optimizing performance and build size is a high priority forward. Current size is small, only ~4K minified and gzipped.
+
 ## Credits
 This project is greatly inspired by libraries such as [normalizr](https://www.npmjs.com/package/normalizr) and [redux-orm](https://www.npmjs.com/package/redux-orm). redux-db is however a complete rewrite and only lends it's basic consepts.
