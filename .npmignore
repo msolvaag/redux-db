@@ -1,0 +1,10 @@
+.vscode
+node_modules
+example
+docs
+_config.yaml
+logo.*
+gulpfile.js
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+tsconfig.*
