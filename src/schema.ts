@@ -42,6 +42,7 @@ export interface FieldDDL {
     relationName?: string;
     propName?: string;
     value?: (record: any, context?: ComputeContext) => any;
+    cascadeOnDelete?: boolean;
 
     // deprecated. use type instead.
     constraint?: "PK" | "FK";
@@ -200,7 +201,7 @@ export class TableSchema {
                     if (fkPks.length > 1)
                         throw new Error(`Invalid schema definition. The field "${this.name}.${fk.name}" is referencing table "${fk.refTable.name}", but the given data is an array.`);
 
-                    record[fk.name] = fkPks[0];
+                    record[fk.name] = fk.value = fkPks[0];
                 }
 
                 // all FK's are auto indexed

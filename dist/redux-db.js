@@ -152,7 +152,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                         var fkPks = fk.refTable.normalize(fk.value, ctx);
                         if (fkPks.length > 1)
                             throw new Error("Invalid schema definition. The field \"" + _this.name + "." + fk.name + "\" is referencing table \"" + fk.refTable.name + "\", but the given data is an array.");
-                        record[fk.name] = fkPks[0];
+                        record[fk.name] = fk.value = fkPks[0];
                     }
                     // all FK's are auto indexed
                     if (fk.value !== null && fk.value !== undefined) {
@@ -329,7 +329,11 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             if (ref) {
                 var fks = this.schema.getForeignKeys(ref);
                 fks.forEach(function (fk) {
+<<<<<<< HEAD
                     var fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(sid);
+=======
+                    var fkIdx = fk.value && indexes[fk.name] && indexes[fk.name][fk.value] && indexes[fk.name][fk.value].indexOf(id);
+>>>>>>> 3b93bf0045ea6117b3f37e5f87bfa870d7be5fb1
                     if (fkIdx >= 0) {
                         var idxBucket = indexes[fk.name][fk.value].slice();
                         idxBucket.splice(fkIdx, 1);
@@ -356,11 +360,11 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             var records = Object.keys(table.byId).map(function (id) {
                 if (!_this.state.byId[id])
                     throw new Error("Failed to apply update. No \"" + _this.schema.name + "\" record with id: " + id + " exists.");
-                var newRecord = table.byId[id];
                 var oldRecord = state.byId[id];
+                var newRecord = __assign({}, oldRecord, table.byId[id]);
                 var isModified = _this.schema.isModified(oldRecord, newRecord);
                 if (isModified) {
-                    state.byId[id] = __assign({}, oldRecord, newRecord);
+                    state.byId[id] = newRecord;
                     dirty = true;
                 }
                 return ModelFactory.default.newRecord(id, _this);

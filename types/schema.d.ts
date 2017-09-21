@@ -35,6 +35,7 @@ export interface FieldDDL {
     relationName?: string;
     propName?: string;
     value?: (record: any, context?: ComputeContext) => any;
+    cascadeOnDelete?: boolean;
     constraint?: "PK" | "FK";
 }
 export interface ComputeContext {
