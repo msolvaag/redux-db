@@ -17,6 +17,7 @@ export class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
+    dirty = false;
 
     constructor(session: Session, state: TableState = { ids: [], byId: {}, indexes: {} }, schema: TableSchema) {
         this.session = session;
@@ -107,13 +108,15 @@ export class TableModel<T extends TableRecord> implements Table {
         if (idx >= 0)
             ids.splice(idx, 1);
 
-        if (record) 
+        if (record)
             this._cleanIndexes(id, record, indexes);
-        
+
+        this.dirty = true;
         this.state = { ...this.state, byId: byId, ids: ids, indexes: indexes };
     }
 
     insertNormalized(table: TableState) {
+        this.dirty = true;
         this.state = {
             ...this.state,
             ids: utils.arrayMerge(this.state.ids, table.ids),
@@ -144,6 +147,7 @@ export class TableModel<T extends TableRecord> implements Table {
         });
 
         if (dirty) {
+            this.dirty = true;
             this.state = state;
             this._updateIndexes(table);
         }

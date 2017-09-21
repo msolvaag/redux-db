@@ -23,6 +23,7 @@ var utils = require("./utils");
 var TableModel = /** @class */ (function () {
     function TableModel(session, state, schema) {
         if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
+        this.dirty = false;
         this.session = session;
         this.state = state;
         this.schema = schema;
@@ -101,10 +102,12 @@ var TableModel = /** @class */ (function () {
             ids.splice(idx, 1);
         if (record)
             this._cleanIndexes(id, record, indexes);
+        this.dirty = true;
         this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
     };
     TableModel.prototype.insertNormalized = function (table) {
         var _this = this;
+        this.dirty = true;
         this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
         return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
@@ -125,6 +128,7 @@ var TableModel = /** @class */ (function () {
             return ModelFactory.default.newRecord(id, _this);
         });
         if (dirty) {
+            this.dirty = true;
             this.state = state;
             this._updateIndexes(table);
         }

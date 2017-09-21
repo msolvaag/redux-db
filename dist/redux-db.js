@@ -250,6 +250,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
     var TableModel = /** @class */ (function () {
         function TableModel(session, state, schema) {
             if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
+            this.dirty = false;
             this.session = session;
             this.state = state;
             this.schema = schema;
@@ -328,10 +329,12 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 ids.splice(idx, 1);
             if (record)
                 this._cleanIndexes(id, record, indexes);
+            this.dirty = true;
             this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
         };
         TableModel.prototype.insertNormalized = function (table) {
             var _this = this;
+            this.dirty = true;
             this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
             this._updateIndexes(table);
             return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
@@ -352,6 +355,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 return ModelFactory.default.newRecord(id, _this);
             });
             if (dirty) {
+                this.dirty = true;
                 this.state = state;
                 this._updateIndexes(table);
             }
@@ -567,7 +571,6 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
     var Database = /** @class */ (function () {
         function Database(schema, options) {
             var _this = this;
-            this._cache = {};
             this.options = options;
             this.normalizeHooks = options.onNormalize || {};
             this.tables = Object.keys(schema).map(function (tableName) { return new schema_2.TableSchema(_this, tableName, schema[tableName]); });
@@ -609,12 +612,6 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
             var _a;
         };
-        Database.prototype.cache = function (key, valueFn) {
-            return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));
-        };
-        Database.prototype.clearCache = function (key) {
-            delete this._cache[key];
-        };
         return Database;
     }());
     exports.Database = Database;
@@ -647,10 +644,12 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             if (this.options.readOnly)
                 throw new Error("Invalid attempt to alter a readonly session.");
             Object.keys(this.tables).forEach(function (table) {
-                var oldState = _this.state[table];
-                var newState = _this.tables[table].state;
-                if (oldState !== newState)
-                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+                if (_this.tables[table].dirty) {
+                    var oldState = _this.state[table];
+                    var newState = _this.tables[table].state;
+                    if (oldState !== newState)
+                        _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+                }
                 var _a;
             });
             return this.state;

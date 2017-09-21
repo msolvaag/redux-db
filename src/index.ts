@@ -6,8 +6,7 @@ export interface Reducer {
     (session: any, action: any): void;
 }
 
-const defaultOptions = {
-};
+const defaultOptions = {};
 
 export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => {
     return new Database(schema, { ...defaultOptions, ...options });
@@ -17,8 +16,6 @@ export class Database implements DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
     normalizeHooks: { [key: string]: Normalizer };
-
-    private _cache: any = {};
 
     constructor(schema: SchemaDDL, options: DatabaseOptions) {
         this.options = options;
@@ -65,14 +62,6 @@ export class Database implements DatabaseSchema {
 
         return this.selectTables({ [name]: tableState })[name];
     }
-
-    cache<T>(key: string, valueFn?: () => T) {
-        return (this._cache[key] || (valueFn && (this._cache[key] = valueFn()))) as T;
-    }
-
-    clearCache(key: string) {
-        delete this._cache[key];
-    }
 }
 
 export class DatabaseSession implements Session {
@@ -108,11 +97,13 @@ export class DatabaseSession implements Session {
         if (this.options.readOnly) throw new Error("Invalid attempt to alter a readonly session.");
 
         Object.keys(this.tables).forEach(table => {
-            const oldState = this.state[table];
-            const newState = this.tables[table].state;
+            if (this.tables[table].dirty) {
+                const oldState = this.state[table];
+                const newState = this.tables[table].state;
 
-            if (oldState !== newState)
-                this.state = { ...this.state, [table]: newState };
+                if (oldState !== newState)
+                    this.state = { ...this.state, [table]: newState };
+            }
         });
         return this.state as any;
     }

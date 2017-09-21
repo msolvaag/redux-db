@@ -3,6 +3,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState;
+    dirty: boolean;
     constructor(session: Session, state: TableState | undefined, schema: TableSchema);
     all(): T[];
     readonly length: number;

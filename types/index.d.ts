@@ -10,7 +10,6 @@ export declare class Database implements DatabaseSchema {
     normalizeHooks: {
         [key: string]: Normalizer;
     };
-    private _cache;
     constructor(schema: SchemaDDL, options: DatabaseOptions);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;
     createSession(state: any, options?: SessionOptions): DatabaseSession;
@@ -18,8 +17,6 @@ export declare class Database implements DatabaseSchema {
         [key: string]: TableModel<any>;
     };
     selectTable<T = any>(tableState: any, schemaName?: string): TableModel<any>;
-    cache<T>(key: string, valueFn?: () => T): T;
-    clearCache(key: string): void;
 }
 export declare class DatabaseSession implements Session {
     db: DatabaseSchema;

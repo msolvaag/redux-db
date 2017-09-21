@@ -21,7 +21,6 @@ exports.createDatabase = function (schema, options) {
 var Database = /** @class */ (function () {
     function Database(schema, options) {
         var _this = this;
-        this._cache = {};
         this.options = options;
         this.normalizeHooks = options.onNormalize || {};
         this.tables = Object.keys(schema).map(function (tableName) { return new schema_1.TableSchema(_this, tableName, schema[tableName]); });
@@ -63,12 +62,6 @@ var Database = /** @class */ (function () {
         return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
         var _a;
     };
-    Database.prototype.cache = function (key, valueFn) {
-        return (this._cache[key] || (valueFn && (this._cache[key] = valueFn())));
-    };
-    Database.prototype.clearCache = function (key) {
-        delete this._cache[key];
-    };
     return Database;
 }());
 exports.Database = Database;
@@ -101,10 +94,12 @@ var DatabaseSession = /** @class */ (function () {
         if (this.options.readOnly)
             throw new Error("Invalid attempt to alter a readonly session.");
         Object.keys(this.tables).forEach(function (table) {
-            var oldState = _this.state[table];
-            var newState = _this.tables[table].state;
-            if (oldState !== newState)
-                _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+            if (_this.tables[table].dirty) {
+                var oldState = _this.state[table];
+                var newState = _this.tables[table].state;
+                if (oldState !== newState)
+                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+            }
             var _a;
         });
         return this.state;

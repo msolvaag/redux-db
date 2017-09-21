@@ -4,6 +4,7 @@ export interface Table {
     session: Session;
     schema: TableSchema;
     state: TableState;
+    dirty: boolean;
 
     get: (id: string | number) => TableRecord;
     getOrDefault: (id: string | number) => TableRecord | null;
