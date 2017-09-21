@@ -532,11 +532,13 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 return new RecordField(schema, record);
             var refTable = schema.references && record.table.session.tables[schema.references];
             if (!refTable)
-                throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
+                throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
             return refTable.getOrDefault(schema.getRecordValue(record));
         };
         ModelFactory.prototype.newRecordSet = function (schema, record) {
             var refTable = record.table.session.tables[schema.table.name];
+            if (!refTable)
+                throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
             return new RecordSet(refTable, schema, record);
         };
         ModelFactory.prototype._createRecordModelClass = function (schema) {
@@ -650,12 +652,10 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             if (this.options.readOnly)
                 throw new Error("Invalid attempt to alter a readonly session.");
             Object.keys(this.tables).forEach(function (table) {
-                if (_this.tables[table].dirty) {
-                    var oldState = _this.state[table];
-                    var newState = _this.tables[table].state;
-                    if (oldState !== newState)
-                        _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
-                }
+                var oldState = _this.state[table];
+                var newState = _this.tables[table].state;
+                if (oldState !== newState)
+                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
                 var _a;
             });
             return this.state;

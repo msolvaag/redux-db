@@ -303,11 +303,13 @@ var ModelFactory = /** @class */ (function () {
             return new RecordField(schema, record);
         var refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
-            throw new Error("The foreign key " + schema.name + " references an unregistered table: " + schema.table.name);
+            throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
         return refTable.getOrDefault(schema.getRecordValue(record));
     };
     ModelFactory.prototype.newRecordSet = function (schema, record) {
         var refTable = record.table.session.tables[schema.table.name];
+        if (!refTable)
+            throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
         return new RecordSet(refTable, schema, record);
     };
     ModelFactory.prototype._createRecordModelClass = function (schema) {
