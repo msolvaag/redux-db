@@ -2,7 +2,7 @@
 node_modules
 example
 docs
-_config.yaml
+_config.yml
 logo.*
 gulpfile.js
 CODE_OF_CONDUCT.md
