@@ -1,6 +1,7 @@
 .vscode
 node_modules
 example
+src
 docs
 _config.yml
 logo.*
