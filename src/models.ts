@@ -4,6 +4,7 @@ import {
     FieldSchema,
     DatabaseState,
     TableState,
+    TableIndex,
     NormalizedState,
     NormalizeContext,
     Table,
@@ -98,7 +99,7 @@ export class TableModel<T extends TableRecord> implements Table {
         const byId = { ...this.state.byId },
             ids = this.state.ids.slice(),
             indexes = { ...this.state.indexes },
-            ref = byId[id],
+            record = byId[id],
             sid = id;
 
         delete byId[id];
@@ -106,27 +107,9 @@ export class TableModel<T extends TableRecord> implements Table {
         if (idx >= 0)
             ids.splice(idx, 1);
 
-        if (ref) {
-            const fks = this.schema.getForeignKeys(ref);
-            fks.forEach(fk => {
-<<<<<<< HEAD
-                const fkIdx = fk.value && indexes[fk.name][fk.value].indexOf(sid);
-=======
-                const fkIdx = fk.value && indexes[fk.name] && indexes[fk.name][fk.value] && indexes[fk.name][fk.value].indexOf(id);
->>>>>>> 3b93bf0045ea6117b3f37e5f87bfa870d7be5fb1
-                if (fkIdx >= 0) {
-                    const idxBucket = indexes[fk.name][fk.value].slice();
-                    idxBucket.splice(fkIdx, 1);
-
-                    indexes[fk.name][fk.value] = idxBucket;
-                } else if (indexes[fk.name]) {
-                    delete indexes[fk.name][id];
-                    if (Object.keys(indexes[fk.name]).length === 0)
-                        delete indexes[fk.name];
-                }
-            });
-        }
-
+        if (record) 
+            this._cleanIndexes(id, record, indexes);
+        
         this.state = { ...this.state, byId: byId, ids: ids, indexes: indexes };
     }
 
@@ -208,6 +191,27 @@ export class TableModel<T extends TableRecord> implements Table {
                 const idxBucket = idx[fk] || (idx[fk] = []);
                 idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
             });
+        });
+    }
+
+    private _cleanIndexes(id: string, record: any, indexes: TableIndex) {
+        const fks = this.schema.getForeignKeys(record);
+
+        fks.forEach(fk => {
+            let fkIdx = -1;
+            if (fk.value && indexes[fk.name] && indexes[fk.name][fk.value])
+                fkIdx = indexes[fk.name][fk.value].indexOf(id);
+
+            if (fkIdx >= 0) {
+                const idxBucket = indexes[fk.name][fk.value].slice();
+                idxBucket.splice(fkIdx, 1);
+
+                indexes[fk.name][fk.value] = idxBucket;
+            } else if (indexes[fk.name]) {
+                delete indexes[fk.name][id];
+                if (Object.keys(indexes[fk.name]).length === 0)
+                    delete indexes[fk.name];
+            }
         });
     }
 }

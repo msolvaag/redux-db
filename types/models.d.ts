@@ -24,6 +24,7 @@ export declare class TableModel<T extends TableRecord> implements Table {
     upsertNormalized(norm: TableState): T[];
     private _normalizedAction(data, action);
     private _updateIndexes(table);
+    private _cleanIndexes(id, record, indexes);
 }
 export declare class RecordModel<T> implements TableRecord {
     table: Table;

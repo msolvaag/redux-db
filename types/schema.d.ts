@@ -66,10 +66,11 @@ export interface TableState {
         [key: string]: any;
     };
     ids: string[];
-    indexes: {
-        [key: string]: {
-            [key: string]: string[];
-        };
+    indexes: TableIndex;
+}
+export interface TableIndex {
+    [key: string]: {
+        [key: string]: string[];
     };
 }
 export interface RecordState {

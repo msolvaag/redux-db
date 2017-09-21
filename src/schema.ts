@@ -78,10 +78,12 @@ export interface TableState {
     name?: string;
     byId: { [key: string]: any };
     ids: string[];
-    indexes: {
-        [key: string]: {
-            [key: string]: string[]
-        }
+    indexes: TableIndex;
+}
+
+export interface TableIndex {
+    [key: string]: {
+        [key: string]: string[]
     };
 }
 
