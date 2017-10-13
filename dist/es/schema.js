@@ -1,4 +1,3 @@
-"use strict";
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -7,8 +6,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-var utils = require("./utils");
+import * as utils from "./utils";
 var PK = "PK", FK = "FK", NONE = "NONE";
 var NormalizeContext = /** @class */ (function () {
     function NormalizeContext(schema) {
@@ -23,7 +21,7 @@ var NormalizeContext = /** @class */ (function () {
     };
     return NormalizeContext;
 }());
-exports.NormalizeContext = NormalizeContext;
+export { NormalizeContext };
 var TableSchema = /** @class */ (function () {
     function TableSchema(db, name, schema) {
         var _this = this;
@@ -31,11 +29,13 @@ var TableSchema = /** @class */ (function () {
         this.db = db;
         this.name = name;
         this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
+        this.fieldsByName = utils.toObject(this.fields, function (f) { return f.name; });
         this._primaryKeyFields = this.fields.filter(function (f) { return f.type === PK; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.type === FK; });
         this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
     }
     /// Connects this schema's fields with other tables.
+    /// Used internally in the setup of the schema object model.
     TableSchema.prototype.connect = function (schemas) {
         var _this = this;
         schemas.forEach(function (schema) {
@@ -75,11 +75,12 @@ var TableSchema = /** @class */ (function () {
                 }
                 // all FK's are auto indexed
                 if (fk.value !== null && fk.value !== undefined) {
-                    if (!tbl.indexes[fk.name])
-                        tbl.indexes[fk.name] = {};
-                    if (!tbl.indexes[fk.name][fk.value])
-                        tbl.indexes[fk.name][fk.value] = [];
-                    tbl.indexes[fk.name][fk.value].push(pk);
+                    var idx = tbl.indexes[fk.name] || (tbl.indexes[fk.name] = { unique: fk.unique, values: {} });
+                    if (!idx.values[fk.value])
+                        idx.values[fk.value] = [];
+                    if (idx.unique && idx.values.length)
+                        throw new Error("The insert/update operation violates the unique foreign key \"" + _this.name + "." + fk.name + "\".");
+                    idx.values[fk.value].push(pk);
                 }
             });
             var relations = {};
@@ -128,7 +129,7 @@ var TableSchema = /** @class */ (function () {
     };
     /// Gets the values of the FK's for the given record.
     TableSchema.prototype.getForeignKeys = function (record) {
-        return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable }); });
+        return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique }); });
     };
     /// Determines wether two records are equal, not modified.
     TableSchema.prototype.isModified = function (x, y) {
@@ -139,19 +140,27 @@ var TableSchema = /** @class */ (function () {
     };
     return TableSchema;
 }());
-exports.TableSchema = TableSchema;
+export { TableSchema };
 var FieldSchema = /** @class */ (function () {
     function FieldSchema(table, name, schema) {
         this.table = table;
+        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
         this.name = name;
         this.propName = schema.propName || name;
-        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
-        this.references = schema.references;
-        this.relationName = schema.relationName;
-        this._valueFn = schema.value ? schema.value.bind(this) : null;
+        this._valueFactory = schema.value ? schema.value.bind(this) : null;
+        if (schema.type === "FK") {
+            this.references = schema.references;
+            this.relationName = schema.relationName;
+            this.cascade = schema.cascade === true;
+            this.unique = schema.unique === true;
+        }
+        else {
+            this.cascade = false;
+            this.unique = false;
+        }
     }
     FieldSchema.prototype.getValue = function (data, record) {
-        return this._valueFn ? this._valueFn(data, {
+        return this._valueFactory ? this._valueFactory(data, {
             schema: this,
             record: record
         }) : data[this.name];
@@ -161,4 +170,4 @@ var FieldSchema = /** @class */ (function () {
     };
     return FieldSchema;
 }());
-exports.FieldSchema = FieldSchema;
+export { FieldSchema };

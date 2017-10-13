@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -16,8 +17,9 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-import { NormalizeContext } from "./schema";
-import * as utils from "./utils";
+Object.defineProperty(exports, "__esModule", { value: true });
+var schema_1 = require("./schema");
+var utils = require("./utils");
 var TableModel = /** @class */ (function () {
     function TableModel(session, state, schema) {
         if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
@@ -50,8 +52,8 @@ var TableModel = /** @class */ (function () {
         return this.all().filter(predicate);
     };
     TableModel.prototype.index = function (name, fk) {
-        if (this.state.indexes[name] && this.state.indexes[name][fk])
-            return this.state.indexes[name][fk];
+        if (this.state.indexes[name] && this.state.indexes[name].values[fk])
+            return this.state.indexes[name].values[fk];
         else
             return [];
     };
@@ -99,7 +101,10 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype.delete = function (id) {
         if (typeof id === "number")
             id = id.toString();
-        var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), record = byId[id], sid = id;
+        if (!this.exists(id))
+            return false;
+        this._deleteCascade(id);
+        var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), record = byId[id];
         delete byId[id];
         var idx = ids.indexOf(id);
         if (idx >= 0)
@@ -108,6 +113,7 @@ var TableModel = /** @class */ (function () {
             this._cleanIndexes(id, record, indexes);
         this.dirty = true;
         this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
+        return true;
     };
     TableModel.prototype.insertNormalized = function (table) {
         var _this = this;
@@ -157,7 +163,7 @@ var TableModel = /** @class */ (function () {
         return refs;
     };
     TableModel.prototype._normalizedAction = function (data, action) {
-        var norm = new NormalizeContext(this.schema);
+        var norm = new schema_1.NormalizeContext(this.schema);
         this.schema.normalize(data, norm);
         var table = norm.output[this.schema.name];
         var records = table ? action.call(this, table) : [];
@@ -167,10 +173,13 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype._updateIndexes = function (table) {
         var _this = this;
         Object.keys(table.indexes).forEach(function (key) {
-            var idx = _this.state.indexes[key] || (_this.state.indexes[key] = {});
-            Object.keys(table.indexes[key]).forEach(function (fk) {
-                var idxBucket = idx[fk] || (idx[fk] = []);
-                idx[fk] = utils.arrayMerge(idxBucket, table.indexes[key][fk]);
+            var idx = _this.state.indexes[key] || (_this.state.indexes[key] = { unique: table.indexes[key].unique, values: {} });
+            Object.keys(table.indexes[key].values).forEach(function (fk) {
+                var idxBucket = idx.values[fk] || (idx.values[fk] = []);
+                var modifiedBucket = utils.arrayMerge(idxBucket, table.indexes[key].values[fk]);
+                if (idx.unique && modifiedBucket.length > 1)
+                    throw new Error("The insert/update operation violates the unique foreign key \"" + _this.schema.name + "." + key + "\".");
+                idx.values[fk] = modifiedBucket;
             });
         });
     };
@@ -178,23 +187,32 @@ var TableModel = /** @class */ (function () {
         var fks = this.schema.getForeignKeys(record);
         fks.forEach(function (fk) {
             var fkIdx = -1;
-            if (fk.value && indexes[fk.name] && indexes[fk.name][fk.value])
-                fkIdx = indexes[fk.name][fk.value].indexOf(id);
+            if (fk.value && indexes[fk.name] && indexes[fk.name].values[fk.value])
+                fkIdx = indexes[fk.name].values[fk.value].indexOf(id);
             if (fkIdx >= 0) {
-                var idxBucket = indexes[fk.name][fk.value].slice();
+                var idxBucket = indexes[fk.name].values[fk.value].slice();
                 idxBucket.splice(fkIdx, 1);
-                indexes[fk.name][fk.value] = idxBucket;
+                indexes[fk.name].values[fk.value] = idxBucket;
             }
             else if (indexes[fk.name]) {
-                delete indexes[fk.name][id];
-                if (Object.keys(indexes[fk.name]).length === 0)
+                delete indexes[fk.name].values[id];
+                if (Object.keys(indexes[fk.name].values).length === 0)
                     delete indexes[fk.name];
             }
         });
     };
+    TableModel.prototype._deleteCascade = function (id) {
+        var cascade = this.schema.relations.filter(function (rel) { return rel.relationName && rel.cascade; });
+        if (cascade.length) {
+            var model_1 = this.get(id);
+            model_1 && cascade.forEach(function (schema) {
+                model_1[schema.relationName].delete();
+            });
+        }
+    };
     return TableModel;
 }());
-export { TableModel };
+exports.TableModel = TableModel;
 var RecordModel = /** @class */ (function () {
     function RecordModel(id, table) {
         this.id = id;
@@ -216,7 +234,7 @@ var RecordModel = /** @class */ (function () {
     };
     return RecordModel;
 }());
-export { RecordModel };
+exports.RecordModel = RecordModel;
 var RecordField = /** @class */ (function () {
     function RecordField(schema, record) {
         this.name = schema.name;
@@ -232,7 +250,7 @@ var RecordField = /** @class */ (function () {
     });
     return RecordField;
 }());
-export { RecordField };
+exports.RecordField = RecordField;
 var RecordSet = /** @class */ (function () {
     function RecordSet(table, schema, owner) {
         this.table = table;
@@ -283,14 +301,45 @@ var RecordSet = /** @class */ (function () {
     };
     RecordSet.prototype.delete = function () {
         var _this = this;
-        this.all().forEach(function (obj) { return _this.table.delete(obj.id); });
+        this.ids.forEach(function (id) { return _this.table.delete(id); });
     };
     RecordSet.prototype._normalize = function (data) {
         return this.table.schema.inferRelations(data, this.schema, this.owner.id);
     };
     return RecordSet;
 }());
-export { RecordSet };
+exports.RecordSet = RecordSet;
+/// Represents a single dynamic one 2 one relation
+var RecordRelation = /** @class */ (function () {
+    function RecordRelation(table, schema, owner) {
+        this.table = table;
+        this.schema = schema;
+        this.owner = owner;
+    }
+    Object.defineProperty(RecordRelation.prototype, "id", {
+        get: function () {
+            return this.table.index(this.schema.name, this.owner.id)[0];
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RecordRelation.prototype, "value", {
+        get: function () {
+            return this.table.value(this.id);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    RecordRelation.prototype.delete = function () {
+        this.table.delete(this.id);
+    };
+    RecordRelation.prototype.update = function (data) {
+        this.table.update(data);
+        return this;
+    };
+    return RecordRelation;
+}());
+exports.RecordRelation = RecordRelation;
 var ModelFactory = /** @class */ (function () {
     function ModelFactory() {
         this._recordClass = {};
@@ -312,6 +361,16 @@ var ModelFactory = /** @class */ (function () {
             throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
         return new RecordSet(refTable, schema, record);
     };
+    ModelFactory.prototype.newRecordRelation = function (schema, record) {
+        var refTable = record.table.session.tables[schema.table.name];
+        if (!refTable)
+            throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
+        var id = refTable.index(schema.name, record.id)[0];
+        if (id === undefined)
+            return null;
+        else
+            return ModelFactory.default.newRecord(id, refTable);
+    };
     ModelFactory.prototype._createRecordModelClass = function (schema) {
         var Record = /** @class */ (function (_super) {
             __extends(Record, _super);
@@ -322,15 +381,16 @@ var ModelFactory = /** @class */ (function () {
             }
             return Record;
         }(RecordModel));
-        var defineProperty = function (name, field, factory) {
+        var defineProperty = function (name, field, factory, cache) {
+            if (cache === void 0) { cache = true; }
             Object.defineProperty(Record.prototype, name, {
                 get: function () {
-                    return this._fields[name] || (this._fields[name] = factory(field, this));
+                    return cache ? (this._fields[name] || (this._fields[name] = factory(field, this))) : factory(field, this);
                 }
             });
         };
         schema.fields.forEach(function (f) { return f.type !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField); });
-        schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, ModelFactory.default.newRecordSet); });
+        schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, f.unique ? ModelFactory.default.newRecordRelation : ModelFactory.default.newRecordSet, !f.unique); });
         return Record;
     };
     ModelFactory.default = new ModelFactory();

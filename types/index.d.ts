@@ -14,9 +14,9 @@ export declare class Database implements DatabaseSchema {
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;
     createSession(state: any, options?: SessionOptions): DatabaseSession;
     selectTables(state: any): {
-        [key: string]: TableModel<any>;
+        [key: string]: TableModel<any, {}>;
     };
-    selectTable<T = any>(tableState: any, schemaName?: string): TableModel<any>;
+    selectTable<T = any>(tableState: any, schemaName?: string): TableModel<any, {}>;
 }
 export declare class DatabaseSession implements Session {
     db: DatabaseSchema;

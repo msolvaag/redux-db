@@ -6,7 +6,7 @@
     "importHelpers": false,
     "removeComments": false,
     "target": "es5",
-    "outDir": "./cjs",
+    "outDir": "./dist/cjs",
     "sourceMap": false,
     "noImplicitAny": true,
     "module": "commonjs",

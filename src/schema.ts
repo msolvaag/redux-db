@@ -1,68 +1,96 @@
 import * as utils from "./utils";
 
-export interface Table {
+const PK = "PK", FK = "FK", NONE = "NONE";
+
+export type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
+
+export interface Table<T={}> {
     session: Session;
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
 
-    get: (id: string | number) => TableRecord;
-    getOrDefault: (id: string | number) => TableRecord | null;
-    getByFk: (fieldName: string, id: string | number) => TableRecordSet;
-    all(): TableRecord[];
-    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
+    get: (id: string | number) => TableRecord<T>;
+    getOrDefault: (id: string | number) => TableRecord<T> | null;
+    getByFk: (fieldName: string, id: string | number) => TableRecordSet<T>;
+    all(): TableRecord<T>[];
+    filter: (callback: (record: TableRecord<T>) => boolean) => TableRecord<T>[];
     exists: (id: string | number) => boolean;
     index: (name: string, fk: string) => string[];
-    value: (id: string | number) => any;
+    value: (id: string | number) => T;
 
-    upsert: (data: any) => TableRecord;
-    insert: (data: any) => TableRecord;
-    insertMany: (data: any) => TableRecord[];
-    update: (data: any) => TableRecord;
-    updateMany: (data: any) => TableRecord[];
+    upsert: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
+    insert: (data: T | T[]) => TableRecord<T>;
+    insertMany: (data: T | T[]) => TableRecord<T>[];
+    update: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
+    updateMany: (data: Partial<T> | Partial<T>[]) => TableRecord<T>[];
     delete: (id: string | number) => void;
 }
 
-export interface TableRecord {
+export interface TableRecord<T={}> {
     id: string;
     table: Table;
-    value: any;
+    value: T;
 
-    update(data: any): TableRecord;
+    update(data: T): TableRecord<T>;
     delete(): void;
 }
 
-export interface TableRecordSet {
-    value: any[];
+export interface TableRecordSet<T> {
+    value: T[];
     ids: string[]
     length: number;
 
-    all(): TableRecord[];
+    all(): TableRecord<T>[];
 
-    add(data: any): void;
-    remove(data: any): void;
+    add(data: T | T[]): void;
+    remove(data: Partial<T>): void;
 
-    update(data: any): TableRecordSet;
+    update(data: Partial<T> | Partial<T>[]): TableRecordSet<T>;
     delete(): void;
 
-    map<M>(callback: (record: TableRecord) => M): M[];
+    map<M>(callback: (record: TableRecord<T>) => M): M[];
 }
 
+// Defines a database schema
 export interface SchemaDDL {
     [key: string]: TableDDL;
 }
+
+// Defines a table schema
 export interface TableDDL {
     [key: string]: FieldDDL;
 }
-export interface FieldDDL {
-    type?: FieldType,
-    references?: string;
-    relationName?: string;
-    propName?: string;
-    value?: (record: any, context?: ComputeContext) => any;
-    cascadeOnDelete?: boolean;
 
-    // deprecated. use type instead.
+// Defines a field (column) schema
+export interface FieldDDL {
+
+    // Defines the field type. 
+    type?: FieldType,
+
+    // Defines a custom property name for the field. Defaults to the field name.
+    propName?: string;
+
+    // Defines the foreign table this field references.
+    // Only applicable for type: FK
+    references?: string;
+
+    // Defines the relationship name, which'll be the property name on the foreign table.
+    // Only applicable for type: FK
+    relationName?: string;
+
+    // If set, causes the record to be deleted if the foreign table row is deleted.
+    // Only applicable for type: FK
+    cascade?: boolean;
+
+    // If set, declares that this relation is a one 2 one relationship.
+    // Only applicable for type: FK
+    unique?: boolean;
+
+    // Defines a custom value factory for each record.
+    value?: (record: any, context?: ComputeContext) => any;
+
+    // Deprecated, use type instead.
     constraint?: "PK" | "FK";
 }
 
@@ -70,10 +98,6 @@ export interface ComputeContext {
     schema: FieldSchema;
     record?: TableRecord;
 }
-
-const PK = "PK", FK = "FK", NONE = "NONE";
-
-export type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 
 export interface DatabaseSchema {
     tables: TableSchema[];
@@ -92,16 +116,17 @@ export interface DatabaseState {
     [key: string]: TableState;
 }
 
-export interface TableState {
+export interface TableState<T=any> {
     name?: string;
-    byId: { [key: string]: any };
+    byId: { [key: string]: T };
     ids: string[];
     indexes: TableIndex;
 }
 
 export interface TableIndex {
     [key: string]: {
-        [key: string]: string[]
+        unique: boolean,
+        values: { [key: string]: string[] }
     };
 }
 
@@ -134,9 +159,7 @@ export interface NormalizedState {
         byId: {
             [key: string]: any
         },
-        indexes: {
-            [key: string]: { [key: string]: string[] }
-        }
+        indexes: TableIndex;
     };
 }
 
@@ -164,6 +187,8 @@ export class TableSchema {
 
     relations: FieldSchema[] = [];
 
+    readonly fieldsByName: { [key: string]: FieldSchema };
+
     private _primaryKeyFields: FieldSchema[];
     private _foreignKeyFields: FieldSchema[];
     private _stampFields: FieldSchema[];
@@ -172,6 +197,7 @@ export class TableSchema {
         this.db = db;
         this.name = name;
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
+        this.fieldsByName = utils.toObject(this.fields, f => f.name);
 
         this._primaryKeyFields = this.fields.filter(f => f.type === PK);
         this._foreignKeyFields = this.fields.filter(f => f.type === FK);
@@ -179,6 +205,7 @@ export class TableSchema {
     }
 
     /// Connects this schema's fields with other tables.
+    /// Used internally in the setup of the schema object model.
     connect(schemas: TableSchema[]) {
         schemas.forEach(schema => {
             this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
@@ -226,11 +253,14 @@ export class TableSchema {
 
                 // all FK's are auto indexed
                 if (fk.value !== null && fk.value !== undefined) {
-                    if (!tbl.indexes[fk.name])
-                        tbl.indexes[fk.name] = {};
-                    if (!tbl.indexes[fk.name][fk.value])
-                        tbl.indexes[fk.name][fk.value] = [];
-                    tbl.indexes[fk.name][fk.value].push(pk);
+                    const idx = tbl.indexes[fk.name] || (tbl.indexes[fk.name] = { unique: fk.unique, values: {} });
+
+                    if (!idx.values[fk.value])
+                        idx.values[fk.value] = [];
+                    if (idx.unique && idx.values.length)
+                        throw new Error(`The insert/update operation violates the unique foreign key "${this.name}.${fk.name}".`)
+
+                    idx.values[fk.value].push(pk);
                 }
             });
 
@@ -288,7 +318,7 @@ export class TableSchema {
 
     /// Gets the values of the FK's for the given record.
     getForeignKeys(record: any) {
-        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable }));
+        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique }));
     }
 
     /// Determines wether two records are equal, not modified.
@@ -309,23 +339,34 @@ export class FieldSchema {
 
     readonly references?: string;
     readonly relationName?: string;
+    readonly cascade: boolean;
+    readonly unique: boolean;
 
     refTable?: TableSchema;
 
-    private _valueFn?: (record: any, context?: ComputeContext) => any;
+    private _valueFactory?: (record: any, context?: ComputeContext) => any;
 
     constructor(table: TableSchema, name: string, schema: FieldDDL) {
         this.table = table;
+
+        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
         this.name = name;
         this.propName = schema.propName || name;
-        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
-        this.references = schema.references;
-        this.relationName = schema.relationName;
-        this._valueFn = schema.value ? schema.value.bind(this) : null;
+        this._valueFactory = schema.value ? schema.value.bind(this) : null;
+
+        if (schema.type === "FK") {
+            this.references = schema.references;
+            this.relationName = schema.relationName;
+            this.cascade = schema.cascade === true;
+            this.unique = schema.unique === true;
+        } else {
+            this.cascade = false;
+            this.unique = false;
+        }
     }
 
     getValue(data: any, record?: TableRecord) {
-        return this._valueFn ? this._valueFn(data, {
+        return this._valueFactory ? this._valueFactory(data, {
             schema: this,
             record: record
         }) : data[this.name];

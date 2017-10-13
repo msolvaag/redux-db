@@ -1,5 +1,5 @@
 var test = require('tape');
-var reduxDB = require("../cjs");
+var reduxDB = require("../dist/cjs");
 
 let state = {};
 const blogPosts = [
@@ -44,6 +44,17 @@ const blogPosts = [
     }
 ];
 
+const uniqueData = [
+    {
+        id: 1,
+        postID: 1
+    },
+    {
+        id: 2,
+        postID: 2
+    }
+];
+
 const schema = {
     User: {
         username: { type: "PK" }
@@ -55,8 +66,12 @@ const schema = {
     },
     Comment: {
         id: { type: "PK" },
-        post: { type: "FK", references: "BlogPost", relationName: "comments", cascadeOnDelete: true },
+        post: { type: "FK", references: "BlogPost", relationName: "comments", cascade: true },
         author: { type: "FK", references: "User", relationName: "comments" }
+    },
+    Unique:{
+        id: { type: "PK" },
+        postID: { type: "FK", propName: "post", references: "BlogPost", relationName: "unique", unique:true }
     }
 };
 
@@ -155,7 +170,45 @@ test('get by foreign key', function (t) {
     const session = db.createSession(state);
     const { Comment, BlogPost } = session.tables;
     const post = BlogPost.get(1);
-    const commentsByPost = Comment.getByFk( "post", 1);
+    const commentsByPost = Comment.getByFk( "post", 1 );
 
     t.deepEqual(commentsByPost.value, post.comments.value, "getByFk is equivalent to get by owner property");
+});
+
+test('add one 2 one relationship', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const { BlogPost, Unique } = session.tables;
+
+    const uq = Unique.insert( uniqueData );
+    t.assert( uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property" );
+
+    const post = BlogPost.get(1);
+    t.assert( post.unique && post.unique.value && post.unique.value.id === 1, "Referenced record has unique property" );
+});
+
+test('violate one 2 one relationship', function (t) {
+    t.plan(1);
+
+    const session = db.createSession(state);
+    const { Unique } = session.tables;
+
+    t.throws( ()=> Unique.insert( {id:3,postID:1} ), "Update/insert record with existing unique fk, throws an exception" );
+});
+
+
+test('delete cascade', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const { BlogPost, Comment } = session.tables;
+
+    let commentsByPost = Comment.getByFk( "post", 1 );
+    t.assert( commentsByPost.length > 1, "Relations exists before delete.");
+    
+    BlogPost.delete(1);
+    commentsByPost = Comment.getByFk( "post", 1 );
+
+    t.assert( commentsByPost.length === 0, "Relations marked with 'cascade' is deleted when the referenced entity is deleted.");
 });

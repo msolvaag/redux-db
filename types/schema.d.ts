@@ -1,40 +1,41 @@
-export interface Table {
+export declare type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
+export interface Table<T = {}> {
     session: Session;
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
-    get: (id: string | number) => TableRecord;
-    getOrDefault: (id: string | number) => TableRecord | null;
-    getByFk: (fieldName: string, id: string | number) => TableRecordSet;
-    all(): TableRecord[];
-    filter: (callback: (record: TableRecord) => boolean) => TableRecord[];
+    get: (id: string | number) => TableRecord<T>;
+    getOrDefault: (id: string | number) => TableRecord<T> | null;
+    getByFk: (fieldName: string, id: string | number) => TableRecordSet<T>;
+    all(): TableRecord<T>[];
+    filter: (callback: (record: TableRecord<T>) => boolean) => TableRecord<T>[];
     exists: (id: string | number) => boolean;
     index: (name: string, fk: string) => string[];
-    value: (id: string | number) => any;
-    upsert: (data: any) => TableRecord;
-    insert: (data: any) => TableRecord;
-    insertMany: (data: any) => TableRecord[];
-    update: (data: any) => TableRecord;
-    updateMany: (data: any) => TableRecord[];
+    value: (id: string | number) => T;
+    upsert: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
+    insert: (data: T | T[]) => TableRecord<T>;
+    insertMany: (data: T | T[]) => TableRecord<T>[];
+    update: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
+    updateMany: (data: Partial<T> | Partial<T>[]) => TableRecord<T>[];
     delete: (id: string | number) => void;
 }
-export interface TableRecord {
+export interface TableRecord<T = {}> {
     id: string;
     table: Table;
-    value: any;
-    update(data: any): TableRecord;
+    value: T;
+    update(data: T): TableRecord<T>;
     delete(): void;
 }
-export interface TableRecordSet {
-    value: any[];
+export interface TableRecordSet<T> {
+    value: T[];
     ids: string[];
     length: number;
-    all(): TableRecord[];
-    add(data: any): void;
-    remove(data: any): void;
-    update(data: any): TableRecordSet;
+    all(): TableRecord<T>[];
+    add(data: T | T[]): void;
+    remove(data: Partial<T>): void;
+    update(data: Partial<T> | Partial<T>[]): TableRecordSet<T>;
     delete(): void;
-    map<M>(callback: (record: TableRecord) => M): M[];
+    map<M>(callback: (record: TableRecord<T>) => M): M[];
 }
 export interface SchemaDDL {
     [key: string]: TableDDL;
@@ -44,18 +45,18 @@ export interface TableDDL {
 }
 export interface FieldDDL {
     type?: FieldType;
+    propName?: string;
     references?: string;
     relationName?: string;
-    propName?: string;
+    cascade?: boolean;
+    unique?: boolean;
     value?: (record: any, context?: ComputeContext) => any;
-    cascadeOnDelete?: boolean;
     constraint?: "PK" | "FK";
 }
 export interface ComputeContext {
     schema: FieldSchema;
     record?: TableRecord;
 }
-export declare type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
 export interface DatabaseSchema {
     tables: TableSchema[];
     normalizeHooks?: {
@@ -73,17 +74,20 @@ export interface SessionOptions {
 export interface DatabaseState {
     [key: string]: TableState;
 }
-export interface TableState {
+export interface TableState<T = any> {
     name?: string;
     byId: {
-        [key: string]: any;
+        [key: string]: T;
     };
     ids: string[];
     indexes: TableIndex;
 }
 export interface TableIndex {
     [key: string]: {
-        [key: string]: string[];
+        unique: boolean;
+        values: {
+            [key: string]: string[];
+        };
     };
 }
 export interface RecordState {
@@ -109,11 +113,7 @@ export interface NormalizedState {
         byId: {
             [key: string]: any;
         };
-        indexes: {
-            [key: string]: {
-                [key: string]: string[];
-            };
-        };
+        indexes: TableIndex;
     };
 }
 export declare class NormalizeContext {
@@ -131,6 +131,9 @@ export declare class TableSchema {
     readonly name: string;
     readonly fields: FieldSchema[];
     relations: FieldSchema[];
+    readonly fieldsByName: {
+        [key: string]: FieldSchema;
+    };
     private _primaryKeyFields;
     private _foreignKeyFields;
     private _stampFields;
@@ -143,6 +146,7 @@ export declare class TableSchema {
         name: string;
         value: any;
         refTable: TableSchema | undefined;
+        unique: boolean;
     }[];
     isModified(x: any, y: any): boolean;
 }
@@ -153,8 +157,10 @@ export declare class FieldSchema {
     readonly type: FieldType;
     readonly references?: string;
     readonly relationName?: string;
+    readonly cascade: boolean;
+    readonly unique: boolean;
     refTable?: TableSchema;
-    private _valueFn?;
+    private _valueFactory?;
     constructor(table: TableSchema, name: string, schema: FieldDDL);
     getValue(data: any, record?: TableRecord): any;
     getRecordValue(record: TableRecord): any;
