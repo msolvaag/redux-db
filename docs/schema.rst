@@ -73,6 +73,27 @@ This will enforce the unique constraint for updates and inserts.
         parent: { references: "Table", relationName: "child", unique: true }
     }
 
+Cascading deletes
+-----------------
+
+You may define the "cascade" flag on a field definition. This will automatically delete the referencing records when the foreign table record is deleted.
+
+::
+
+    "Table": {
+        // when the related record of "Table" is deleted, all it's children is also deleted.
+        parent: { references: "Table", relationName: "children", cascade: true }
+    }
+
+Other field types
+-----------------
+
+Aside for the "PK" and "FK" type, you may also define fields of type "ATTR" and "MODIFIED".
+The "ATTR" type is just a convenience field to make custom properties on the RecordModel.
+In usage with the "value" callback you can create computed properties. 
+
+The "MODIFIED" type defines a field that will be used to compare the state record with a updated record.
+The default comparison is to do a shallow equallity check.
 
 Custom normalization
 --------------------
@@ -96,7 +117,7 @@ redux-db provides a basic normalization hook for each table.
     });
 
 Schema reference
-------------------------
+----------------
 All supported definitions
 
 ::
