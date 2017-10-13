@@ -8,12 +8,12 @@ const schema = {
     },
     BlogPost: {
         id: { type: "PK" },
-        author: { type: "FK", references: "User", relationName: "posts" }
+        author: { references: "User", relationName: "posts" }
     },
     Comment: {
         id: { type: "PK" },
-        post: { type: "FK", references: "BlogPost", relationName: "comments" },
-        author: { type: "FK", references: "User", relationName: "comments" }
+        post: { references: "BlogPost", relationName: "comments" },
+        author: { references: "User", relationName: "comments" }
     }
 };
 

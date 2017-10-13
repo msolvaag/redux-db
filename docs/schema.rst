@@ -88,9 +88,7 @@ You may define the "cascade" flag on a field definition. This will automatically
 Other field types
 -----------------
 
-Aside for the "PK" and "FK" type, you may also define fields of type "ATTR" and "MODIFIED".
-The "ATTR" type is just a convenience field to make custom properties on the RecordModel.
-In usage with the "value" callback you can create computed properties. 
+Aside for the "PK" type, you may also define fields of type "MODIFIED".
 
 The "MODIFIED" type defines a field that will be used to compare the state record with a updated record.
 The default comparison is to do a shallow equallity check.
@@ -125,7 +123,7 @@ All supported definitions
     {
         "Table" : {
             "Field": {
-                type: "PK" | "FK" | "MODIFIED" | "ATTR",
+                type: "PK" | "MODIFIED" | "ATTR",
 
                 // Defines a custom property name for the field. Defaults to the field name.
                 propName?: string;

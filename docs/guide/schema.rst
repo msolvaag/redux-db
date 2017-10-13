@@ -13,11 +13,7 @@ You would define a schema like so:
 .. literalinclude:: ../../example/schema.js
     :language: js
 
-Note you only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
-
-.. tip::
-
-    You do not have to specify type: "FK" when using the "references" property.
+Note you may only define foreign and primary keys. The data fields like "User.name" and "Comment.comment" are not needed in the schema.
 
 Using this schema definition, the example data would be normalized out in the following manner:
 
