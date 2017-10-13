@@ -17,7 +17,7 @@ Note you only define foreign and primary keys. The data fields like "User.name" 
 
 .. tip::
 
-    You do not have to specify type: "FK" when using the "references" property.``
+    You do not have to specify type: "FK" when using the "references" property.
 
 Using this schema definition, the example data would be normalized out in the following manner:
 

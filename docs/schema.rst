@@ -68,6 +68,7 @@ To specify a one to one relationship, you can set the "unique" flag on the field
 This will enforce the unique constraint for updates and inserts.
 
 ::
+
     "Table": {
         parent: { references: "Table", relationName: "child", unique: true }
     }
