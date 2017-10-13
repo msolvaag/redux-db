@@ -6,7 +6,7 @@
   "module": "dist/es/index.js",
   "typings": "./types/index.d.ts",
   "scripts": {
-    "test": "tape test/*.js | \"node_modules/.bin/tap-spec\"",
+    "test": "npm run build-cjs && tape test/*.js | \"node_modules/.bin/tap-spec\"",
     "build": "tsc && tsc -p tsconfig.cjs.json && tsc -p tsconfig.dist.json && gulp compress",
     "build-cjs": "tsc -p tsconfig.cjs.json",
     "docs": "rimraf \"docs/_build/\" && python -msphinx -b html \"docs\" \"docs/_build/html\"",

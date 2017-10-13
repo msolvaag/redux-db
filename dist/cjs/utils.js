@@ -18,6 +18,16 @@ exports.ensureArray = function (obj) {
     else
         return [obj];
 };
+exports.ensureParam = function (name, value) {
+    if (value === undefined)
+        throw new Error("Missing a valid value for the argument \"" + name + "\"");
+    return value;
+};
+exports.ensureParamString = function (name, value) {
+    if (value === undefined || value === null || value.length === 0)
+        throw new Error("Missing a valid string for the argument \"" + name + "\"");
+    return value;
+};
 exports.toObject = function (a, key) {
     return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
 };

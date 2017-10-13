@@ -20,6 +20,17 @@ export const ensureArray = (obj: any) => {
         return [obj];
 };
 
+export const ensureParam = <T=any>(name: string, value: T) => {
+    if (value === undefined)
+        throw new Error(`Missing a valid value for the argument "${name}"`);
+    return value;
+};
+export const ensureParamString = (name: string, value: string) => {
+    if (value === undefined || value === null || value.length === 0)
+        throw new Error(`Missing a valid string for the argument "${name}"`);
+    return value;
+};
+
 export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});
 };

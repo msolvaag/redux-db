@@ -1,8 +1,6 @@
 import * as utils from "./utils";
 
-const PK = "PK", FK = "FK", NONE = "NONE";
-
-export type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
+export type FieldType = "ATTR" | "MODIFIED" | "PK";
 
 export interface Table<T={}> {
     session: Session;
@@ -72,26 +70,19 @@ export interface FieldDDL {
     propName?: string;
 
     // Defines the foreign table this field references.
-    // Only applicable for type: FK
     references?: string;
 
     // Defines the relationship name, which'll be the property name on the foreign table.
-    // Only applicable for type: FK
     relationName?: string;
 
     // If set, causes the record to be deleted if the foreign table row is deleted.
-    // Only applicable for type: FK
     cascade?: boolean;
 
     // If set, declares that this relation is a one 2 one relationship.
-    // Only applicable for type: FK
     unique?: boolean;
 
     // Defines a custom value factory for each record.
     value?: (record: any, context?: ComputeContext) => any;
-
-    // Deprecated, use type instead.
-    constraint?: "PK" | "FK";
 }
 
 export interface ComputeContext {
@@ -199,8 +190,8 @@ export class TableSchema {
         this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
         this.fieldsByName = utils.toObject(this.fields, f => f.name);
 
-        this._primaryKeyFields = this.fields.filter(f => f.type === PK);
-        this._foreignKeyFields = this.fields.filter(f => f.type === FK);
+        this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
+        this._foreignKeyFields = this.fields.filter(f => f.isForeignKey);
         this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
     }
 
@@ -284,14 +275,14 @@ export class TableSchema {
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {
         if (!rel.relationName) return data;
 
-        const otherFks = rel.table.fields.filter(f => f.type === FK && f !== rel);
+        const otherFks = rel.table.fields.filter(f => f.isForeignKey && f !== rel);
 
         return utils.ensureArray(data).map(obj => {
             if (typeof obj === "number" || typeof obj === "string") {
                 if (otherFks.length === 1) {
                     obj = { [otherFks[0].name]: obj };
                 } else {
-                    obj = { id: obj }; // TODO: this may be quite wrong..
+                    obj = { id: obj }; // TODO: this might be quite wrong..
                 }
             }
             return { ...obj, [rel.name]: ownerId };
@@ -342,6 +333,9 @@ export class FieldSchema {
     readonly cascade: boolean;
     readonly unique: boolean;
 
+    readonly isPrimaryKey: boolean;
+    readonly isForeignKey: boolean;
+
     refTable?: TableSchema;
 
     private _valueFactory?: (record: any, context?: ComputeContext) => any;
@@ -349,12 +343,14 @@ export class FieldSchema {
     constructor(table: TableSchema, name: string, schema: FieldDDL) {
         this.table = table;
 
-        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
+        this.type = schema.type || "ATTR";
         this.name = name;
         this.propName = schema.propName || name;
         this._valueFactory = schema.value ? schema.value.bind(this) : null;
+        this.isPrimaryKey = schema.type === "PK";
+        this.isForeignKey = schema.references !== null && schema.references !== undefined;
 
-        if (schema.type === "FK") {
+        if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;
             this.relationName = schema.relationName;
             this.cascade = schema.cascade === true;

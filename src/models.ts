@@ -21,9 +21,10 @@ export class TableModel<T extends TableRecord<V>, V={}> implements Table<V> {
     dirty = false;
 
     constructor(session: Session, state: TableState<V> = { ids: [], byId: {}, indexes: {} }, schema: TableSchema) {
-        this.session = session;
-        this.state = state;
-        this.schema = schema;
+        this.session = utils.ensureParam("session", session);
+        this.state = utils.ensureParam("state", state);
+        this.schema = utils.ensureParam("schema", schema);
+
         if (!this.state.name)
             this.state.name = schema.name;
     }
@@ -65,7 +66,7 @@ export class TableModel<T extends TableRecord<V>, V={}> implements Table<V> {
     }
 
     getByFk(fieldName: string, value: number | string): RecordSet<T, V> {
-        const field = this.schema.fields.filter(f => f.type === "FK" && f.name === fieldName)[0];
+        const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
         return new RecordSet<T, V>(this, field, { id: value.toString() });
     }
@@ -254,8 +255,8 @@ export class RecordModel<T> implements TableRecord<T> {
 
 
     constructor(id: string, table: Table<T>) {
-        this.id = id;
-        this.table = table;
+        this.id = utils.ensureParam("id", id);
+        this.table = utils.ensureParam("table", table);
     }
 
     get value(): T {
@@ -278,9 +279,9 @@ export class RecordField {
     readonly name: string;
 
     constructor(schema: FieldSchema, record: TableRecord) {
-        this.name = schema.name;
-        this.schema = schema;
-        this.record = record;
+        this.schema = utils.ensureParam("schema", schema);
+        this.record = utils.ensureParam("record", record);
+        this.name = utils.ensureParamString("schema.name", schema.name);
     }
 
     get value() {
@@ -295,10 +296,9 @@ export class RecordSet<T extends TableRecord<V>, V={}> implements TableRecordSet
     readonly owner: { id: string };
 
     constructor(table: Table<V>, schema: FieldSchema, owner: { id: string }) {
-
-        this.table = table;
-        this.schema = schema;
-        this.owner = owner;
+        this.table = utils.ensureParam("table", table);
+        this.schema = utils.ensureParam("schema", schema);
+        this.owner = utils.ensureParam("owner", owner);
     }
 
     get value() {
@@ -356,7 +356,7 @@ class ModelFactory {
     }
 
     newRecordField<T>(schema: FieldSchema, record: TableRecord<T>) {
-        if (schema.type !== "FK")
+        if (!schema.isForeignKey)
             return new RecordField(schema, record);
 
         const refTable = schema.references && record.table.session.tables[schema.references] as Table;
@@ -396,6 +396,7 @@ class ModelFactory {
         }
 
         const defineProperty = (name: string, field: FieldSchema, factory: (f: FieldSchema, ref: Record) => any, cache = true) => {
+            if (name === "id") throw new Error(`The property "${field.table.name}.id" is a reserved name. Please specify another name using the "propName" definition.`);
             Object.defineProperty(Record.prototype, name, {
                 get: function (this: Record) {
                     return cache ? (this._fields[name] || (this._fields[name] = factory(field, this))) : factory(field, this);
@@ -403,7 +404,7 @@ class ModelFactory {
             });
         };
 
-        schema.fields.forEach(f => f.type !== "PK" && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
+        schema.fields.forEach(f => (f.isForeignKey || !f.isPrimaryKey) && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
         schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f, f.unique ? ModelFactory.default.newRecordRelation : ModelFactory.default.newRecordSet, !f.unique));
 
         return Record;

@@ -61,17 +61,24 @@ const schema = {
     },
     BlogPost: {
         id: { type: "PK" },
-        author: { type: "FK", references: "User", relationName: "posts" },
-        computed: { value: (val,ctx) => ctx.record.author.value.name }
+        author: { references: "User", relationName: "posts" },
+        computed: { 
+            value: (val,ctx) => { 
+                return ctx.record.author.value.name; 
+            } 
+        }
     },
     Comment: {
         id: { type: "PK" },
-        post: { type: "FK", references: "BlogPost", relationName: "comments", cascade: true },
-        author: { type: "FK", references: "User", relationName: "comments" }
+        post: { references: "BlogPost", relationName: "comments", cascade: true },
+        author: { references: "User", relationName: "comments" }
     },
     Unique:{
         id: { type: "PK" },
-        postID: { type: "FK", propName: "post", references: "BlogPost", relationName: "unique", unique:true }
+        postID: { propName: "post", references: "BlogPost", relationName: "unique", unique:true }
+    },
+    Unique2:{
+        id: { type: "PK", propName: "post", references: "BlogPost", relationName: "unique2", unique:true }
     }
 };
 
@@ -186,6 +193,19 @@ test('add one 2 one relationship', function (t) {
 
     const post = BlogPost.get(1);
     t.assert( post.unique && post.unique.value && post.unique.value.id === 1, "Referenced record has unique property" );
+});
+
+test('add one 2 one relationship through PK', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const { BlogPost, Unique2 } = session.tables;
+
+    const uq = Unique2.insert( uniqueData );
+    t.assert( uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property" );
+
+    const post = BlogPost.get(1);
+    t.assert( post.unique2 && post.unique2.value && post.unique2.value.id === 1, "Referenced record has unique property" );
 });
 
 test('violate one 2 one relationship', function (t) {
