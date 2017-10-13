@@ -1,4 +1,4 @@
-export declare type FieldType = "PK" | "FK" | "ATTR" | "MODIFIED";
+export declare type FieldType = "ATTR" | "MODIFIED" | "PK";
 export interface Table<T = {}> {
     session: Session;
     schema: TableSchema;
@@ -51,7 +51,6 @@ export interface FieldDDL {
     cascade?: boolean;
     unique?: boolean;
     value?: (record: any, context?: ComputeContext) => any;
-    constraint?: "PK" | "FK";
 }
 export interface ComputeContext {
     schema: FieldSchema;
@@ -159,6 +158,8 @@ export declare class FieldSchema {
     readonly relationName?: string;
     readonly cascade: boolean;
     readonly unique: boolean;
+    readonly isPrimaryKey: boolean;
+    readonly isForeignKey: boolean;
     refTable?: TableSchema;
     private _valueFactory?;
     constructor(table: TableSchema, name: string, schema: FieldDDL);

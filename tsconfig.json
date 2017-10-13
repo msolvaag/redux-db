@@ -22,6 +22,7 @@
     "node_modules",
     "wwwroot",
     "types",
-    "test"
+    "test",
+    "example"
   ]
 }

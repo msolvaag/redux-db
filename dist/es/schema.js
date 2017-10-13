@@ -7,7 +7,6 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 import * as utils from "./utils";
-var PK = "PK", FK = "FK", NONE = "NONE";
 var NormalizeContext = /** @class */ (function () {
     function NormalizeContext(schema) {
         this.output = {};
@@ -30,8 +29,8 @@ var TableSchema = /** @class */ (function () {
         this.name = name;
         this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
         this.fieldsByName = utils.toObject(this.fields, function (f) { return f.name; });
-        this._primaryKeyFields = this.fields.filter(function (f) { return f.type === PK; });
-        this._foreignKeyFields = this.fields.filter(function (f) { return f.type === FK; });
+        this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
+        this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
         this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
     }
     /// Connects this schema's fields with other tables.
@@ -100,14 +99,14 @@ var TableSchema = /** @class */ (function () {
     TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
         if (!rel.relationName)
             return data;
-        var otherFks = rel.table.fields.filter(function (f) { return f.type === FK && f !== rel; });
+        var otherFks = rel.table.fields.filter(function (f) { return f.isForeignKey && f !== rel; });
         return utils.ensureArray(data).map(function (obj) {
             if (typeof obj === "number" || typeof obj === "string") {
                 if (otherFks.length === 1) {
                     obj = (_a = {}, _a[otherFks[0].name] = obj, _a);
                 }
                 else {
-                    obj = { id: obj }; // TODO: this may be quite wrong..
+                    obj = { id: obj }; // TODO: this might be quite wrong..
                 }
             }
             return __assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
@@ -144,11 +143,13 @@ export { TableSchema };
 var FieldSchema = /** @class */ (function () {
     function FieldSchema(table, name, schema) {
         this.table = table;
-        this.type = schema.type || schema.constraint || (schema.references ? "FK" : "ATTR");
+        this.type = schema.type || "ATTR";
         this.name = name;
         this.propName = schema.propName || name;
         this._valueFactory = schema.value ? schema.value.bind(this) : null;
-        if (schema.type === "FK") {
+        this.isPrimaryKey = schema.type === "PK";
+        this.isForeignKey = schema.references !== null && schema.references !== undefined;
+        if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;
             this.relationName = schema.relationName;
             this.cascade = schema.cascade === true;

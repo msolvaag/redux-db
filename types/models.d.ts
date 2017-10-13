@@ -64,17 +64,3 @@ export declare class RecordSet<T extends TableRecord<V>, V = {}> implements Tabl
     delete(): void;
     private _normalize(data);
 }
-export declare class RecordRelation<V> implements TableRecord<V> {
-    readonly table: Table<V>;
-    readonly schema: FieldSchema;
-    readonly owner: {
-        id: string;
-    };
-    constructor(table: Table<V>, schema: FieldSchema, owner: {
-        id: string;
-    });
-    readonly id: string;
-    readonly value: V;
-    delete(): void;
-    update(data: Partial<V>): this;
-}
