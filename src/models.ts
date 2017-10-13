@@ -346,37 +346,6 @@ export class RecordSet<T extends TableRecord<V>, V={}> implements TableRecordSet
     }
 }
 
-/// Represents a single dynamic one 2 one relation
-export class RecordRelation<V> implements TableRecord<V> {
-    readonly table: Table<V>;
-    readonly schema: FieldSchema;
-    readonly owner: { id: string };
-
-    constructor(table: Table<V>, schema: FieldSchema, owner: { id: string }) {
-
-        this.table = table;
-        this.schema = schema;
-        this.owner = owner;
-    }
-
-    get id(): string {
-        return this.table.index(this.schema.name, this.owner.id)[0];
-    }
-
-    get value(): V {
-        return this.table.value(this.id);
-    }
-
-    delete() {
-        this.table.delete(this.id);
-    }
-
-    update(data: Partial<V>) {
-        this.table.update(data);
-        return this;
-    }
-}
-
 class ModelFactory {
     private _recordClass: { [key: string]: any } = {};
 

@@ -15,6 +15,7 @@ redux-db provides a normalized redux_ store and easy object management.
     install
     schema
     models
+    typescript
 
 .. toctree::
     :maxdepth: 2

@@ -19,6 +19,7 @@ The table name is up to you, but the field names must match your data model.
 .. note::
     It is not really required, but the table name should be written using pascal casing. This helps you seperate Table class instances later on.
 
+
 Primary keys
 ------------
 
@@ -29,6 +30,7 @@ If a table represents a single entity you should define a primary key::
             "id": { type: "PK" }
         }
     }
+
 
 Foreign keys
 ------------
@@ -56,6 +58,18 @@ It's perfectly fine to add a self referencing table field::
 
     "Table": {
         parent: { references: "Table", relationName: "children" }
+    }
+
+
+One to one relationships
+------------------------
+
+To specify a one to one relationship, you can set the "unique" flag on the field definition.
+This will enforce the unique constraint for updates and inserts.
+
+::
+    "Table": {
+        parent: { references: "Table", relationName: "child", unique: true }
     }
 
 
@@ -90,10 +104,24 @@ All supported definitions
         "Table" : {
             "Field": {
                 type: "PK" | "FK" | "MODIFIED" | "ATTR",
-                references: string,
-                relationName: string,
-                propName: string,
-                value: ( record: Record ) => any
+
+                // Defines a custom property name for the field. Defaults to the field name.
+                propName?: string;
+
+                // Defines the foreign table this field references.
+                references?: string;
+
+                // Defines the relationship name, which'll be the property name on the foreign table.
+                relationName?: string;
+
+                // If set, causes the record to be deleted if the foreign table row is deleted.
+                cascade?: boolean;
+
+                // If set, declares that this relation is a one 2 one relationship.
+                unique?: boolean;
+
+                // Defines a custom value factory for each record.
+                value?: (record: any, context?: ComputeContext) => any;
             }
         }
     }
