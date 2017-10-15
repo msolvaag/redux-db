@@ -105,7 +105,6 @@ export class DatabaseSession implements Session {
         });
         return this.state as any;
     }
-
 }
 
 export { RecordModel as Record, RecordSet, TableModel as Table };

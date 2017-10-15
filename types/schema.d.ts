@@ -1,5 +1,5 @@
 export declare type FieldType = "ATTR" | "MODIFIED" | "PK";
-export interface Table<T = {}> {
+export interface Table<T = any> {
     session: Session;
     schema: TableSchema;
     state: TableState;
@@ -19,9 +19,9 @@ export interface Table<T = {}> {
     updateMany: (data: Partial<T> | Partial<T>[]) => TableRecord<T>[];
     delete: (id: string | number) => void;
 }
-export interface TableRecord<T = {}> {
+export interface TableRecord<T = any> {
     id: string;
-    table: Table;
+    table: Table<T>;
     value: T;
     update(data: T): TableRecord<T>;
     delete(): void;
@@ -50,11 +50,11 @@ export interface FieldDDL {
     relationName?: string;
     cascade?: boolean;
     unique?: boolean;
-    value?: (record: any, context?: ComputeContext) => any;
+    value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
 }
-export interface ComputeContext {
+export interface ComputeContext<T> {
     schema: FieldSchema;
-    record?: TableRecord;
+    record?: TableRecord<T>;
 }
 export interface DatabaseSchema {
     tables: TableSchema[];
@@ -163,6 +163,8 @@ export declare class FieldSchema {
     refTable?: TableSchema;
     private _valueFactory?;
     constructor(table: TableSchema, name: string, schema: FieldDDL);
-    getValue(data: any, record?: TableRecord): any;
-    getRecordValue(record: TableRecord): any;
+    getValue(data: any, record?: any): any;
+    getRecordValue(record: {
+        value: any;
+    }): any;
 }

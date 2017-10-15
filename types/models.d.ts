@@ -37,11 +37,11 @@ export declare class RecordModel<T> implements TableRecord<T> {
     delete(): void;
     update(data: Partial<T>): this;
 }
-export declare class RecordField {
-    readonly record: TableRecord;
+export declare class RecordField<T> {
+    readonly record: TableRecord<T>;
     readonly schema: FieldSchema;
     readonly name: string;
-    constructor(schema: FieldSchema, record: TableRecord);
+    constructor(schema: FieldSchema, record: TableRecord<T>);
     readonly value: any;
 }
 export declare class RecordSet<T extends TableRecord<V>, V = {}> implements TableRecordSet<V> {

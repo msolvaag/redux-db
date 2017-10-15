@@ -273,12 +273,12 @@ export class RecordModel<T> implements TableRecord<T> {
     }
 }
 
-export class RecordField {
-    readonly record: TableRecord;
+export class RecordField<T> {
+    readonly record: TableRecord<T>;
     readonly schema: FieldSchema;
     readonly name: string;
 
-    constructor(schema: FieldSchema, record: TableRecord) {
+    constructor(schema: FieldSchema, record: TableRecord<T>) {
         this.schema = utils.ensureParam("schema", schema);
         this.record = utils.ensureParam("record", record);
         this.name = utils.ensureParamString("schema.name", schema.name);
@@ -355,7 +355,7 @@ class ModelFactory {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass(table.schema)))(id, table);
     }
 
-    newRecordField<T>(schema: FieldSchema, record: TableRecord<T>) {
+    newRecordField(schema: FieldSchema, record: TableRecord) {
         if (!schema.isForeignKey)
             return new RecordField(schema, record);
 

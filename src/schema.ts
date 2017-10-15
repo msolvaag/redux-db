@@ -2,7 +2,7 @@ import * as utils from "./utils";
 
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
 
-export interface Table<T={}> {
+export interface Table<T=any> {
     session: Session;
     schema: TableSchema;
     state: TableState;
@@ -25,9 +25,9 @@ export interface Table<T={}> {
     delete: (id: string | number) => void;
 }
 
-export interface TableRecord<T={}> {
+export interface TableRecord<T=any> {
     id: string;
-    table: Table;
+    table: Table<T>;
     value: T;
 
     update(data: T): TableRecord<T>;
@@ -82,12 +82,12 @@ export interface FieldDDL {
     unique?: boolean;
 
     // Defines a custom value factory for each record.
-    value?: (record: any, context?: ComputeContext) => any;
+    value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
 }
 
-export interface ComputeContext {
+export interface ComputeContext<T> {
     schema: FieldSchema;
-    record?: TableRecord;
+    record?: TableRecord<T>;
 }
 
 export interface DatabaseSchema {
@@ -338,7 +338,7 @@ export class FieldSchema {
 
     refTable?: TableSchema;
 
-    private _valueFactory?: (record: any, context?: ComputeContext) => any;
+    private _valueFactory?: <T, M>(record: T, context?: ComputeContext<T>) => M;
 
     constructor(table: TableSchema, name: string, schema: FieldDDL) {
         this.table = table;
@@ -361,14 +361,14 @@ export class FieldSchema {
         }
     }
 
-    getValue(data: any, record?: TableRecord) {
+    getValue(data: any, record?: any) {
         return this._valueFactory ? this._valueFactory(data, {
             schema: this,
             record: record
         }) : data[this.name];
     }
 
-    getRecordValue(record: TableRecord) {
+    getRecordValue(record: { value: any }) {
         return this.getValue(record.value, record);
     }
 }
