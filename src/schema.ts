@@ -228,8 +228,10 @@ export class TableSchema {
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
 
+            if (!tbl.byId[pk])
+                tbl.ids.push(pk);
+
             const record = tbl.byId[pk] = { ...obj };
-            tbl.ids.push(pk);
 
             fks.forEach(fk => {
 

@@ -99,18 +99,18 @@ test('insert records', function (t) {
 });
 
 test('insert record', function (t) {
-    t.plan(1);
+    t.plan(2);
 
     const session = db.createSession(state);
     const { BlogPost } = session.tables;
-    const recordModel = BlogPost.insert(
-        { id: 3, author: { username: "user1" }, body: "test" }
-    );
+    const record = { id: 3, author: { username: "user1" }, body: "test" };
+    const recordModel = BlogPost.insert( record );
 
     state = session.commit();
     const newTableState = state["BlogPost"];
 
     t.deepEqual(newTableState.byId["3"], { id: 3, author:"user1", body: "test" }, "State is updated with the inserted record");
+    t.throws( ()=> BlogPost.insert( record ), "Inserting a duplicate record violates PK" );
 });
 
 

@@ -31,13 +31,16 @@ exports.ensureParamString = function (name, value) {
 exports.toObject = function (a, key) {
     return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
 };
-exports.arrayMerge = function (a, b) {
-    var hash = {}, i;
-    for (i = 0; i < a.length; i++) {
-        hash[a[i]] = true;
+exports.mergeIds = function (source, second, unique) {
+    var hash = {};
+    var i;
+    for (i = 0; i < source.length; i++) {
+        hash[source[i]] = true;
     }
-    for (i = 0; i < b.length; i++) {
-        hash[b[i]] = true;
+    for (i = 0; i < second.length; i++) {
+        if (unique && hash[second[i]])
+            throw new Error("Id merge operation violates unique constraint for id: \"" + second[i] + "\"");
+        hash[second[i]] = true;
     }
     return Object.keys(hash);
 };
@@ -46,9 +49,7 @@ exports.arrayMerge = function (a, b) {
 exports.isEqual = function (a, b) {
     if (a === b)
         return true;
-    var aKeys = Object.keys(a);
-    var bKeys = Object.keys(b);
-    var len = aKeys.length;
+    var aKeys = Object.keys(a), bKeys = Object.keys(b), len = aKeys.length;
     if (bKeys.length !== len) {
         return false;
     }

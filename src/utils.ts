@@ -35,13 +35,16 @@ export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});
 };
 
-export const arrayMerge = (a: string[], b: string[]) => {
-    var hash: { [key: string]: boolean } = {}, i;
-    for (i = 0; i < a.length; i++) {
-        hash[a[i]] = true;
+export const mergeIds = (source: string[], second: string[], unique: boolean) => {
+    const hash: { [key: string]: boolean } = {};
+    let i;
+    for (i = 0; i < source.length; i++) {
+        hash[source[i]] = true;
     }
-    for (i = 0; i < b.length; i++) {
-        hash[b[i]] = true;
+    for (i = 0; i < second.length; i++) {
+        if (unique && hash[second[i]])
+            throw new Error(`Id merge operation violates unique constraint for id: "${second[i]}"`);
+        hash[second[i]] = true;
     }
     return Object.keys(hash);
 };
@@ -53,16 +56,16 @@ export const isEqual = (a: any, b: any) => {
     if (a === b)
         return true;
 
-    const aKeys = Object.keys(a);
-    const bKeys = Object.keys(b);
-    var len = aKeys.length;
+    const aKeys = Object.keys(a),
+        bKeys = Object.keys(b),
+        len = aKeys.length;
 
     if (bKeys.length !== len) {
         return false;
     }
 
-    for (var i = 0; i < len; i++) {
-        var key = aKeys[i];
+    for (let i = 0; i < len; i++) {
+        const key = aKeys[i];
 
         if (Array.isArray(a[key]) && Array.isArray(b[key]) && arrayIsShallowEqual(a[key], b[key]))
             continue;
@@ -80,13 +83,13 @@ const arrayIsShallowEqual = (a: any[], b: any[]) => {
         return true;
     }
 
-    var len = a.length;
+    const len = a.length;
 
     if (b.length !== len) {
         return false;
     }
 
-    for (var i = 0; i < len; i++) {
+    for (let i = 0; i < len; i++) {
         if (a[i] !== b[i]) {
             return false;
         }
