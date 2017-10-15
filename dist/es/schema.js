@@ -55,11 +55,15 @@ var TableSchema = /** @class */ (function () {
         var ctx = context || new NormalizeContext(this);
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+        // temp holder to validate PK constraint
+        var pks = {};
         return utils.ensureArray(data).map(function (obj) {
             var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
             var pk = _this.getPrimaryKey(obj);
+            if (pks[pk])
+                throw new Error("Multiple records with the same PK: \"" + _this.name + "." + pk + "\". Check your schema definition.");
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])

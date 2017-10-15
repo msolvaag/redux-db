@@ -219,12 +219,18 @@ export class TableSchema {
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
+        // temp holder to validate PK constraint
+        const pks: { [key: string]: boolean } = {};
+
         return utils.ensureArray(data).map(obj => {
             const normalizeHook = this.db.normalizeHooks ? this.db.normalizeHooks[this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
 
             const pk = this.getPrimaryKey(obj);
+            if (pks[pk])
+                throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
+
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
 
