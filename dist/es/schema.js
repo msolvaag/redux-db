@@ -64,6 +64,7 @@ var TableSchema = /** @class */ (function () {
             var pk = _this.getPrimaryKey(obj);
             if (pks[pk])
                 throw new Error("Multiple records with the same PK: \"" + _this.name + "." + pk + "\". Check your schema definition.");
+            pks[pk] = true;
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])

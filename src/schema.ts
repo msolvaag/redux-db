@@ -228,8 +228,8 @@ export class TableSchema {
                 obj = normalizeHook(obj, ctx);
 
             const pk = this.getPrimaryKey(obj);
-            if (pks[pk])
-                throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
+            if (pks[pk]) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
+            pks[pk] = true;
 
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
