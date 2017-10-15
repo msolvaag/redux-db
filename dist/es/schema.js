@@ -62,8 +62,9 @@ var TableSchema = /** @class */ (function () {
             var pk = _this.getPrimaryKey(obj);
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
+            if (!tbl.byId[pk])
+                tbl.ids.push(pk);
             var record = tbl.byId[pk] = __assign({}, obj);
-            tbl.ids.push(pk);
             fks.forEach(function (fk) {
                 // if the FK is an object, then normalize it and replace object with it's PK.
                 if (typeof fk.value === "object" && fk.refTable) {

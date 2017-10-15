@@ -116,7 +116,7 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype.insertNormalized = function (table) {
         var _this = this;
         this.dirty = true;
-        this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
+        this.state = __assign({}, this.state, { ids: utils.mergeIds(this.state.ids, table.ids, true), byId: __assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
         return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
     };
@@ -174,7 +174,7 @@ var TableModel = /** @class */ (function () {
             var idx = _this.state.indexes[key] || (_this.state.indexes[key] = { unique: table.indexes[key].unique, values: {} });
             Object.keys(table.indexes[key].values).forEach(function (fk) {
                 var idxBucket = idx.values[fk] || (idx.values[fk] = []);
-                var modifiedBucket = utils.arrayMerge(idxBucket, table.indexes[key].values[fk]);
+                var modifiedBucket = utils.mergeIds(idxBucket, table.indexes[key].values[fk], false);
                 if (idx.unique && modifiedBucket.length > 1)
                     throw new Error("The insert/update operation violates the unique foreign key \"" + _this.schema.name + "." + key + "\".");
                 idx.values[fk] = modifiedBucket;

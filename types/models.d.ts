@@ -1,29 +1,29 @@
 import { TableSchema, FieldSchema, TableState, Table, TableRecord, TableRecordSet, Session } from "./schema";
-export declare class TableModel<T extends TableRecord<V>, V = {}> implements Table<V> {
+export declare class TableModel<R extends TableRecord<T>, T = any> implements Table<T> {
     readonly session: Session;
     readonly schema: TableSchema;
-    state: TableState<V>;
+    state: TableState<T>;
     dirty: boolean;
-    constructor(session: Session, state: TableState<V> | undefined, schema: TableSchema);
-    all(): T[];
+    constructor(session: Session, state: TableState<T> | undefined, schema: TableSchema);
+    all(): R[];
     readonly length: number;
-    readonly values: V[];
-    filter(predicate: (record: T, index: number) => boolean): T[];
+    readonly values: T[];
+    filter(predicate: (record: R, index: number) => boolean): R[];
     index(name: string, fk: string): string[];
-    get(id: number | string): T;
-    getOrDefault(id: number | string): T | null;
-    getByFk(fieldName: string, value: number | string): RecordSet<T, V>;
-    value(id: number | string): V;
+    get(id: number | string): R;
+    getOrDefault(id: number | string): R | null;
+    getByFk(fieldName: string, value: number | string): RecordSet<R, T>;
+    value(id: number | string): T;
     exists(id: number | string): boolean;
-    insert(data: V | V[]): T;
-    insertMany(data: V | V[]): T[];
-    update(data: Partial<V> | Partial<V>[]): T;
-    updateMany(data: Partial<V> | Partial<V>[]): T[];
-    upsert(data: Partial<V> | Partial<V>[]): T;
+    insert(data: T | T[]): R;
+    insertMany(data: T | T[]): R[];
+    update(data: Partial<T> | Partial<T>[]): R;
+    updateMany(data: Partial<T> | Partial<T>[]): R[];
+    upsert(data: Partial<T> | Partial<T>[]): R;
     delete(id: string | number): boolean;
-    insertNormalized(table: TableState<V>): T[];
-    updateNormalized(table: TableState<V>): T[];
-    upsertNormalized(norm: TableState): T[];
+    insertNormalized(table: TableState<T>): R[];
+    updateNormalized(table: TableState<T>): R[];
+    upsertNormalized(norm: TableState): R[];
     private _normalizedAction(data, action);
     private _updateIndexes(table);
     private _cleanIndexes(id, record, indexes);
@@ -44,23 +44,23 @@ export declare class RecordField<T> {
     constructor(schema: FieldSchema, record: TableRecord<T>);
     readonly value: any;
 }
-export declare class RecordSet<T extends TableRecord<V>, V = {}> implements TableRecordSet<V> {
-    readonly table: Table<V>;
+export declare class RecordSet<R extends TableRecord<T>, T = any> implements TableRecordSet<T> {
+    readonly table: Table<T>;
     readonly schema: FieldSchema;
     readonly owner: {
         id: string;
     };
-    constructor(table: Table<V>, schema: FieldSchema, owner: {
+    constructor(table: Table<T>, schema: FieldSchema, owner: {
         id: string;
     });
-    readonly value: V[];
+    readonly value: T[];
     readonly ids: string[];
     readonly length: number;
-    all(): T[];
-    map<M>(callback: (record: T) => M): M[];
-    add(data: V | V[]): void;
-    remove(data: Partial<V> | Partial<V>[]): void;
-    update(data: Partial<V> | Partial<V>[]): this;
+    all(): R[];
+    map<M>(callback: (record: R) => M): M[];
+    add(data: T | T[]): void;
+    remove(data: Partial<T> | Partial<T>[]): void;
+    update(data: Partial<T> | Partial<T>[]): this;
     delete(): void;
     private _normalize(data);
 }

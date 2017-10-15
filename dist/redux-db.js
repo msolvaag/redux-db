@@ -50,13 +50,16 @@ define("utils", ["require", "exports"], function (require, exports) {
     exports.toObject = function (a, key) {
         return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
     };
-    exports.arrayMerge = function (a, b) {
-        var hash = {}, i;
-        for (i = 0; i < a.length; i++) {
-            hash[a[i]] = true;
+    exports.mergeIds = function (source, second, unique) {
+        var hash = {};
+        var i;
+        for (i = 0; i < source.length; i++) {
+            hash[source[i]] = true;
         }
-        for (i = 0; i < b.length; i++) {
-            hash[b[i]] = true;
+        for (i = 0; i < second.length; i++) {
+            if (unique && hash[second[i]])
+                throw new Error("Id merge operation violates unique constraint for id: \"" + second[i] + "\"");
+            hash[second[i]] = true;
         }
         return Object.keys(hash);
     };
@@ -65,9 +68,7 @@ define("utils", ["require", "exports"], function (require, exports) {
     exports.isEqual = function (a, b) {
         if (a === b)
             return true;
-        var aKeys = Object.keys(a);
-        var bKeys = Object.keys(b);
-        var len = aKeys.length;
+        var aKeys = Object.keys(a), bKeys = Object.keys(b), len = aKeys.length;
         if (bKeys.length !== len) {
             return false;
         }
@@ -155,8 +156,9 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var pk = _this.getPrimaryKey(obj);
                 var fks = _this.getForeignKeys(obj);
                 var tbl = ctx.output[_this.name];
+                if (!tbl.byId[pk])
+                    tbl.ids.push(pk);
                 var record = tbl.byId[pk] = __assign({}, obj);
-                tbl.ids.push(pk);
                 fks.forEach(function (fk) {
                     // if the FK is an object, then normalize it and replace object with it's PK.
                     if (typeof fk.value === "object" && fk.refTable) {
@@ -367,7 +369,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         TableModel.prototype.insertNormalized = function (table) {
             var _this = this;
             this.dirty = true;
-            this.state = __assign({}, this.state, { ids: utils.arrayMerge(this.state.ids, table.ids), byId: __assign({}, this.state.byId, table.byId) });
+            this.state = __assign({}, this.state, { ids: utils.mergeIds(this.state.ids, table.ids, true), byId: __assign({}, this.state.byId, table.byId) });
             this._updateIndexes(table);
             return table.ids.map(function (id) { return ModelFactory.default.newRecord(id, _this); });
         };
@@ -425,7 +427,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 var idx = _this.state.indexes[key] || (_this.state.indexes[key] = { unique: table.indexes[key].unique, values: {} });
                 Object.keys(table.indexes[key].values).forEach(function (fk) {
                     var idxBucket = idx.values[fk] || (idx.values[fk] = []);
-                    var modifiedBucket = utils.arrayMerge(idxBucket, table.indexes[key].values[fk]);
+                    var modifiedBucket = utils.mergeIds(idxBucket, table.indexes[key].values[fk], false);
                     if (idx.unique && modifiedBucket.length > 1)
                         throw new Error("The insert/update operation violates the unique foreign key \"" + _this.schema.name + "." + key + "\".");
                     idx.values[fk] = modifiedBucket;
