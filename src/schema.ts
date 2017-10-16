@@ -8,25 +8,25 @@ export interface Table<R extends TableRecord<T> = TableRecord, T=any> {
     state: TableState;
     dirty: boolean;
 
-    get: (id: string | number) => R;
-    getOrDefault: (id: string | number) => R | null;
-    getByFk: (fieldName: string, id: string | number) => TableRecordSet<R, T>;
+    get(id: string | number): R;
+    getOrDefault(id: string | number): R | null;
+    getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
     all(): R[];
-    filter: (callback: (record: R) => boolean) => R[];
-    exists: (id: string | number) => boolean;
-    index: (name: string, fk: string) => string[];
-    value: (id: string | number) => T;
+    filter(callback: (record: R) => boolean): R[];
+    exists(id: string | number): boolean;
+    index(name: string, fk: string): string[];
+    value(id: string | number): T;
 
-    upsert: (data: Partial<T> | Partial<T>[]) => R;
-    insert: (data: T | T[]) => R;
-    insertMany: (data: T | T[]) => R[];
-    update: (data: Partial<T> | Partial<T>[]) => R;
-    updateMany: (data: Partial<T> | Partial<T>[]) => R[];
+    upsert(data: Partial<T> | Partial<T>[]): R;
+    insert(data: T | T[]): R;
+    insertMany(data: T | T[]): R[];
+    update(data: Partial<T> | Partial<T>[]): R;
+    updateMany(data: Partial<T> | Partial<T>[]): R[];
 
     // Delete one record
-    delete: (id: string | number) => boolean;
+    delete(id: string | number): boolean;
     // Delete all records
-    deleteAll: () => void;
+    deleteAll(): void;
 
     upsertNormalized(table: TableState<T>): void;
 }
