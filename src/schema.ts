@@ -236,7 +236,7 @@ export class TableSchema {
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
         // temp holder to validate PK constraint
-        const pks: { [key: string]: number } = {};
+        //const pks: { [key: string]: number } = {};
 
         return utils.ensureArray(data).map(obj => {
             if (typeof obj !== "object")
@@ -247,7 +247,7 @@ export class TableSchema {
                 obj = normalizeHook(obj, ctx);
 
             const pk = this.getPrimaryKey(obj);
-            if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
+            //if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
 
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];

@@ -58,7 +58,7 @@ var TableSchema = /** @class */ (function () {
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
         // temp holder to validate PK constraint
-        var pks = {};
+        //const pks: { [key: string]: number } = {};
         return utils.ensureArray(data).map(function (obj) {
             if (typeof obj !== "object")
                 throw new Error("Failed to normalize data. Given record is not a plain object.");
@@ -66,8 +66,7 @@ var TableSchema = /** @class */ (function () {
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
             var pk = _this.getPrimaryKey(obj);
-            if (pks[pk]++)
-                throw new Error("Multiple records with the same PK: \"" + _this.name + "." + pk + "\". Check your schema definition.");
+            //if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])
