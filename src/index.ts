@@ -54,7 +54,7 @@ export class Database implements DatabaseSchema {
             return tableSchema;
         });
 
-        const partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+        const partialSession = new DatabaseSession(state, { tables: tableSchemas, options: {} }, { readOnly: true });
 
         return partialSession.tables as T;
     }

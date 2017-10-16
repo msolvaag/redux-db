@@ -1,116 +1,57 @@
 var test = require('tape');
 var reduxDB = require("../dist/cjs");
+var schema = require("./schema");
+var data = require("./data");
 
 let state = {};
-const blogPosts = [
-    {
-        id: 1,
-        author: { username: "user1", name: "User 1" },
-        body: "......",
-        comments: [
-            {
-                id: 1,
-                author: { username: "user2", name: "User 2" },
-                comment: ".....",
-            },
-            {
-                id: 2,
-                author: { username: "user3", name: "User 3" },
-                comment: ".....",
-            }
-        ]
-    },
-    {
-        id: 2,
-        author: { username: "user2", name: "User 2" },
-        body: "......",
-        comments: [
-            {
-                id: 3,
-                author: { username: "user3", name: "User 3" },
-                comment: ".....",
-            },
-            {
-                id: 4,
-                author: { username: "user1", name: "User 1" },
-                comment: ".....",
-            },
-            {
-                id: 5,
-                author: { username: "user3", name: "User 3" },
-                comment: ".....",
-            }
-        ]
-    }
-];
 
-const uniqueData = [
-    {
-        id: 1,
-        postID: 1
-    },
-    {
-        id: 2,
-        postID: 2
-    }
-];
-
-const schema = {
-    User: {
-        username: { type: "PK" }
-    },
-    BlogPost: {
-        id: { type: "PK" },
-        author: { references: "User", relationName: "posts" },
-        computed: { 
-            value: (val,ctx) => { 
-                return ctx.record.author.value.name; 
-            } 
-        }
-    },
-    Comment: {
-        id: { type: "PK" },
-        post: { references: "BlogPost", relationName: "comments", cascade: true },
-        author: { references: "User", relationName: "comments" }
-    },
-    Unique:{
-        id: { type: "PK" },
-        postID: { propName: "post", references: "BlogPost", relationName: "unique", unique:true }
-    },
-    Unique2:{
-        id: { type: "PK", propName: "post", references: "BlogPost", relationName: "unique2", unique:true }
-    }
-};
-
-const db = reduxDB.createDatabase(schema);
+const db = reduxDB.createDatabase(schema.default);
 
 test('insert records', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
-    const recordModel = BlogPost.insertMany( blogPosts );
+    const {
+        BlogPost
+    } = session.tables;
+    const recordModel = BlogPost.insertMany(data.blogPosts);
 
     state = session.commit();
     const newTableState = state["BlogPost"];
 
-    t.deepEqual(newTableState.ids, ["1","2"], "State ids array is updated");
-    t.deepEqual(newTableState.byId["1"], { id: 1, author: "user1", body: "......" }, "State is updated with the inserted data");
+    t.deepEqual(newTableState.ids, ["1", "2"], "State ids array is updated");
+    t.deepEqual(newTableState.byId["1"], {
+        id: 1,
+        author: "user1",
+        body: "......"
+    }, "State is updated with the inserted data");
 });
 
 test('insert record', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
-    const record = { id: 3, author: { username: "user1" }, body: "test" };
-    const recordModel = BlogPost.insert( record );
+    const {
+        BlogPost
+    } = session.tables;
+    const record = {
+        id: 3,
+        author: {
+            username: "user1"
+        },
+        body: "test"
+    };
+    const recordModel = BlogPost.insert(record);
 
     state = session.commit();
     const newTableState = state["BlogPost"];
 
-    t.deepEqual(newTableState.byId["3"], { id: 3, author:"user1", body: "test" }, "State is updated with the inserted record");
-    t.throws( ()=> BlogPost.insert( record ), "Inserting a duplicate record violates PK" );
+    t.deepEqual(newTableState.byId["3"], {
+        id: 3,
+        author: "user1",
+        body: "test"
+    }, "State is updated with the inserted record");
+    t.throws(() => BlogPost.insert(record), "Inserting a duplicate record violates PK");
 });
 
 
@@ -118,25 +59,35 @@ test('update record', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
-    const recordModel = BlogPost.update(
-        { id: 1, body: "updated" }
-    );
+    const {
+        BlogPost
+    } = session.tables;
+    const recordModel = BlogPost.update({
+        id: 1,
+        body: "updated"
+    });
 
     state = session.commit();
     const newTableState = state["BlogPost"];
 
-    t.deepEqual(newTableState.byId["1"], { id: 1, author:"user1", body: "updated" }, "State is updated with the given data");
+    t.deepEqual(newTableState.byId["1"], {
+        id: 1,
+        author: "user1",
+        body: "updated"
+    }, "State is updated with the given data");
 });
 
 test('update non-modified record', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
-    const recordModel = BlogPost.update(
-        { id: 1, body: "updated" }
-    );
+    const {
+        BlogPost
+    } = session.tables;
+    const recordModel = BlogPost.update({
+        id: 1,
+        body: "updated"
+    });
 
     const newState = session.commit();
     t.equal(state, newState, "State remains unmodified when applying update with same data");
@@ -146,7 +97,9 @@ test('add/remove record relation', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
+    const {
+        BlogPost
+    } = session.tables;
     const recordModel = BlogPost.get(1);
     const numComments = recordModel.comments.length;
 
@@ -157,7 +110,9 @@ test('add/remove record relation', function (t) {
     });
     t.assert(recordModel.comments.length === numComments + 1, "Added relation is reflected immediatly");
 
-    recordModel.comments.remove( { id: 6 } );
+    recordModel.comments.remove({
+        id: 6
+    });
     t.assert(recordModel.comments.length === numComments, "Removed relation is reflected immediatly");
 });
 
@@ -165,7 +120,9 @@ test('computed property', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
-    const { BlogPost } = session.tables;
+    const {
+        BlogPost
+    } = session.tables;
     const recordModel = BlogPost.get(1);
 
     t.equal(recordModel.computed.value, "User 1", "computed property exists");
@@ -175,9 +132,12 @@ test('get by foreign key', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
-    const { Comment, BlogPost } = session.tables;
+    const {
+        Comment,
+        BlogPost
+    } = session.tables;
     const post = BlogPost.get(1);
-    const commentsByPost = Comment.getByFk( "post", 1 );
+    const commentsByPost = Comment.getByFk("post", 1);
 
     t.deepEqual(commentsByPost.value, post.comments.value, "getByFk is equivalent to get by owner property");
 });
@@ -186,35 +146,46 @@ test('add one 2 one relationship', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost, Unique } = session.tables;
+    const {
+        BlogPost,
+        Unique
+    } = session.tables;
 
-    const uq = Unique.insert( uniqueData );
-    t.assert( uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property" );
+    const uq = Unique.insert(data.uniqueData);
+    t.assert(uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property");
 
     const post = BlogPost.get(1);
-    t.assert( post.unique && post.unique.value && post.unique.value.id === 1, "Referenced record has unique property" );
+    t.assert(post.unique && post.unique.value && post.unique.value.id === 1, "Referenced record has unique property");
 });
 
 test('add one 2 one relationship through PK', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost, Unique2 } = session.tables;
+    const {
+        BlogPost,
+        Unique2
+    } = session.tables;
 
-    const uq = Unique2.insert( uniqueData );
-    t.assert( uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property" );
+    const uq = Unique2.insert(data.uniqueData);
+    t.assert(uq.post && uq.post.value && uq.post.value.id === 1, "Referencing record has foreign property");
 
     const post = BlogPost.get(1);
-    t.assert( post.unique2 && post.unique2.value && post.unique2.value.id === 1, "Referenced record has unique property" );
+    t.assert(post.unique2 && post.unique2.value && post.unique2.value.id === 1, "Referenced record has unique property");
 });
 
 test('violate one 2 one relationship', function (t) {
     t.plan(1);
 
     const session = db.createSession(state);
-    const { Unique } = session.tables;
+    const {
+        Unique
+    } = session.tables;
 
-    t.throws( ()=> Unique.insert( {id:3,postID:1} ), "Update/insert record with existing unique fk, throws an exception" );
+    t.throws(() => Unique.insert({
+        id: 3,
+        postID: 1
+    }), "Update/insert record with existing unique fk, throws an exception");
 });
 
 
@@ -222,13 +193,32 @@ test('delete cascade', function (t) {
     t.plan(2);
 
     const session = db.createSession(state);
-    const { BlogPost, Comment } = session.tables;
+    const {
+        BlogPost,
+        Comment
+    } = session.tables;
 
-    let commentsByPost = Comment.getByFk( "post", 1 );
-    t.assert( commentsByPost.length > 1, "Relations exists before delete.");
-    
+    let commentsByPost = Comment.getByFk("post", 1);
+    t.assert(commentsByPost.length > 1, "Relations exists before delete.");
+
     BlogPost.delete(1);
-    commentsByPost = Comment.getByFk( "post", 1 );
+    commentsByPost = Comment.getByFk("post", 1);
 
-    t.assert( commentsByPost.length === 0, "Relations marked with 'cascade' is deleted when the referenced entity is deleted.");
+    t.assert(commentsByPost.length === 0, "Relations marked with 'cascade' is deleted when the referenced entity is deleted.");
+});
+
+test('inserting invalid data is handled', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const {
+        BlogPost
+    } = session.tables;
+
+    t.throws(() => BlogPost.insert([false, 1, "test"]), "Insert record of primitives throws an exception.");
+    t.throws(() => BlogPost.insert({}), "Insert record with empty data throws an exception.");
+    // t.throws(() => BlogPost.insert({
+    //     id: 4,
+    //     autor: "user1" // misstyped
+    // }), "Insert record with invalid field throws an exception.");
 });

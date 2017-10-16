@@ -28,6 +28,24 @@ exports.ensureParamString = function (name, value) {
         throw new Error("Missing a valid string for the argument \"" + name + "\"");
     return value;
 };
+exports.ensureParamID = function (name, value) {
+    if (!exports.isValidID(value))
+        throw new Error("Missing a valid id for the argument \"" + name + "\"");
+    return exports.asID(value);
+};
+exports.ensureID = function (id) {
+    if (!exports.isValidID(id))
+        throw new Error("The given value is not a valid \"id\". An \"id\" must be a non-empty string or a number.");
+    return exports.asID(id);
+};
+// A valid id must be a non-empty string or a number.
+exports.isValidID = function (id) {
+    return id !== null && id !== undefined && ((typeof id === "string" && id.length > 0) || typeof id === "number");
+};
+// Ensures that the given id is a string
+exports.asID = function (id) {
+    return typeof id === "string" ? id : id.toString();
+};
 exports.toObject = function (a, key) {
     return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
 };

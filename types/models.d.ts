@@ -12,7 +12,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     index(name: string, fk: string): string[];
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
-    getByFk(fieldName: string, value: number | string): RecordSet<R, T>;
+    getByFk(fieldName: string, id: number | string): RecordSet<R, T>;
     value(id: number | string): T;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;

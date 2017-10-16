@@ -25,11 +25,31 @@ export const ensureParam = <T=any>(name: string, value: T) => {
         throw new Error(`Missing a valid value for the argument "${name}"`);
     return value;
 };
-export const ensureParamString = (name: string, value: string) => {
+export const ensureParamString = (name: string, value: any) => {
     if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
         throw new Error(`Missing a valid string for the argument "${name}"`);
     return value;
 };
+export const ensureParamID = (name: string, value: string | number) => {
+    if (!isValidID(value))
+        throw new Error(`Missing a valid id for the argument "${name}"`);
+    return asID(value);
+};
+export const ensureID = (id: string | number) => {
+    if (!isValidID(id))
+        throw new Error(`The given value is not a valid "id". An "id" must be a non-empty string or a number.`);
+    return asID(id);
+};
+
+// A valid id must be a non-empty string or a number.
+export const isValidID = (id: any) => {
+    return id !== null && id !== undefined && ((typeof id === "string" && id.length > 0) || typeof id === "number");
+};
+
+// Ensures that the given id is a string
+export const asID = (id: string | number) => {
+    return typeof id === "string" ? id : id.toString();
+}
 
 export const toObject = <T>(a: T[], key: (a: T) => string) => {
     return a.reduce<Record<string, T>>((o, v) => { o[key(v)] = v; return o; }, {});

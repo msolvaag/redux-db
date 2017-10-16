@@ -4,21 +4,21 @@ export interface Table<R extends TableRecord<T> = TableRecord, T = any> {
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
-    get: (id: string | number) => R;
-    getOrDefault: (id: string | number) => R | null;
-    getByFk: (fieldName: string, id: string | number) => TableRecordSet<R, T>;
+    get(id: string | number): R;
+    getOrDefault(id: string | number): R | null;
+    getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
     all(): R[];
-    filter: (callback: (record: R) => boolean) => R[];
-    exists: (id: string | number) => boolean;
-    index: (name: string, fk: string) => string[];
-    value: (id: string | number) => T;
-    upsert: (data: Partial<T> | Partial<T>[]) => R;
-    insert: (data: T | T[]) => R;
-    insertMany: (data: T | T[]) => R[];
-    update: (data: Partial<T> | Partial<T>[]) => R;
-    updateMany: (data: Partial<T> | Partial<T>[]) => R[];
-    delete: (id: string | number) => boolean;
-    deleteAll: () => void;
+    filter(callback: (record: R) => boolean): R[];
+    exists(id: string | number): boolean;
+    index(name: string, fk: string): string[];
+    value(id: string | number): T;
+    upsert(data: Partial<T> | Partial<T>[]): R;
+    insert(data: T | T[]): R;
+    insertMany(data: T | T[]): R[];
+    update(data: Partial<T> | Partial<T>[]): R;
+    updateMany(data: Partial<T> | Partial<T>[]): R[];
+    delete(id: string | number): boolean;
+    deleteAll(): void;
     upsertNormalized(table: TableState<T>): void;
 }
 export interface TableRecord<T = any> {
@@ -52,6 +52,7 @@ export interface FieldDDL {
     relationName?: string;
     cascade?: boolean;
     unique?: boolean;
+    notNull?: boolean;
     value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
 }
 export interface ComputeContext<T> {
@@ -60,6 +61,7 @@ export interface ComputeContext<T> {
 }
 export interface DatabaseSchema {
     tables: TableSchema[];
+    options: DatabaseOptions;
     normalizeHooks?: {
         [key: string]: Normalizer;
     };
@@ -68,6 +70,7 @@ export interface DatabaseOptions {
     onNormalize?: {
         [key: string]: Normalizer;
     };
+    cascadeAsDefault?: boolean;
 }
 export interface SessionOptions {
     readOnly: boolean;
@@ -144,14 +147,15 @@ export declare class TableSchema {
     private _stampFields;
     constructor(db: DatabaseSchema, name: string, schema: TableDDL);
     connect(schemas: TableSchema[]): void;
-    normalize(data: any, context: NormalizeContext): any[];
+    normalize(data: any, context: NormalizeContext): string[];
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
-    getPrimaryKey(record: any): any;
+    getPrimaryKey(record: any): string;
     getForeignKeys(record: any): {
         name: string;
         value: any;
         refTable: TableSchema | undefined;
         unique: boolean;
+        notNull: boolean;
     }[];
     isModified(x: any, y: any): boolean;
 }
@@ -164,11 +168,12 @@ export declare class FieldSchema {
     readonly relationName?: string;
     readonly cascade: boolean;
     readonly unique: boolean;
+    readonly notNull: boolean;
     readonly isPrimaryKey: boolean;
     readonly isForeignKey: boolean;
     refTable?: TableSchema;
     private _valueFactory?;
-    constructor(table: TableSchema, name: string, schema: FieldDDL);
+    constructor(table: TableSchema, name: string, schema: FieldDDL, cascadeAsDefault: boolean);
     getValue(data: any, record?: any): any;
     getRecordValue(record: {
         value: any;

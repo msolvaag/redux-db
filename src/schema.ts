@@ -87,6 +87,9 @@ export interface FieldDDL {
     // If set, declares that this relation is a one 2 one relationship.
     unique?: boolean;
 
+    // If set, declares that this field is nullable or not.
+    notNull?: boolean;
+
     // Defines a custom value factory for each record.
     value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
 }
@@ -98,12 +101,14 @@ export interface ComputeContext<T> {
 
 export interface DatabaseSchema {
     tables: TableSchema[];
+    options: DatabaseOptions;
 
     normalizeHooks?: { [key: string]: Normalizer };
 }
 
 export interface DatabaseOptions {
     onNormalize?: { [key: string]: Normalizer };
+    cascadeAsDefault?: boolean
 }
 export interface SessionOptions {
     readOnly: boolean;
@@ -198,7 +203,7 @@ export class TableSchema {
     constructor(db: DatabaseSchema, name: string, schema: TableDDL) {
         this.db = db;
         this.name = name;
-        this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName]));
+        this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true));
         this.fieldsByName = utils.toObject(this.fields, f => f.name);
 
         this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
@@ -231,16 +236,18 @@ export class TableSchema {
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
 
         // temp holder to validate PK constraint
-        const pks: { [key: string]: boolean } = {};
+        const pks: { [key: string]: number } = {};
 
         return utils.ensureArray(data).map(obj => {
+            if (typeof obj !== "object")
+                throw new Error("Failed to normalize data. Given record is not a plain object.");
+
             const normalizeHook = this.db.normalizeHooks ? this.db.normalizeHooks[this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
 
             const pk = this.getPrimaryKey(obj);
-            if (pks[pk]) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
-            pks[pk] = true;
+            if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
 
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
@@ -262,15 +269,16 @@ export class TableSchema {
                 }
 
                 // all FK's are auto indexed
-                if (fk.value !== null && fk.value !== undefined) {
+                if (utils.isValidID(fk.value)) {
+                    const fkId = utils.asID(fk.value); // ensure string id
                     const idx = tbl.indexes[fk.name] || (tbl.indexes[fk.name] = { unique: fk.unique, values: {} });
 
-                    if (!idx.values[fk.value])
-                        idx.values[fk.value] = [];
+                    if (!idx.values[fkId])
+                        idx.values[fkId] = [];
                     if (idx.unique && idx.values.length)
                         throw new Error(`The insert/update operation violates the unique foreign key "${this.name}.${fk.name}".`)
 
-                    idx.values[fk.value].push(pk);
+                    idx.values[fkId].push(pk);
                 }
             });
 
@@ -312,15 +320,14 @@ export class TableSchema {
     getPrimaryKey(record: any) {
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
 
-        let pk = lookup.reduce((p, n) => {
+        let combinedPk = lookup.reduce((p, n) => {
             const k = n.getValue(record);
             return p && k ? (p + "_" + k) : k;
         }, <string | null | undefined | number>null);
 
-        if (pk !== null && pk !== undefined && typeof (pk) !== "string")
-            pk = pk.toString();
+        const pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
 
-        if (!pk || pk.length === 0)
+        if (!pk)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
 
         return pk;
@@ -328,7 +335,7 @@ export class TableSchema {
 
     /// Gets the values of the FK's for the given record.
     getForeignKeys(record: any) {
-        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique }));
+        return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique, notNull: fk.notNull }));
     }
 
     /// Determines wether two records are equal, not modified.
@@ -351,6 +358,7 @@ export class FieldSchema {
     readonly relationName?: string;
     readonly cascade: boolean;
     readonly unique: boolean;
+    readonly notNull: boolean;
 
     readonly isPrimaryKey: boolean;
     readonly isForeignKey: boolean;
@@ -359,7 +367,7 @@ export class FieldSchema {
 
     private _valueFactory?: <T, M>(record: T, context?: ComputeContext<T>) => M;
 
-    constructor(table: TableSchema, name: string, schema: FieldDDL) {
+    constructor(table: TableSchema, name: string, schema: FieldDDL, cascadeAsDefault: boolean) {
         this.table = table;
 
         this.type = schema.type || "ATTR";
@@ -372,11 +380,15 @@ export class FieldSchema {
         if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;
             this.relationName = schema.relationName;
-            this.cascade = schema.cascade === true;
+            this.cascade = schema.cascade === undefined ? cascadeAsDefault : schema.cascade === true;
             this.unique = schema.unique === true;
+
+            // not null is default true, for PK's and FK's
+            this.notNull = schema.notNull === undefined ? true : schema.notNull === true;
         } else {
             this.cascade = false;
             this.unique = false;
+            this.notNull = schema.notNull === true;
         }
     }
 

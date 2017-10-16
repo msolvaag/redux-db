@@ -29,7 +29,7 @@ var TableSchema = /** @class */ (function () {
         this.relations = [];
         this.db = db;
         this.name = name;
-        this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
+        this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
         this.fieldsByName = utils.toObject(this.fields, function (f) { return f.name; });
         this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
@@ -60,13 +60,14 @@ var TableSchema = /** @class */ (function () {
         // temp holder to validate PK constraint
         var pks = {};
         return utils.ensureArray(data).map(function (obj) {
+            if (typeof obj !== "object")
+                throw new Error("Failed to normalize data. Given record is not a plain object.");
             var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
             var pk = _this.getPrimaryKey(obj);
-            if (pks[pk])
+            if (pks[pk]++)
                 throw new Error("Multiple records with the same PK: \"" + _this.name + "." + pk + "\". Check your schema definition.");
-            pks[pk] = true;
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])
@@ -81,13 +82,14 @@ var TableSchema = /** @class */ (function () {
                     record[fk.name] = fk.value = fkPks[0];
                 }
                 // all FK's are auto indexed
-                if (fk.value !== null && fk.value !== undefined) {
+                if (utils.isValidID(fk.value)) {
+                    var fkId = utils.asID(fk.value); // ensure string id
                     var idx = tbl.indexes[fk.name] || (tbl.indexes[fk.name] = { unique: fk.unique, values: {} });
-                    if (!idx.values[fk.value])
-                        idx.values[fk.value] = [];
+                    if (!idx.values[fkId])
+                        idx.values[fkId] = [];
                     if (idx.unique && idx.values.length)
                         throw new Error("The insert/update operation violates the unique foreign key \"" + _this.name + "." + fk.name + "\".");
-                    idx.values[fk.value].push(pk);
+                    idx.values[fkId].push(pk);
                 }
             });
             var relations = {};
@@ -124,19 +126,18 @@ var TableSchema = /** @class */ (function () {
     /// Gets the value of the PK for the given record.
     TableSchema.prototype.getPrimaryKey = function (record) {
         var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-        var pk = lookup.reduce(function (p, n) {
+        var combinedPk = lookup.reduce(function (p, n) {
             var k = n.getValue(record);
             return p && k ? (p + "_" + k) : k;
         }, null);
-        if (pk !== null && pk !== undefined && typeof (pk) !== "string")
-            pk = pk.toString();
-        if (!pk || pk.length === 0)
+        var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+        if (!pk)
             throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
         return pk;
     };
     /// Gets the values of the FK's for the given record.
     TableSchema.prototype.getForeignKeys = function (record) {
-        return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique }); });
+        return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique, notNull: fk.notNull }); });
     };
     /// Determines wether two records are equal, not modified.
     TableSchema.prototype.isModified = function (x, y) {
@@ -149,7 +150,7 @@ var TableSchema = /** @class */ (function () {
 }());
 exports.TableSchema = TableSchema;
 var FieldSchema = /** @class */ (function () {
-    function FieldSchema(table, name, schema) {
+    function FieldSchema(table, name, schema, cascadeAsDefault) {
         this.table = table;
         this.type = schema.type || "ATTR";
         this.name = name;
@@ -160,12 +161,15 @@ var FieldSchema = /** @class */ (function () {
         if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;
             this.relationName = schema.relationName;
-            this.cascade = schema.cascade === true;
+            this.cascade = schema.cascade === undefined ? cascadeAsDefault : schema.cascade === true;
             this.unique = schema.unique === true;
+            // not null is default true, for PK's and FK's
+            this.notNull = schema.notNull === undefined ? true : schema.notNull === true;
         }
         else {
             this.cascade = false;
             this.unique = false;
+            this.notNull = schema.notNull === true;
         }
     }
     FieldSchema.prototype.getValue = function (data, record) {

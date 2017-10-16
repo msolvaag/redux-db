@@ -53,7 +53,7 @@ var Database = /** @class */ (function () {
                 throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
             return tableSchema;
         });
-        var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+        var partialSession = new DatabaseSession(state, { tables: tableSchemas, options: {} }, { readOnly: true });
         return partialSession.tables;
     };
     Database.prototype.selectTable = function (tableState, schemaName) {

@@ -57,39 +57,31 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     get(id: number | string): R {
-        if (typeof id === "number") id = id.toString();
-
         if (!this.exists(id))
-            throw new Error(`No \"${this.schema.name}\" record with id: ${id} exists.`);
+            throw new Error(`No "${this.schema.name}" record with id: ${id} exists.`);
 
-        return ModelFactory.default.newRecord<R, T>(id, this);
+        return ModelFactory.default.newRecord<R, T>(utils.asID(id), this);
     }
 
     getOrDefault(id: number | string) {
         return this.exists(id) ? this.get(id) : null;
     }
 
-    getByFk(fieldName: string, value: number | string): RecordSet<R, T> {
+    getByFk(fieldName: string, id: number | string): RecordSet<R, T> {
         utils.ensureParam("fieldName", fieldName);
-        utils.ensureParam("value", value);
+        id = utils.ensureParamID("id", id);
 
         const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
-        return new RecordSet<R, T>(this, field, { id: value.toString() });
+        return new RecordSet<R, T>(this, field, { id: id });
     }
 
     value(id: number | string) {
-        utils.ensureParam("id", id);
-        if (typeof id === "number") id = id.toString();
-
-        return this.state.byId[id];
+        return this.state.byId[utils.ensureID(id)];
     }
 
     exists(id: number | string) {
-        utils.ensureParam("id", id);
-        if (typeof id === "number") id = id.toString();
-
-        return this.state.byId[id] !== undefined;
+        return this.state.byId[utils.ensureID(id)] !== undefined;
     }
 
     insert(data: T | T[]): R {
@@ -113,10 +105,8 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     delete(id: string | number) {
-        utils.ensureParam("id", id);
-
-        if (typeof id === "number") id = id.toString();
         if (!this.exists(id)) return false;
+        id = utils.asID(id);
 
         this._deleteCascade(id);
 

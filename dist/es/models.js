@@ -58,34 +58,26 @@ var TableModel = /** @class */ (function () {
             return [];
     };
     TableModel.prototype.get = function (id) {
-        if (typeof id === "number")
-            id = id.toString();
         if (!this.exists(id))
             throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
-        return ModelFactory.default.newRecord(id, this);
+        return ModelFactory.default.newRecord(utils.asID(id), this);
     };
     TableModel.prototype.getOrDefault = function (id) {
         return this.exists(id) ? this.get(id) : null;
     };
-    TableModel.prototype.getByFk = function (fieldName, value) {
+    TableModel.prototype.getByFk = function (fieldName, id) {
         utils.ensureParam("fieldName", fieldName);
-        utils.ensureParam("value", value);
+        id = utils.ensureParamID("id", id);
         var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
         if (!field)
             throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
-        return new RecordSet(this, field, { id: value.toString() });
+        return new RecordSet(this, field, { id: id });
     };
     TableModel.prototype.value = function (id) {
-        utils.ensureParam("id", id);
-        if (typeof id === "number")
-            id = id.toString();
-        return this.state.byId[id];
+        return this.state.byId[utils.ensureID(id)];
     };
     TableModel.prototype.exists = function (id) {
-        utils.ensureParam("id", id);
-        if (typeof id === "number")
-            id = id.toString();
-        return this.state.byId[id] !== undefined;
+        return this.state.byId[utils.ensureID(id)] !== undefined;
     };
     TableModel.prototype.insert = function (data) {
         return this.insertMany(data)[0];
@@ -103,11 +95,9 @@ var TableModel = /** @class */ (function () {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     };
     TableModel.prototype.delete = function (id) {
-        utils.ensureParam("id", id);
-        if (typeof id === "number")
-            id = id.toString();
         if (!this.exists(id))
             return false;
+        id = utils.asID(id);
         this._deleteCascade(id);
         var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), record = byId[id];
         delete byId[id];

@@ -47,6 +47,24 @@ define("utils", ["require", "exports"], function (require, exports) {
             throw new Error("Missing a valid string for the argument \"" + name + "\"");
         return value;
     };
+    exports.ensureParamID = function (name, value) {
+        if (!exports.isValidID(value))
+            throw new Error("Missing a valid id for the argument \"" + name + "\"");
+        return exports.asID(value);
+    };
+    exports.ensureID = function (id) {
+        if (!exports.isValidID(id))
+            throw new Error("The given value is not a valid \"id\". An \"id\" must be a non-empty string or a number.");
+        return exports.asID(id);
+    };
+    // A valid id must be a non-empty string or a number.
+    exports.isValidID = function (id) {
+        return id !== null && id !== undefined && ((typeof id === "string" && id.length > 0) || typeof id === "number");
+    };
+    // Ensures that the given id is a string
+    exports.asID = function (id) {
+        return typeof id === "string" ? id : id.toString();
+    };
     exports.toObject = function (a, key) {
         return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});
     };
@@ -121,7 +139,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             this.relations = [];
             this.db = db;
             this.name = name;
-            this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName]); });
+            this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
             this.fieldsByName = utils.toObject(this.fields, function (f) { return f.name; });
             this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
@@ -152,13 +170,14 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             // temp holder to validate PK constraint
             var pks = {};
             return utils.ensureArray(data).map(function (obj) {
+                if (typeof obj !== "object")
+                    throw new Error("Failed to normalize data. Given record is not a plain object.");
                 var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
                 if (normalizeHook)
                     obj = normalizeHook(obj, ctx);
                 var pk = _this.getPrimaryKey(obj);
-                if (pks[pk])
+                if (pks[pk]++)
                     throw new Error("Multiple records with the same PK: \"" + _this.name + "." + pk + "\". Check your schema definition.");
-                pks[pk] = true;
                 var fks = _this.getForeignKeys(obj);
                 var tbl = ctx.output[_this.name];
                 if (!tbl.byId[pk])
@@ -173,13 +192,14 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                         record[fk.name] = fk.value = fkPks[0];
                     }
                     // all FK's are auto indexed
-                    if (fk.value !== null && fk.value !== undefined) {
+                    if (utils.isValidID(fk.value)) {
+                        var fkId = utils.asID(fk.value); // ensure string id
                         var idx = tbl.indexes[fk.name] || (tbl.indexes[fk.name] = { unique: fk.unique, values: {} });
-                        if (!idx.values[fk.value])
-                            idx.values[fk.value] = [];
+                        if (!idx.values[fkId])
+                            idx.values[fkId] = [];
                         if (idx.unique && idx.values.length)
                             throw new Error("The insert/update operation violates the unique foreign key \"" + _this.name + "." + fk.name + "\".");
-                        idx.values[fk.value].push(pk);
+                        idx.values[fkId].push(pk);
                     }
                 });
                 var relations = {};
@@ -216,19 +236,18 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         /// Gets the value of the PK for the given record.
         TableSchema.prototype.getPrimaryKey = function (record) {
             var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-            var pk = lookup.reduce(function (p, n) {
+            var combinedPk = lookup.reduce(function (p, n) {
                 var k = n.getValue(record);
                 return p && k ? (p + "_" + k) : k;
             }, null);
-            if (pk !== null && pk !== undefined && typeof (pk) !== "string")
-                pk = pk.toString();
-            if (!pk || pk.length === 0)
+            var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+            if (!pk)
                 throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
             return pk;
         };
         /// Gets the values of the FK's for the given record.
         TableSchema.prototype.getForeignKeys = function (record) {
-            return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique }); });
+            return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique, notNull: fk.notNull }); });
         };
         /// Determines wether two records are equal, not modified.
         TableSchema.prototype.isModified = function (x, y) {
@@ -241,7 +260,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     }());
     exports.TableSchema = TableSchema;
     var FieldSchema = /** @class */ (function () {
-        function FieldSchema(table, name, schema) {
+        function FieldSchema(table, name, schema, cascadeAsDefault) {
             this.table = table;
             this.type = schema.type || "ATTR";
             this.name = name;
@@ -252,12 +271,15 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
             if (this.isPrimaryKey || this.isForeignKey) {
                 this.references = schema.references;
                 this.relationName = schema.relationName;
-                this.cascade = schema.cascade === true;
+                this.cascade = schema.cascade === undefined ? cascadeAsDefault : schema.cascade === true;
                 this.unique = schema.unique === true;
+                // not null is default true, for PK's and FK's
+                this.notNull = schema.notNull === undefined ? true : schema.notNull === true;
             }
             else {
                 this.cascade = false;
                 this.unique = false;
+                this.notNull = schema.notNull === true;
             }
         }
         FieldSchema.prototype.getValue = function (data, record) {
@@ -316,34 +338,26 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
                 return [];
         };
         TableModel.prototype.get = function (id) {
-            if (typeof id === "number")
-                id = id.toString();
             if (!this.exists(id))
                 throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
-            return ModelFactory.default.newRecord(id, this);
+            return ModelFactory.default.newRecord(utils.asID(id), this);
         };
         TableModel.prototype.getOrDefault = function (id) {
             return this.exists(id) ? this.get(id) : null;
         };
-        TableModel.prototype.getByFk = function (fieldName, value) {
+        TableModel.prototype.getByFk = function (fieldName, id) {
             utils.ensureParam("fieldName", fieldName);
-            utils.ensureParam("value", value);
+            id = utils.ensureParamID("id", id);
             var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
             if (!field)
                 throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
-            return new RecordSet(this, field, { id: value.toString() });
+            return new RecordSet(this, field, { id: id });
         };
         TableModel.prototype.value = function (id) {
-            utils.ensureParam("id", id);
-            if (typeof id === "number")
-                id = id.toString();
-            return this.state.byId[id];
+            return this.state.byId[utils.ensureID(id)];
         };
         TableModel.prototype.exists = function (id) {
-            utils.ensureParam("id", id);
-            if (typeof id === "number")
-                id = id.toString();
-            return this.state.byId[id] !== undefined;
+            return this.state.byId[utils.ensureID(id)] !== undefined;
         };
         TableModel.prototype.insert = function (data) {
             return this.insertMany(data)[0];
@@ -361,11 +375,9 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this._normalizedAction(data, this.upsertNormalized)[0];
         };
         TableModel.prototype.delete = function (id) {
-            utils.ensureParam("id", id);
-            if (typeof id === "number")
-                id = id.toString();
             if (!this.exists(id))
                 return false;
+            id = utils.asID(id);
             this._deleteCascade(id);
             var byId = __assign({}, this.state.byId), ids = this.state.ids.slice(), indexes = __assign({}, this.state.indexes), record = byId[id];
             delete byId[id];
@@ -685,7 +697,7 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
                     throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
                 return tableSchema;
             });
-            var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+            var partialSession = new DatabaseSession(state, { tables: tableSchemas, options: {} }, { readOnly: true });
             return partialSession.tables;
         };
         Database.prototype.selectTable = function (tableState, schemaName) {
