@@ -52,6 +52,8 @@ var TableModel = /** @class */ (function () {
         return this.all().filter(predicate);
     };
     TableModel.prototype.index = function (name, fk) {
+        utils.ensureParamString("value", name);
+        utils.ensureParamString("fk", fk);
         if (this.state.indexes[name] && this.state.indexes[name].values[fk])
             return this.state.indexes[name].values[fk];
         else
@@ -68,17 +70,21 @@ var TableModel = /** @class */ (function () {
         return this.exists(id) ? this.get(id) : null;
     };
     TableModel.prototype.getByFk = function (fieldName, value) {
+        utils.ensureParam("fieldName", fieldName);
+        utils.ensureParam("value", value);
         var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
         if (!field)
             throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
         return new RecordSet(this, field, { id: value.toString() });
     };
     TableModel.prototype.value = function (id) {
+        utils.ensureParam("id", id);
         if (typeof id === "number")
             id = id.toString();
         return this.state.byId[id];
     };
     TableModel.prototype.exists = function (id) {
+        utils.ensureParam("id", id);
         if (typeof id === "number")
             id = id.toString();
         return this.state.byId[id] !== undefined;
@@ -99,6 +105,7 @@ var TableModel = /** @class */ (function () {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     };
     TableModel.prototype.delete = function (id) {
+        utils.ensureParam("id", id);
         if (typeof id === "number")
             id = id.toString();
         if (!this.exists(id))
@@ -115,8 +122,13 @@ var TableModel = /** @class */ (function () {
         this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
         return true;
     };
+    TableModel.prototype.deleteAll = function () {
+        if (this.length)
+            this.all().forEach(function (d) { return d.delete(); });
+    };
     TableModel.prototype.insertNormalized = function (table) {
         var _this = this;
+        utils.ensureParam("table", table);
         this.dirty = true;
         this.state = __assign({}, this.state, { ids: utils.mergeIds(this.state.ids, table.ids, true), byId: __assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
@@ -124,6 +136,7 @@ var TableModel = /** @class */ (function () {
     };
     TableModel.prototype.updateNormalized = function (table) {
         var _this = this;
+        utils.ensureParam("table", table);
         var state = __assign({}, this.state), dirty = false;
         var records = Object.keys(table.byId).map(function (id) {
             if (!_this.state.byId[id])
@@ -146,6 +159,7 @@ var TableModel = /** @class */ (function () {
     };
     TableModel.prototype.upsertNormalized = function (norm) {
         var _this = this;
+        utils.ensureParam("table", norm);
         var toUpdate = { ids: [], byId: {}, indexes: {} };
         var toInsert = { ids: [], byId: {}, indexes: {} };
         norm.ids.forEach(function (id) {
@@ -163,6 +177,8 @@ var TableModel = /** @class */ (function () {
         return refs;
     };
     TableModel.prototype._normalizedAction = function (data, action) {
+        utils.ensureParam("data", data);
+        utils.ensureParam("action", action);
         var norm = new schema_1.NormalizeContext(this.schema);
         this.schema.normalize(data, norm);
         var table = norm.output[this.schema.name];

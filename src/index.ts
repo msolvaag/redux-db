@@ -1,9 +1,9 @@
-import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, Table, DatabaseOptions, SessionOptions, Session, DatabaseState, NormalizeContext, NormalizedState, Normalizer } from "./schema";
+import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, Table, TableRecord, TableState, DatabaseOptions, SessionOptions, Session, TableMap, DatabaseState, NormalizeContext, NormalizedState, Normalizer } from "./schema";
 import { RecordModel, RecordSet, TableModel } from "./models";
 import * as utils from "./utils";
 
 export interface Reducer {
-    (session: any, action: any): void;
+    (session: any, action: any, arg?: any): void;
 }
 
 const defaultOptions = {};
@@ -26,21 +26,25 @@ export class Database implements DatabaseSchema {
 
     combineReducers(...reducers: Reducer[]) {
         return (state: any = {}, action: any) => {
-            const session = this.createSession(state);
-
-            reducers.forEach(reducer => {
-                reducer(session.tables, action);
-            });
-
-            return session.commit();
+            return this.reduce(state, action, reducers);
         };
+    }
+
+    reduce(state: any, action: any, reducers: Reducer | Reducer[], arg?: any) {
+        const session = this.createSession(state);
+
+        utils.ensureArray(reducers).forEach(reducer => {
+            reducer(session.tables, action, arg);
+        });
+
+        return session.commit();
     }
 
     createSession(state: any, options?: SessionOptions) {
         return new DatabaseSession(state, this, { readOnly: false, ...options });
     }
 
-    selectTables(state: any) {
+    selectTables<T extends TableMap = any>(state: any) {
         const tableSchemas = Object.keys(state).map(tableName => {
 
             const tableSchema = this.tables.filter(s => s.name === tableName)[0];
@@ -50,23 +54,23 @@ export class Database implements DatabaseSchema {
             return tableSchema;
         });
 
-        var partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
+        const partialSession = new DatabaseSession(state, { tables: tableSchemas }, { readOnly: true });
 
-        return partialSession.tables as { [key: string]: TableModel<any> };
+        return partialSession.tables as T;
     }
 
-    selectTable<T=any>(tableState: any, schemaName?: string) {
-        let name = schemaName || tableState["name"];
+    selectTable<T extends Table = any>(tableState: any, schemaName?: string) {
+        const name = schemaName || tableState["name"];
         if (!name)
             throw new Error("Failed to select table. Could not identify table schema.");
 
-        return this.selectTables({ [name]: tableState })[name];
+        return this.selectTables({ [name]: tableState })[name] as T;
     }
 }
 
 export class DatabaseSession implements Session {
     db: DatabaseSchema;
-    tables: any;
+    tables: TableMap;
     state: DatabaseState;
     options: SessionOptions;
 
@@ -107,4 +111,4 @@ export class DatabaseSession implements Session {
     }
 }
 
-export { RecordModel as Record, RecordSet, TableModel as Table };
+export { TableRecord as Record, RecordSet, Table, TableMap };

@@ -7,7 +7,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 import { TableSchema } from "./schema";
-import { RecordModel, RecordSet, TableModel } from "./models";
+import { RecordSet, TableModel } from "./models";
 import * as utils from "./utils";
 var defaultOptions = {};
 export var createDatabase = function (schema, options) {
@@ -29,12 +29,15 @@ var Database = /** @class */ (function () {
         }
         return function (state, action) {
             if (state === void 0) { state = {}; }
-            var session = _this.createSession(state);
-            reducers.forEach(function (reducer) {
-                reducer(session.tables, action);
-            });
-            return session.commit();
+            return _this.reduce(state, action, reducers);
         };
+    };
+    Database.prototype.reduce = function (state, action, reducers, arg) {
+        var session = this.createSession(state);
+        utils.ensureArray(reducers).forEach(function (reducer) {
+            reducer(session.tables, action, arg);
+        });
+        return session.commit();
     };
     Database.prototype.createSession = function (state, options) {
         return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
@@ -100,4 +103,4 @@ var DatabaseSession = /** @class */ (function () {
     return DatabaseSession;
 }());
 export { DatabaseSession };
-export { RecordModel as Record, RecordSet, TableModel as Table };
+export { RecordSet };

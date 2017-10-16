@@ -14,7 +14,8 @@ import {
 } from "./schema";
 import * as utils from "./utils";
 
-export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
+
+export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implements Table<R, T> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -46,6 +47,9 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
     }
 
     index(name: string, fk: string): string[] {
+        utils.ensureParamString("value", name);
+        utils.ensureParamString("fk", fk);
+
         if (this.state.indexes[name] && this.state.indexes[name].values[fk])
             return this.state.indexes[name].values[fk];
         else
@@ -66,17 +70,23 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
     }
 
     getByFk(fieldName: string, value: number | string): RecordSet<R, T> {
+        utils.ensureParam("fieldName", fieldName);
+        utils.ensureParam("value", value);
+
         const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
         return new RecordSet<R, T>(this, field, { id: value.toString() });
     }
 
     value(id: number | string) {
+        utils.ensureParam("id", id);
         if (typeof id === "number") id = id.toString();
+
         return this.state.byId[id];
     }
 
     exists(id: number | string) {
+        utils.ensureParam("id", id);
         if (typeof id === "number") id = id.toString();
 
         return this.state.byId[id] !== undefined;
@@ -103,6 +113,8 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
     }
 
     delete(id: string | number) {
+        utils.ensureParam("id", id);
+
         if (typeof id === "number") id = id.toString();
         if (!this.exists(id)) return false;
 
@@ -127,7 +139,14 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
         return true;
     }
 
+    deleteAll() {
+        if (this.length)
+            this.all().forEach(d => d.delete());
+    }
+
     insertNormalized(table: TableState<T>) {
+        utils.ensureParam("table", table);
+
         this.dirty = true;
         this.state = {
             ...this.state,
@@ -140,6 +159,8 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
     }
 
     updateNormalized(table: TableState<T>) {
+        utils.ensureParam("table", table);
+
         let state = { ... this.state }, dirty = false;
         const records = Object.keys(table.byId).map(id => {
             if (!this.state.byId[id])
@@ -167,9 +188,11 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
         return records;
     }
 
-    upsertNormalized(norm: TableState): R[] {
-        const toUpdate: TableState = { ids: [], byId: {}, indexes: {} };
-        const toInsert: TableState = { ids: [], byId: {}, indexes: {} };
+    upsertNormalized(norm: TableState<T>): R[] {
+        utils.ensureParam("table", norm);
+
+        const toUpdate: TableState<T> = { ids: [], byId: {}, indexes: {} };
+        const toInsert: TableState<T> = { ids: [], byId: {}, indexes: {} };
 
         norm.ids.forEach(id => {
             if (this.exists(id)) {
@@ -189,7 +212,10 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
         return refs;
     }
 
-    private _normalizedAction(data: any, action: (norm: TableState) => R[]): R[] {
+    private _normalizedAction(data: Partial<T> | Partial<T>[], action: (norm: TableState) => R[]): R[] {
+        utils.ensureParam("data", data);
+        utils.ensureParam("action", action);
+
         const norm = new NormalizeContext(this.schema);
         this.schema.normalize(data, norm);
 
@@ -200,6 +226,7 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
     }
 
     private _updateIndexes(table: TableState) {
+
         Object.keys(table.indexes).forEach(key => {
             const idx = this.state.indexes[key] || (this.state.indexes[key] = { unique: table.indexes[key].unique, values: {} });
 
@@ -250,11 +277,11 @@ export class TableModel<R extends TableRecord<T>, T=any> implements Table<T> {
 }
 
 export class RecordModel<T> implements TableRecord<T> {
-    table: Table<T>;
+    table: Table;
     id: string;
 
 
-    constructor(id: string, table: Table<T>) {
+    constructor(id: string, table: Table) {
         this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
@@ -289,13 +316,13 @@ export class RecordField<T> {
     }
 }
 
-export class RecordSet<R extends TableRecord<T>, T=any> implements TableRecordSet<T> {
+export class RecordSet<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
 
-    readonly table: Table<T>;
+    readonly table: Table<R, T>;
     readonly schema: FieldSchema;
     readonly owner: { id: string };
 
-    constructor(table: Table<T>, schema: FieldSchema, owner: { id: string }) {
+    constructor(table: Table<R, T>, schema: FieldSchema, owner: { id: string }) {
         this.table = utils.ensureParam("table", table);
         this.schema = utils.ensureParam("schema", schema);
         this.owner = utils.ensureParam("owner", owner);
@@ -351,7 +378,7 @@ class ModelFactory {
 
     static default: ModelFactory = new ModelFactory();
 
-    newRecord<R extends TableRecord<T>, T>(id: string, table: Table<T>): R {
+    newRecord<R extends TableRecord<T>, T>(id: string, table: Table<R, T>): R {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass<T>(table.schema)))(id, table);
     }
 

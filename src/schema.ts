@@ -2,52 +2,58 @@ import * as utils from "./utils";
 
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
 
-export interface Table<T=any> {
+export interface Table<R extends TableRecord<T> = TableRecord, T=any> {
     session: Session;
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
 
-    get: (id: string | number) => TableRecord<T>;
-    getOrDefault: (id: string | number) => TableRecord<T> | null;
-    getByFk: (fieldName: string, id: string | number) => TableRecordSet<T>;
-    all(): TableRecord<T>[];
-    filter: (callback: (record: TableRecord<T>) => boolean) => TableRecord<T>[];
+    get: (id: string | number) => R;
+    getOrDefault: (id: string | number) => R | null;
+    getByFk: (fieldName: string, id: string | number) => TableRecordSet<R, T>;
+    all(): R[];
+    filter: (callback: (record: R) => boolean) => R[];
     exists: (id: string | number) => boolean;
     index: (name: string, fk: string) => string[];
     value: (id: string | number) => T;
 
-    upsert: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
-    insert: (data: T | T[]) => TableRecord<T>;
-    insertMany: (data: T | T[]) => TableRecord<T>[];
-    update: (data: Partial<T> | Partial<T>[]) => TableRecord<T>;
-    updateMany: (data: Partial<T> | Partial<T>[]) => TableRecord<T>[];
-    delete: (id: string | number) => void;
+    upsert: (data: Partial<T> | Partial<T>[]) => R;
+    insert: (data: T | T[]) => R;
+    insertMany: (data: T | T[]) => R[];
+    update: (data: Partial<T> | Partial<T>[]) => R;
+    updateMany: (data: Partial<T> | Partial<T>[]) => R[];
+
+    // Delete one record
+    delete: (id: string | number) => boolean;
+    // Delete all records
+    deleteAll: () => void;
+
+    upsertNormalized(table: TableState<T>): void;
 }
 
 export interface TableRecord<T=any> {
     id: string;
-    table: Table<T>;
+    table: Table;
     value: T;
 
-    update(data: T): TableRecord<T>;
+    update(data: Partial<T>): TableRecord<T>;
     delete(): void;
 }
 
-export interface TableRecordSet<T> {
+export interface TableRecordSet<R extends TableRecord<T>, T> {
     value: T[];
     ids: string[]
     length: number;
 
-    all(): TableRecord<T>[];
+    all(): R[];
 
     add(data: T | T[]): void;
     remove(data: Partial<T>): void;
 
-    update(data: Partial<T> | Partial<T>[]): TableRecordSet<T>;
+    update(data: Partial<T> | Partial<T>[]): TableRecordSet<R, T>;
     delete(): void;
 
-    map<M>(callback: (record: TableRecord<T>) => M): M[];
+    map<M>(callback: (record: R) => M): M[];
 }
 
 // Defines a database schema
@@ -136,12 +142,17 @@ export interface Schema {
     getPrimaryKey: (state: any) => string;
 }
 
+export interface TableMap {
+    [key: string]: Table
+}
+
 export interface Session {
     db: DatabaseSchema;
     state: DatabaseState;
-    tables: any;
+    tables: TableMap;
 
     upsert(ctx: NormalizeContext): void;
+    commit(): DatabaseState;
 }
 
 export interface NormalizedState {

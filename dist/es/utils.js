@@ -22,7 +22,7 @@ export var ensureParam = function (name, value) {
     return value;
 };
 export var ensureParamString = function (name, value) {
-    if (value === undefined || value === null || value.length === 0)
+    if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
         throw new Error("Missing a valid string for the argument \"" + name + "\"");
     return value;
 };

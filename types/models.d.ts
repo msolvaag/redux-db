@@ -1,5 +1,5 @@
 import { TableSchema, FieldSchema, TableState, Table, TableRecord, TableRecordSet, Session } from "./schema";
-export declare class TableModel<R extends TableRecord<T>, T = any> implements Table<T> {
+export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any> implements Table<R, T> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -21,18 +21,19 @@ export declare class TableModel<R extends TableRecord<T>, T = any> implements Ta
     updateMany(data: Partial<T> | Partial<T>[]): R[];
     upsert(data: Partial<T> | Partial<T>[]): R;
     delete(id: string | number): boolean;
+    deleteAll(): void;
     insertNormalized(table: TableState<T>): R[];
     updateNormalized(table: TableState<T>): R[];
-    upsertNormalized(norm: TableState): R[];
+    upsertNormalized(norm: TableState<T>): R[];
     private _normalizedAction(data, action);
     private _updateIndexes(table);
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);
 }
 export declare class RecordModel<T> implements TableRecord<T> {
-    table: Table<T>;
+    table: Table;
     id: string;
-    constructor(id: string, table: Table<T>);
+    constructor(id: string, table: Table);
     readonly value: T;
     delete(): void;
     update(data: Partial<T>): this;
@@ -44,13 +45,13 @@ export declare class RecordField<T> {
     constructor(schema: FieldSchema, record: TableRecord<T>);
     readonly value: any;
 }
-export declare class RecordSet<R extends TableRecord<T>, T = any> implements TableRecordSet<T> {
-    readonly table: Table<T>;
+export declare class RecordSet<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
+    readonly table: Table<R, T>;
     readonly schema: FieldSchema;
     readonly owner: {
         id: string;
     };
-    constructor(table: Table<T>, schema: FieldSchema, owner: {
+    constructor(table: Table<R, T>, schema: FieldSchema, owner: {
         id: string;
     });
     readonly value: T[];

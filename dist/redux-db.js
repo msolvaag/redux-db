@@ -43,7 +43,7 @@ define("utils", ["require", "exports"], function (require, exports) {
         return value;
     };
     exports.ensureParamString = function (name, value) {
-        if (value === undefined || value === null || value.length === 0)
+        if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
             throw new Error("Missing a valid string for the argument \"" + name + "\"");
         return value;
     };
@@ -308,6 +308,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this.all().filter(predicate);
         };
         TableModel.prototype.index = function (name, fk) {
+            utils.ensureParamString("value", name);
+            utils.ensureParamString("fk", fk);
             if (this.state.indexes[name] && this.state.indexes[name].values[fk])
                 return this.state.indexes[name].values[fk];
             else
@@ -324,17 +326,21 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this.exists(id) ? this.get(id) : null;
         };
         TableModel.prototype.getByFk = function (fieldName, value) {
+            utils.ensureParam("fieldName", fieldName);
+            utils.ensureParam("value", value);
             var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
             if (!field)
                 throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
             return new RecordSet(this, field, { id: value.toString() });
         };
         TableModel.prototype.value = function (id) {
+            utils.ensureParam("id", id);
             if (typeof id === "number")
                 id = id.toString();
             return this.state.byId[id];
         };
         TableModel.prototype.exists = function (id) {
+            utils.ensureParam("id", id);
             if (typeof id === "number")
                 id = id.toString();
             return this.state.byId[id] !== undefined;
@@ -355,6 +361,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return this._normalizedAction(data, this.upsertNormalized)[0];
         };
         TableModel.prototype.delete = function (id) {
+            utils.ensureParam("id", id);
             if (typeof id === "number")
                 id = id.toString();
             if (!this.exists(id))
@@ -371,8 +378,13 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             this.state = __assign({}, this.state, { byId: byId, ids: ids, indexes: indexes });
             return true;
         };
+        TableModel.prototype.deleteAll = function () {
+            if (this.length)
+                this.all().forEach(function (d) { return d.delete(); });
+        };
         TableModel.prototype.insertNormalized = function (table) {
             var _this = this;
+            utils.ensureParam("table", table);
             this.dirty = true;
             this.state = __assign({}, this.state, { ids: utils.mergeIds(this.state.ids, table.ids, true), byId: __assign({}, this.state.byId, table.byId) });
             this._updateIndexes(table);
@@ -380,6 +392,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         };
         TableModel.prototype.updateNormalized = function (table) {
             var _this = this;
+            utils.ensureParam("table", table);
             var state = __assign({}, this.state), dirty = false;
             var records = Object.keys(table.byId).map(function (id) {
                 if (!_this.state.byId[id])
@@ -402,6 +415,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
         };
         TableModel.prototype.upsertNormalized = function (norm) {
             var _this = this;
+            utils.ensureParam("table", norm);
             var toUpdate = { ids: [], byId: {}, indexes: {} };
             var toInsert = { ids: [], byId: {}, indexes: {} };
             norm.ids.forEach(function (id) {
@@ -419,6 +433,8 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
             return refs;
         };
         TableModel.prototype._normalizedAction = function (data, action) {
+            utils.ensureParam("data", data);
+            utils.ensureParam("action", action);
             var norm = new schema_1.NormalizeContext(this.schema);
             this.schema.normalize(data, norm);
             var table = norm.output[this.schema.name];
@@ -627,9 +643,7 @@ define("models", ["require", "exports", "schema", "utils"], function (require, e
 define("index", ["require", "exports", "schema", "models", "utils"], function (require, exports, schema_2, models_1, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Record = models_1.RecordModel;
     exports.RecordSet = models_1.RecordSet;
-    exports.Table = models_1.TableModel;
     var defaultOptions = {};
     exports.createDatabase = function (schema, options) {
         return new Database(schema, __assign({}, defaultOptions, options));
@@ -650,12 +664,15 @@ define("index", ["require", "exports", "schema", "models", "utils"], function (r
             }
             return function (state, action) {
                 if (state === void 0) { state = {}; }
-                var session = _this.createSession(state);
-                reducers.forEach(function (reducer) {
-                    reducer(session.tables, action);
-                });
-                return session.commit();
+                return _this.reduce(state, action, reducers);
             };
+        };
+        Database.prototype.reduce = function (state, action, reducers, arg) {
+            var session = this.createSession(state);
+            utils.ensureArray(reducers).forEach(function (reducer) {
+                reducer(session.tables, action, arg);
+            });
+            return session.commit();
         };
         Database.prototype.createSession = function (state, options) {
             return new DatabaseSession(state, this, __assign({ readOnly: false }, options));

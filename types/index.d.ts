@@ -1,7 +1,7 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, DatabaseOptions, SessionOptions, Session, DatabaseState, NormalizeContext, Normalizer } from "./schema";
-import { RecordModel, RecordSet, TableModel } from "./models";
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, DatabaseOptions, SessionOptions, Session, TableMap, DatabaseState, NormalizeContext, Normalizer } from "./schema";
+import { RecordSet } from "./models";
 export interface Reducer {
-    (session: any, action: any): void;
+    (session: any, action: any, arg?: any): void;
 }
 export declare const createDatabase: (schema: SchemaDDL, options?: DatabaseOptions | undefined) => Database;
 export declare class Database implements DatabaseSchema {
@@ -12,19 +12,18 @@ export declare class Database implements DatabaseSchema {
     };
     constructor(schema: SchemaDDL, options: DatabaseOptions);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;
+    reduce(state: any, action: any, reducers: Reducer | Reducer[], arg?: any): any;
     createSession(state: any, options?: SessionOptions): DatabaseSession;
-    selectTables(state: any): {
-        [key: string]: TableModel<any, any>;
-    };
-    selectTable<T = any>(tableState: any, schemaName?: string): TableModel<any, any>;
+    selectTables<T extends TableMap = any>(state: any): T;
+    selectTable<T extends Table = any>(tableState: any, schemaName?: string): T;
 }
 export declare class DatabaseSession implements Session {
     db: DatabaseSchema;
-    tables: any;
+    tables: TableMap;
     state: DatabaseState;
     options: SessionOptions;
     constructor(state: DatabaseState | undefined, schema: DatabaseSchema, options: SessionOptions);
     upsert(ctx: NormalizeContext): void;
     commit(): any;
 }
-export { RecordModel as Record, RecordSet, TableModel as Table };
+export { TableRecord as Record, RecordSet, Table, TableMap };
