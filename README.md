@@ -1,9 +1,6 @@
 # redux-db
 redux-db provides a normalized [redux](http://redux.js.org) store and easy object management.
 
-## Documentation
-Head over to [http://redux-db.readthedocs.io](http://redux-db.readthedocs.io/en/latest/).
-
 ## Why
 Having a normalized state is a good strategy if your data is nested in different ways. The redux documentation has a nice explanation [here](http://redux.js.org/docs/recipes/reducers/NormalizingStateShape.html).
 
@@ -55,6 +52,9 @@ export const dbReducer = db.combineReducers(
     }
 );
 ```
+
+## Documentation
+Head over to [http://redux-db.readthedocs.io](http://redux-db.readthedocs.io/en/latest/).
 
 ## Contact / feedback
 Feel free to create issues and PR's.
