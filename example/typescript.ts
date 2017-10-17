@@ -22,11 +22,11 @@ export interface Task{
 }
 
 // Schema models
-export interface ProjectRecord extends ReduxDB.Record<Project> {
-    tasks: ReduxDB.RecordSet<TaskRecord>;
+export interface ProjectRecord extends ReduxDB.TableRecord<Project> {
+    tasks: ReduxDB.TableRecordSet<TaskRecord>;
 }
 
-export interface TaskRecord extends ReduxDB.Record<Task> {
+export interface TaskRecord extends ReduxDB.TableRecord<Task> {
     project: ProjectRecord;
 }
 
