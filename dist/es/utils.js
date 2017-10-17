@@ -26,11 +26,6 @@ export var ensureParamString = function (name, value) {
         throw new Error("Missing a valid string for the argument \"" + name + "\"");
     return value;
 };
-export var ensureParamID = function (name, value) {
-    if (!isValidID(value))
-        throw new Error("Missing a valid id for the argument \"" + name + "\"");
-    return asID(value);
-};
 export var ensureID = function (id) {
     if (!isValidID(id))
         throw new Error("The given value is not a valid \"id\". An \"id\" must be a non-empty string or a number.");

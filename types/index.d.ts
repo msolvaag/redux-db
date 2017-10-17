@@ -1,8 +1,6 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, DatabaseOptions, SessionOptions, Session, TableMap, DatabaseState, NormalizeContext, Normalizer } from "./schema";
-import { RecordSet } from "./models";
-export interface Reducer {
-    (session: any, action: any, arg?: any): void;
-}
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, Reducer } from "./def";
+import { DefaultModelFactory } from "./factory";
+export * from "./models";
 export declare const createDatabase: (schema: SchemaDDL, options?: DatabaseOptions | undefined) => Database;
 export declare class Database implements DatabaseSchema {
     tables: TableSchema[];
@@ -10,7 +8,8 @@ export declare class Database implements DatabaseSchema {
     normalizeHooks: {
         [key: string]: Normalizer;
     };
-    constructor(schema: SchemaDDL, options: DatabaseOptions);
+    factory: ModelFactory;
+    constructor(schema: SchemaDDL, options?: DatabaseOptions);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;
     reduce(state: any, action: any, reducers: Reducer | Reducer[], arg?: any): any;
     createSession(state: any, options?: SessionOptions): DatabaseSession;
@@ -25,5 +24,6 @@ export declare class DatabaseSession implements Session {
     constructor(state: DatabaseState | undefined, schema: DatabaseSchema, options: SessionOptions);
     upsert(ctx: NormalizeContext): void;
     commit(): any;
+    static Partial<T extends TableMap = any>(state: any, tableSchemas: TableSchema[], db: Database): T;
 }
-export { TableRecord as Record, RecordSet, Table, TableMap };
+export { Table, TableRecord, TableRecordSet, TableMap, Reducer, DefaultModelFactory };

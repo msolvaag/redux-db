@@ -11,9 +11,27 @@ import {
     TableRecord,
     TableRecordSet,
     Session
-} from "./schema";
+} from "./def";
 import * as utils from "./utils";
 
+/// Holds context state when normalizing data
+export class DbNormalizeContext implements NormalizeContext {
+    schema: TableSchema;
+    db: DatabaseSchema;
+    output: NormalizedState = {};
+    emits: { [key: string]: any[] } = {};
+
+    constructor(schema: TableSchema) {
+        this.schema = schema;
+        this.db = schema.db;
+    }
+
+    /// Emits data for further normalization
+    emit(tableName: string, record: any) {
+        this.emits[tableName] = this.emits[tableName] || [];
+        this.emits[tableName].push(record);
+    }
+}
 
 export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implements Table<R, T> {
     readonly session: Session;
@@ -31,7 +49,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     all(): R[] {
-        return this.state.ids.map(id => ModelFactory.default.newRecord<R, T>(id, this));
+        return this.state.ids.map(id => this.schema.db.factory.newRecord<T>(id, this) as R);
     }
 
     get length() {
@@ -60,20 +78,20 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         if (!this.exists(id))
             throw new Error(`No "${this.schema.name}" record with id: ${id} exists.`);
 
-        return ModelFactory.default.newRecord<R, T>(utils.asID(id), this);
+        return this.schema.db.factory.newRecord<T>(utils.asID(id), this) as R;
     }
 
     getOrDefault(id: number | string) {
         return this.exists(id) ? this.get(id) : null;
     }
 
-    getByFk(fieldName: string, id: number | string): RecordSet<R, T> {
+    getByFk(fieldName: string, id: number | string): TableRecordSetModel<R, T> {
         utils.ensureParam("fieldName", fieldName);
-        id = utils.ensureParamID("id", id);
+        id = utils.ensureID(id);
 
         const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
-        return new RecordSet<R, T>(this, field, { id: id });
+        return new TableRecordSetModel<R, T>(this, field, { id: id });
     }
 
     value(id: number | string) {
@@ -145,7 +163,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         };
         this._updateIndexes(table);
 
-        return table.ids.map(id => ModelFactory.default.newRecord<R, T>(id, this));
+        return table.ids.map(id => this.schema.db.factory.newRecord<T>(id, this) as R);
     }
 
     updateNormalized(table: TableState<T>) {
@@ -166,7 +184,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
                 dirty = true;
             }
 
-            return ModelFactory.default.newRecord<R, T>(id, this);
+            return this.schema.db.factory.newRecord<T>(id, this) as R;
         });
 
         if (dirty) {
@@ -206,7 +224,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         utils.ensureParam("data", data);
         utils.ensureParam("action", action);
 
-        const norm = new NormalizeContext(this.schema);
+        const norm = new DbNormalizeContext(this.schema);
         this.schema.normalize(data, norm);
 
         const table = norm.output[this.schema.name];
@@ -266,10 +284,9 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 }
 
-export class RecordModel<T> implements TableRecord<T> {
+export class TableRecordModel<T> implements TableRecord<T> {
     table: Table;
     id: string;
-
 
     constructor(id: string, table: Table) {
         this.id = utils.ensureParam("id", id);
@@ -290,7 +307,7 @@ export class RecordModel<T> implements TableRecord<T> {
     }
 }
 
-export class RecordField<T> {
+export class RecordFieldModel<T> {
     readonly record: TableRecord<T>;
     readonly schema: FieldSchema;
     readonly name: string;
@@ -306,7 +323,7 @@ export class RecordField<T> {
     }
 }
 
-export class RecordSet<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
+export class TableRecordSetModel<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
 
     readonly table: Table<R, T>;
     readonly schema: FieldSchema;
@@ -331,7 +348,7 @@ export class RecordSet<R extends TableRecord<T>, T=any> implements TableRecordSe
     }
 
     all() {
-        return this.ids.map(id => ModelFactory.default.newRecord<R, T>(id, this.table));
+        return this.ids.map(id => this.table.schema.db.factory.newRecord<T>(id, this.table) as R);
     }
 
     map<M>(callback: (record: R) => M) {
@@ -360,70 +377,5 @@ export class RecordSet<R extends TableRecord<T>, T=any> implements TableRecordSe
 
     private _normalize(data: Partial<T> | Partial<T>[]) {
         return this.table.schema.inferRelations(data, this.schema, this.owner.id);
-    }
-}
-
-class ModelFactory {
-    private _recordClass: { [key: string]: any } = {};
-
-    static default: ModelFactory = new ModelFactory();
-
-    newRecord<R extends TableRecord<T>, T>(id: string, table: Table<R, T>): R {
-        return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this._createRecordModelClass<T>(table.schema)))(id, table);
-    }
-
-    newRecordField(schema: FieldSchema, record: TableRecord) {
-        if (!schema.isForeignKey)
-            return new RecordField(schema, record);
-
-        const refTable = schema.references && record.table.session.tables[schema.references] as Table;
-        if (!refTable)
-            throw new Error(`The foreign key: "${schema.name}" references an unregistered table: "${schema.references}" in the current session.`);
-
-        return refTable.getOrDefault(schema.getRecordValue(record));
-    }
-
-    newRecordSet(schema: FieldSchema, record: TableRecord) {
-        const refTable = record.table.session.tables[schema.table.name] as Table;
-        if (!refTable)
-            throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
-
-        return new RecordSet(refTable, schema, record);
-    }
-
-    newRecordRelation(schema: FieldSchema, record: TableRecord) {
-        const refTable = record.table.session.tables[schema.table.name] as Table;
-        if (!refTable)
-            throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
-
-        const id = refTable.index(schema.name, record.id)[0];
-        if (id === undefined) return null;
-        else return ModelFactory.default.newRecord(id, refTable);
-    }
-
-    protected _createRecordModelClass<T>(schema: TableSchema) {
-
-        class Record extends RecordModel<T> {
-            table: Table;
-            _fields: { [key: string]: any } = {};
-
-            constructor(id: string, table: Table) {
-                super(id, table);
-            }
-        }
-
-        const defineProperty = (name: string, field: FieldSchema, factory: (f: FieldSchema, ref: Record) => any, cache = true) => {
-            if (name === "id") throw new Error(`The property "${field.table.name}.id" is a reserved name. Please specify another name using the "propName" definition.`);
-            Object.defineProperty(Record.prototype, name, {
-                get: function (this: Record) {
-                    return cache ? (this._fields[name] || (this._fields[name] = factory(field, this))) : factory(field, this);
-                }
-            });
-        };
-
-        schema.fields.forEach(f => (f.isForeignKey || !f.isPrimaryKey) && defineProperty(f.propName, f, ModelFactory.default.newRecordField));
-        schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f, f.unique ? ModelFactory.default.newRecordRelation : ModelFactory.default.newRecordSet, !f.unique));
-
-        return Record;
     }
 }

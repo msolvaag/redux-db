@@ -2,7 +2,6 @@ export declare const toArray: (obj: any) => any[];
 export declare const ensureArray: (obj: any) => any[];
 export declare const ensureParam: <T = any>(name: string, value: T) => T;
 export declare const ensureParamString: (name: string, value: any) => string;
-export declare const ensureParamID: (name: string, value: string | number) => string;
 export declare const ensureID: (id: string | number) => string;
 export declare const isValidID: (id: any) => boolean;
 export declare const asID: (id: string | number) => string;

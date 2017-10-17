@@ -9,56 +9,41 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utils = require("./utils");
-var NormalizeContext = /** @class */ (function () {
-    function NormalizeContext(schema) {
-        this.output = {};
-        this.emits = {};
-        this.schema = schema;
-        this.db = schema.db;
-    }
-    NormalizeContext.prototype.emit = function (tableName, record) {
-        this.emits[tableName] = this.emits[tableName] || [];
-        this.emits[tableName].push(record);
-    };
-    return NormalizeContext;
-}());
-exports.NormalizeContext = NormalizeContext;
-var TableSchema = /** @class */ (function () {
-    function TableSchema(db, name, schema) {
+// Holds the schema definition for a table.
+var TableSchemaModel = /** @class */ (function () {
+    function TableSchemaModel(db, name, schema) {
         var _this = this;
-        this.relations = [];
-        this.db = db;
-        this.name = name;
-        this.fields = Object.keys(schema).map(function (fieldName) { return new FieldSchema(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
-        this.fieldsByName = utils.toObject(this.fields, function (f) { return f.name; });
+        this._relations = [];
+        this.db = utils.ensureParam("db", db);
+        this.name = utils.ensureParamString("name", name);
+        this.fields = Object.keys(utils.ensureParam("schema", schema))
+            .map(function (fieldName) { return new FieldSchemaModel(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
         this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
         this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
     }
+    Object.defineProperty(TableSchemaModel.prototype, "relations", {
+        /// Gets the FK's that references this table.
+        get: function () { return this._relations; },
+        enumerable: true,
+        configurable: true
+    });
     /// Connects this schema's fields with other tables.
     /// Used internally in the setup of the schema object model.
-    TableSchema.prototype.connect = function (schemas) {
+    TableSchemaModel.prototype.connect = function (schemas) {
         var _this = this;
-        schemas.forEach(function (schema) {
-            _this.relations = _this.relations.concat(schema.fields.filter(function (f) { return f.references === _this.name; }));
-        });
-        this._foreignKeyFields.forEach(function (fk) {
-            if (fk.references) {
-                fk.refTable = schemas.filter(function (tbl) { return tbl.name === fk.references; })[0];
-            }
-        });
+        schemas.forEach(function (schema) { return _this._relations = _this._relations.concat(schema.fields.filter(function (f) { return f.references === _this.name; })); });
+        this._foreignKeyFields.forEach(function (fk) { return fk.connect(schemas); });
     };
     /// Normalizes the given data and outputs to context.
     /// Returns the PKs for the normalized records.
-    TableSchema.prototype.normalize = function (data, context) {
+    TableSchemaModel.prototype.normalize = function (data, context) {
         var _this = this;
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
-        var ctx = context || new NormalizeContext(this);
+        var ctx = utils.ensureParam("context", context); // || new DbNormalizeContext(this);
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
-        // temp holder to validate PK constraint
-        //const pks: { [key: string]: number } = {};
         return utils.ensureArray(data).map(function (obj) {
             if (typeof obj !== "object")
                 throw new Error("Failed to normalize data. Given record is not a plain object.");
@@ -66,7 +51,6 @@ var TableSchema = /** @class */ (function () {
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
             var pk = _this.getPrimaryKey(obj);
-            //if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])
@@ -105,7 +89,7 @@ var TableSchema = /** @class */ (function () {
         });
     };
     /// Infers the owner PK into the given nested relations
-    TableSchema.prototype.inferRelations = function (data, rel, ownerId) {
+    TableSchemaModel.prototype.inferRelations = function (data, rel, ownerId) {
         if (!rel.relationName)
             return data;
         var otherFks = rel.table.fields.filter(function (f) { return f.isForeignKey && f !== rel; });
@@ -123,7 +107,7 @@ var TableSchema = /** @class */ (function () {
         });
     };
     /// Gets the value of the PK for the given record.
-    TableSchema.prototype.getPrimaryKey = function (record) {
+    TableSchemaModel.prototype.getPrimaryKey = function (record) {
         var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
         var combinedPk = lookup.reduce(function (p, n) {
             var k = n.getValue(record);
@@ -135,22 +119,23 @@ var TableSchema = /** @class */ (function () {
         return pk;
     };
     /// Gets the values of the FK's for the given record.
-    TableSchema.prototype.getForeignKeys = function (record) {
+    TableSchemaModel.prototype.getForeignKeys = function (record) {
         return this._foreignKeyFields.map(function (fk) { return ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique, notNull: fk.notNull }); });
     };
-    /// Determines wether two records are equal, not modified.
-    TableSchema.prototype.isModified = function (x, y) {
+    /// Determines whether two records are equal, not modified.
+    TableSchemaModel.prototype.isModified = function (x, y) {
         if (this._stampFields.length > 0)
             return this._stampFields.reduce(function (p, n) { return p + (n.getValue(x) === n.getValue(y) ? 1 : 0); }, 0) !== this._stampFields.length;
         else
             return !utils.isEqual(x, y); // TODO: make this customizable
     };
-    return TableSchema;
+    return TableSchemaModel;
 }());
-exports.TableSchema = TableSchema;
-var FieldSchema = /** @class */ (function () {
-    function FieldSchema(table, name, schema, cascadeAsDefault) {
-        this.table = table;
+exports.TableSchemaModel = TableSchemaModel;
+// Holds the schema definition for a table field (column)
+var FieldSchemaModel = /** @class */ (function () {
+    function FieldSchemaModel(table, name, schema, cascadeAsDefault) {
+        this.table = utils.ensureParam("table", table);
         this.type = schema.type || "ATTR";
         this.name = name;
         this.propName = schema.propName || name;
@@ -171,15 +156,30 @@ var FieldSchema = /** @class */ (function () {
             this.notNull = schema.notNull === true;
         }
     }
-    FieldSchema.prototype.getValue = function (data, record) {
+    Object.defineProperty(FieldSchemaModel.prototype, "refTable", {
+        /// Gets the table schema this field references.
+        get: function () { return this._refTable; },
+        enumerable: true,
+        configurable: true
+    });
+    /// Connects this schema with the referenced table.
+    /// Used internally in the setup of the schema object model.
+    FieldSchemaModel.prototype.connect = function (schemas) {
+        var _this = this;
+        if (this.references)
+            this._refTable = schemas.filter(function (tbl) { return tbl.name === _this.references; })[0];
+    };
+    /// Gets the value of the field for the given data.
+    FieldSchemaModel.prototype.getValue = function (data, record) {
         return this._valueFactory ? this._valueFactory(data, {
             schema: this,
             record: record
         }) : data[this.name];
     };
-    FieldSchema.prototype.getRecordValue = function (record) {
+    /// Gets the value of the field for a given table record.
+    FieldSchemaModel.prototype.getRecordValue = function (record) {
         return this.getValue(record.value, record);
     };
-    return FieldSchema;
+    return FieldSchemaModel;
 }());
-exports.FieldSchema = FieldSchema;
+exports.FieldSchemaModel = FieldSchemaModel;

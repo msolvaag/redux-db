@@ -30,11 +30,7 @@ export const ensureParamString = (name: string, value: any) => {
         throw new Error(`Missing a valid string for the argument "${name}"`);
     return value;
 };
-export const ensureParamID = (name: string, value: string | number) => {
-    if (!isValidID(value))
-        throw new Error(`Missing a valid id for the argument "${name}"`);
-    return asID(value);
-};
+
 export const ensureID = (id: string | number) => {
     if (!isValidID(id))
         throw new Error(`The given value is not a valid "id". An "id" must be a non-empty string or a number.`);

@@ -1,41 +1,39 @@
-import { SchemaDDL, DatabaseSchema, FieldSchema, TableSchema, Table, TableRecord, TableState, DatabaseOptions, SessionOptions, Session, TableMap, DatabaseState, NormalizeContext, NormalizedState, Normalizer } from "./schema";
-import { RecordModel, RecordSet, TableModel } from "./models";
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, Reducer } from "./def";
 import * as utils from "./utils";
+import { DefaultModelFactory } from "./factory";
+export * from "./models";
 
-export interface Reducer {
-    (session: any, action: any, arg?: any): void;
-}
-
-const defaultOptions = {};
-
-export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => {
-    return new Database(schema, { ...defaultOptions, ...options });
+const defaultOptions: DatabaseOptions = {
+    cascadeAsDefault: false
 };
+
+export const createDatabase = (schema: SchemaDDL, options?: DatabaseOptions) => new Database(schema, options);
 
 export class Database implements DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
     normalizeHooks: { [key: string]: Normalizer };
+    factory: ModelFactory;
 
-    constructor(schema: SchemaDDL, options: DatabaseOptions) {
-        this.options = options;
-        this.normalizeHooks = options.onNormalize || {};
-        this.tables = Object.keys(schema).map(tableName => new TableSchema(this, tableName, schema[tableName]));
+    constructor(schema: SchemaDDL, options?: DatabaseOptions) {
+        utils.ensureParam("schema", schema);
+
+        this.options = { ...defaultOptions, ...options };
+        this.normalizeHooks = this.options.onNormalize || {};
+        this.factory = this.options.factory || new DefaultModelFactory();
+
+        this.tables = Object.keys(schema).map(tableName => this.factory.newTableSchema(this, tableName, schema[tableName]));
         this.tables.forEach(table => table.connect(this.tables));
     }
 
     combineReducers(...reducers: Reducer[]) {
-        return (state: any = {}, action: any) => {
-            return this.reduce(state, action, reducers);
-        };
+        return (state: any = {}, action: any) => this.reduce(state, action, reducers);
     }
 
     reduce(state: any, action: any, reducers: Reducer | Reducer[], arg?: any) {
         const session = this.createSession(state);
 
-        utils.ensureArray(reducers).forEach(reducer => {
-            reducer(session.tables, action, arg);
-        });
+        utils.ensureArray(reducers).forEach(reducer => reducer(session.tables, action, arg));
 
         return session.commit();
     }
@@ -54,9 +52,7 @@ export class Database implements DatabaseSchema {
             return tableSchema;
         });
 
-        const partialSession = new DatabaseSession(state, { tables: tableSchemas, options: {} }, { readOnly: true });
-
-        return partialSession.tables as T;
+        return DatabaseSession.Partial<T>(state, tableSchemas, this);
     }
 
     selectTable<T extends Table = any>(tableState: any, schemaName?: string) {
@@ -79,7 +75,7 @@ export class DatabaseSession implements Session {
         this.db = schema;
         this.options = options;
         this.tables = utils.toObject(
-            schema.tables.map(t => new TableModel(this, state[t.name], t)), t => t.schema.name);
+            schema.tables.map(t => this.db.factory.newTableModel(this, state[t.name], t)), t => t.schema.name);
     }
 
     upsert(ctx: NormalizeContext) {
@@ -109,6 +105,15 @@ export class DatabaseSession implements Session {
         });
         return this.state as any;
     }
+
+    static Partial<T extends TableMap = any>(state: any, tableSchemas: TableSchema[], db: Database) {
+        return new DatabaseSession(state, {
+            tables: tableSchemas,
+            options: db.options,
+            factory: db.factory,
+            normalizeHooks: db.normalizeHooks
+        }, { readOnly: true }).tables as T;
+    }
 }
 
-export { TableRecord as Record, RecordSet, Table, TableMap };
+export { Table, TableRecord, TableRecordSet, TableMap, Reducer, DefaultModelFactory };

@@ -6,19 +6,21 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-import { TableSchema } from "./schema";
-import { RecordSet, TableModel } from "./models";
 import * as utils from "./utils";
-var defaultOptions = {};
-export var createDatabase = function (schema, options) {
-    return new Database(schema, __assign({}, defaultOptions, options));
+import { DefaultModelFactory } from "./factory";
+export * from "./models";
+var defaultOptions = {
+    cascadeAsDefault: false
 };
+export var createDatabase = function (schema, options) { return new Database(schema, options); };
 var Database = /** @class */ (function () {
     function Database(schema, options) {
         var _this = this;
-        this.options = options;
-        this.normalizeHooks = options.onNormalize || {};
-        this.tables = Object.keys(schema).map(function (tableName) { return new TableSchema(_this, tableName, schema[tableName]); });
+        utils.ensureParam("schema", schema);
+        this.options = __assign({}, defaultOptions, options);
+        this.normalizeHooks = this.options.onNormalize || {};
+        this.factory = this.options.factory || new DefaultModelFactory();
+        this.tables = Object.keys(schema).map(function (tableName) { return _this.factory.newTableSchema(_this, tableName, schema[tableName]); });
         this.tables.forEach(function (table) { return table.connect(_this.tables); });
     }
     Database.prototype.combineReducers = function () {
@@ -34,9 +36,7 @@ var Database = /** @class */ (function () {
     };
     Database.prototype.reduce = function (state, action, reducers, arg) {
         var session = this.createSession(state);
-        utils.ensureArray(reducers).forEach(function (reducer) {
-            reducer(session.tables, action, arg);
-        });
+        utils.ensureArray(reducers).forEach(function (reducer) { return reducer(session.tables, action, arg); });
         return session.commit();
     };
     Database.prototype.createSession = function (state, options) {
@@ -50,8 +50,7 @@ var Database = /** @class */ (function () {
                 throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
             return tableSchema;
         });
-        var partialSession = new DatabaseSession(state, { tables: tableSchemas, options: {} }, { readOnly: true });
-        return partialSession.tables;
+        return DatabaseSession.Partial(state, tableSchemas, this);
     };
     Database.prototype.selectTable = function (tableState, schemaName) {
         var name = schemaName || tableState["name"];
@@ -70,7 +69,7 @@ var DatabaseSession = /** @class */ (function () {
         this.state = state;
         this.db = schema;
         this.options = options;
-        this.tables = utils.toObject(schema.tables.map(function (t) { return new TableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
+        this.tables = utils.toObject(schema.tables.map(function (t) { return _this.db.factory.newTableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
     }
     DatabaseSession.prototype.upsert = function (ctx) {
         var _this = this;
@@ -100,7 +99,15 @@ var DatabaseSession = /** @class */ (function () {
         });
         return this.state;
     };
+    DatabaseSession.Partial = function (state, tableSchemas, db) {
+        return new DatabaseSession(state, {
+            tables: tableSchemas,
+            options: db.options,
+            factory: db.factory,
+            normalizeHooks: db.normalizeHooks
+        }, { readOnly: true }).tables;
+    };
     return DatabaseSession;
 }());
 export { DatabaseSession };
-export { RecordSet };
+export { DefaultModelFactory };

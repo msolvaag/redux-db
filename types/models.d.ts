@@ -1,4 +1,14 @@
-import { TableSchema, FieldSchema, TableState, Table, TableRecord, TableRecordSet, Session } from "./schema";
+import { DatabaseSchema, TableSchema, FieldSchema, TableState, NormalizedState, NormalizeContext, Table, TableRecord, TableRecordSet, Session } from "./def";
+export declare class DbNormalizeContext implements NormalizeContext {
+    schema: TableSchema;
+    db: DatabaseSchema;
+    output: NormalizedState;
+    emits: {
+        [key: string]: any[];
+    };
+    constructor(schema: TableSchema);
+    emit(tableName: string, record: any): void;
+}
 export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any> implements Table<R, T> {
     readonly session: Session;
     readonly schema: TableSchema;
@@ -12,7 +22,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     index(name: string, fk: string): string[];
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
-    getByFk(fieldName: string, id: number | string): RecordSet<R, T>;
+    getByFk(fieldName: string, id: number | string): TableRecordSetModel<R, T>;
     value(id: number | string): T;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
@@ -30,7 +40,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);
 }
-export declare class RecordModel<T> implements TableRecord<T> {
+export declare class TableRecordModel<T> implements TableRecord<T> {
     table: Table;
     id: string;
     constructor(id: string, table: Table);
@@ -38,14 +48,14 @@ export declare class RecordModel<T> implements TableRecord<T> {
     delete(): void;
     update(data: Partial<T>): this;
 }
-export declare class RecordField<T> {
+export declare class RecordFieldModel<T> {
     readonly record: TableRecord<T>;
     readonly schema: FieldSchema;
     readonly name: string;
     constructor(schema: FieldSchema, record: TableRecord<T>);
     readonly value: any;
 }
-export declare class RecordSet<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
+export declare class TableRecordSetModel<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
     readonly table: Table<R, T>;
     readonly schema: FieldSchema;
     readonly owner: {

@@ -1,227 +1,36 @@
 import * as utils from "./utils";
+import { DatabaseSchema, TableSchema, FieldSchema, NormalizedState, TableDDL, FieldDDL, NormalizeContext, ComputeContext, FieldType } from "./def";
 
-export type FieldType = "ATTR" | "MODIFIED" | "PK";
-
-export interface Table<R extends TableRecord<T> = TableRecord, T=any> {
-    session: Session;
-    schema: TableSchema;
-    state: TableState;
-    dirty: boolean;
-
-    get(id: string | number): R;
-    getOrDefault(id: string | number): R | null;
-    getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
-    all(): R[];
-    filter(callback: (record: R) => boolean): R[];
-    exists(id: string | number): boolean;
-    index(name: string, fk: string): string[];
-    value(id: string | number): T;
-
-    upsert(data: Partial<T> | Partial<T>[]): R;
-    insert(data: T | T[]): R;
-    insertMany(data: T | T[]): R[];
-    update(data: Partial<T> | Partial<T>[]): R;
-    updateMany(data: Partial<T> | Partial<T>[]): R[];
-
-    // Delete one record
-    delete(id: string | number): boolean;
-    // Delete all records
-    deleteAll(): void;
-
-    upsertNormalized(table: TableState<T>): void;
-}
-
-export interface TableRecord<T=any> {
-    id: string;
-    table: Table;
-    value: T;
-
-    update(data: Partial<T>): TableRecord<T>;
-    delete(): void;
-}
-
-export interface TableRecordSet<R extends TableRecord<T>, T> {
-    value: T[];
-    ids: string[]
-    length: number;
-
-    all(): R[];
-
-    add(data: T | T[]): void;
-    remove(data: Partial<T>): void;
-
-    update(data: Partial<T> | Partial<T>[]): TableRecordSet<R, T>;
-    delete(): void;
-
-    map<M>(callback: (record: R) => M): M[];
-}
-
-// Defines a database schema
-export interface SchemaDDL {
-    [key: string]: TableDDL;
-}
-
-// Defines a table schema
-export interface TableDDL {
-    [key: string]: FieldDDL;
-}
-
-// Defines a field (column) schema
-export interface FieldDDL {
-
-    // Defines the field type. 
-    type?: FieldType,
-
-    // Defines a custom property name for the field. Defaults to the field name.
-    propName?: string;
-
-    // Defines the foreign table this field references.
-    references?: string;
-
-    // Defines the relationship name, which'll be the property name on the foreign table.
-    relationName?: string;
-
-    // If set, causes the record to be deleted if the foreign table row is deleted.
-    cascade?: boolean;
-
-    // If set, declares that this relation is a one 2 one relationship.
-    unique?: boolean;
-
-    // If set, declares that this field is nullable or not.
-    notNull?: boolean;
-
-    // Defines a custom value factory for each record.
-    value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
-}
-
-export interface ComputeContext<T> {
-    schema: FieldSchema;
-    record?: TableRecord<T>;
-}
-
-export interface DatabaseSchema {
-    tables: TableSchema[];
-    options: DatabaseOptions;
-
-    normalizeHooks?: { [key: string]: Normalizer };
-}
-
-export interface DatabaseOptions {
-    onNormalize?: { [key: string]: Normalizer };
-    cascadeAsDefault?: boolean
-}
-export interface SessionOptions {
-    readOnly: boolean;
-}
-
-export interface DatabaseState {
-    [key: string]: TableState;
-}
-
-export interface TableState<T=any> {
-    name?: string;
-    byId: { [key: string]: T };
-    ids: string[];
-    indexes: TableIndex;
-}
-
-export interface TableIndex {
-    [key: string]: {
-        unique: boolean,
-        values: { [key: string]: string[] }
-    };
-}
-
-export interface RecordState {
-    id: string;
-    state: any;
-}
-
-export interface Normalizer {
-    (record: any, context: NormalizeContext): any;
-}
-
-export interface Schema {
-    name: string;
-
-    getPrimaryKey: (state: any) => string;
-}
-
-export interface TableMap {
-    [key: string]: Table
-}
-
-export interface Session {
-    db: DatabaseSchema;
-    state: DatabaseState;
-    tables: TableMap;
-
-    upsert(ctx: NormalizeContext): void;
-    commit(): DatabaseState;
-}
-
-export interface NormalizedState {
-    [key: string]: { // schema name
-        ids: string[],
-        byId: {
-            [key: string]: any
-        },
-        indexes: TableIndex;
-    };
-}
-
-export class NormalizeContext {
-    schema: TableSchema;
-    db: DatabaseSchema;
-    output: NormalizedState = {};
-    emits: { [key: string]: any[] } = {};
-
-    constructor(schema: TableSchema) {
-        this.schema = schema;
-        this.db = schema.db;
-    }
-
-    emit(tableName: string, record: any) {
-        this.emits[tableName] = this.emits[tableName] || [];
-        this.emits[tableName].push(record);
-    }
-}
-
-export class TableSchema {
+// Holds the schema definition for a table.
+export class TableSchemaModel implements TableSchema {
     readonly db: DatabaseSchema;
     readonly name: string;
     readonly fields: FieldSchema[];
 
-    relations: FieldSchema[] = [];
-
-    readonly fieldsByName: { [key: string]: FieldSchema };
-
+    private _relations: FieldSchema[] = [];
     private _primaryKeyFields: FieldSchema[];
     private _foreignKeyFields: FieldSchema[];
     private _stampFields: FieldSchema[];
 
     constructor(db: DatabaseSchema, name: string, schema: TableDDL) {
-        this.db = db;
-        this.name = name;
-        this.fields = Object.keys(schema).map(fieldName => new FieldSchema(this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true));
-        this.fieldsByName = utils.toObject(this.fields, f => f.name);
+        this.db = utils.ensureParam("db", db);
+        this.name = utils.ensureParamString("name", name);
+        this.fields = Object.keys(utils.ensureParam("schema", schema))
+            .map(fieldName => new FieldSchemaModel(this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true));
 
         this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
         this._foreignKeyFields = this.fields.filter(f => f.isForeignKey);
         this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
     }
 
+    /// Gets the FK's that references this table.
+    get relations() { return this._relations; }
+
     /// Connects this schema's fields with other tables.
     /// Used internally in the setup of the schema object model.
     connect(schemas: TableSchema[]) {
-        schemas.forEach(schema => {
-            this.relations = this.relations.concat(schema.fields.filter(f => f.references === this.name));
-        });
-        this._foreignKeyFields.forEach(fk => {
-            if (fk.references) {
-                fk.refTable = schemas.filter(tbl => tbl.name === fk.references)[0];
-            }
-        });
+        schemas.forEach(schema => this._relations = this._relations.concat(schema.fields.filter(f => f.references === this.name)));
+        this._foreignKeyFields.forEach(fk => fk.connect(schemas));
     }
 
     /// Normalizes the given data and outputs to context.
@@ -230,13 +39,10 @@ export class TableSchema {
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
 
-        const ctx = context || new NormalizeContext(this);
+        const ctx = utils.ensureParam("context", context); // || new DbNormalizeContext(this);
 
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
-
-        // temp holder to validate PK constraint
-        //const pks: { [key: string]: number } = {};
 
         return utils.ensureArray(data).map(obj => {
             if (typeof obj !== "object")
@@ -247,8 +53,6 @@ export class TableSchema {
                 obj = normalizeHook(obj, ctx);
 
             const pk = this.getPrimaryKey(obj);
-            //if (pks[pk]++) throw new Error(`Multiple records with the same PK: "${this.name}.${pk}". Check your schema definition.`);
-
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
 
@@ -338,7 +142,7 @@ export class TableSchema {
         return this._foreignKeyFields.map(fk => ({ name: fk.name, value: record[fk.name], refTable: fk.refTable, unique: fk.unique, notNull: fk.notNull }));
     }
 
-    /// Determines wether two records are equal, not modified.
+    /// Determines whether two records are equal, not modified.
     isModified(x: any, y: any) {
         if (this._stampFields.length > 0)
             return this._stampFields.reduce((p, n) => p + (n.getValue(x) === n.getValue(y) ? 1 : 0), 0) !== this._stampFields.length;
@@ -347,7 +151,8 @@ export class TableSchema {
     }
 }
 
-export class FieldSchema {
+// Holds the schema definition for a table field (column)
+export class FieldSchemaModel implements FieldSchema {
     readonly table: TableSchema;
     readonly name: string;
     readonly propName: string;
@@ -363,12 +168,11 @@ export class FieldSchema {
     readonly isPrimaryKey: boolean;
     readonly isForeignKey: boolean;
 
-    refTable?: TableSchema;
-
+    private _refTable?: TableSchema;
     private _valueFactory?: <T, M>(record: T, context?: ComputeContext<T>) => M;
 
     constructor(table: TableSchema, name: string, schema: FieldDDL, cascadeAsDefault: boolean) {
-        this.table = table;
+        this.table = utils.ensureParam("table", table);
 
         this.type = schema.type || "ATTR";
         this.name = name;
@@ -392,13 +196,25 @@ export class FieldSchema {
         }
     }
 
-    getValue(data: any, record?: any) {
+    /// Gets the table schema this field references.
+    get refTable() { return this._refTable; }
+
+    /// Connects this schema with the referenced table.
+    /// Used internally in the setup of the schema object model.
+    connect(schemas: TableSchema[]) {
+        if (this.references)
+            this._refTable = schemas.filter(tbl => tbl.name === this.references)[0];
+    }
+
+    /// Gets the value of the field for the given data.
+    getValue(data: any, record?: any): any {
         return this._valueFactory ? this._valueFactory(data, {
             schema: this,
             record: record
         }) : data[this.name];
     }
 
+    /// Gets the value of the field for a given table record.
     getRecordValue(record: { value: any }) {
         return this.getValue(record.value, record);
     }

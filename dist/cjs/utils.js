@@ -28,11 +28,6 @@ exports.ensureParamString = function (name, value) {
         throw new Error("Missing a valid string for the argument \"" + name + "\"");
     return value;
 };
-exports.ensureParamID = function (name, value) {
-    if (!exports.isValidID(value))
-        throw new Error("Missing a valid id for the argument \"" + name + "\"");
-    return exports.asID(value);
-};
 exports.ensureID = function (id) {
     if (!exports.isValidID(id))
         throw new Error("The given value is not a valid \"id\". An \"id\" must be a non-empty string or a number.");
