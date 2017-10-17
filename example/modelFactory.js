@@ -1,4 +1,4 @@
-import { DefaultModelFactory, TableModel, TableRecordModel } from "redux-db";
+import { DefaultModelFactory, TableModel, RecordModel } from "redux-db";
 import { schema } from "./schema";
 
 class CustomTableModel extends TableModel {
@@ -6,7 +6,7 @@ class CustomTableModel extends TableModel {
         super(session, state, schema);
     }
 
-    // Override delete operation to add loggint to console.
+    // Override delete operation to add logging to console.
     delete(id) {
         const deleted = super.delete(id);
         if (deleted)
@@ -17,7 +17,7 @@ class CustomTableModel extends TableModel {
     }
 }
 
-class CustomRecordModel extends TableRecordModel {
+class CustomRecordModel extends RecordModel {
     constructor(id, table) {
         super(id, table);
     }
@@ -29,7 +29,7 @@ class CustomRecordModel extends TableRecordModel {
 }
 
 class CustomModelFactory extends DefaultModelFactory {
-    newRecord(id, table) {
+    newRecordModel(id, table) {
         return new CustomRecordModel(id, table);
     }
 

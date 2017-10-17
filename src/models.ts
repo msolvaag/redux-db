@@ -49,7 +49,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     all(): R[] {
-        return this.state.ids.map(id => this.schema.db.factory.newRecord(id, this) as R);
+        return this.state.ids.map(id => this.schema.db.factory.newRecordModel(id, this) as R);
     }
 
     get length() {
@@ -78,20 +78,20 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         if (!this.exists(id))
             throw new Error(`No "${this.schema.name}" record with id: ${id} exists.`);
 
-        return this.schema.db.factory.newRecord(utils.asID(id), this) as R;
+        return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
     getOrDefault(id: number | string) {
         return this.exists(id) ? this.get(id) : null;
     }
 
-    getByFk(fieldName: string, id: number | string): TableRecordSetModel<R, T> {
+    getByFk(fieldName: string, id: number | string): RecordSetModel<R, T> {
         utils.ensureParam("fieldName", fieldName);
         id = utils.ensureID(id);
 
         const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
-        return new TableRecordSetModel<R, T>(this, field, { id: id });
+        return new RecordSetModel<R, T>(this, field, { id: id });
     }
 
     value(id: number | string) {
@@ -163,7 +163,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         };
         this._updateIndexes(table);
 
-        return table.ids.map(id => this.schema.db.factory.newRecord(id, this) as R);
+        return table.ids.map(id => this.schema.db.factory.newRecordModel(id, this) as R);
     }
 
     updateNormalized(table: TableState<T>) {
@@ -184,7 +184,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
                 dirty = true;
             }
 
-            return this.schema.db.factory.newRecord(id, this) as R;
+            return this.schema.db.factory.newRecordModel(id, this) as R;
         });
 
         if (dirty) {
@@ -284,17 +284,21 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 }
 
-export class TableRecordModel<T> implements TableRecord<T> {
-    table: Table;
+export class RecordModel<T> implements TableRecord<T> {
+    table: Table<any, T>;
     id: string;
 
-    constructor(id: string, table: Table) {
+    constructor(id: string, table: Table<any, T>) {
         this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
 
     get value(): T {
         return this.table.value(this.id);
+    }
+
+    set value(data: T) {
+        this.update(data);
     }
 
     delete() {
@@ -323,7 +327,7 @@ export class RecordFieldModel<T> {
     }
 }
 
-export class TableRecordSetModel<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
+export class RecordSetModel<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
 
     readonly table: Table<R, T>;
     readonly schema: FieldSchema;
@@ -348,7 +352,7 @@ export class TableRecordSetModel<R extends TableRecord<T>, T=any> implements Tab
     }
 
     all() {
-        return this.ids.map(id => this.table.schema.db.factory.newRecord(id, this.table) as R);
+        return this.ids.map(id => this.table.schema.db.factory.newRecordModel(id, this.table) as R);
     }
 
     map<M>(callback: (record: R) => M) {

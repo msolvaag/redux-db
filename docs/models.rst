@@ -4,22 +4,36 @@ The object model
 
 To access and manipulate your normalized state redux-db provides you with a simple "Object-relational mapping" (ORM).
 
+Database
+--------
+Your schema definition must be provided to a Database class instance. The database instance is created by:
+
+.. code-block:: js
+
+    import { createDatabase } from "redux-db";
+    
+    const schema = {
+        ...
+    };
+
+    export const db = createDatabase( schema, /*options*/ );
+
 Session
 -------
 
-redux-db uses the concept of a session where each "table" is wrapped in a Table_ class.
-The Table_ class helps to query and perform CRUD operations easily.
+redux-db uses the concept of a session where each "table" is wrapped in a TableModel_ class.
+The TableModel_ class helps to query and perform CRUD operations easily.
 
 To begin a new session and perform some action:
 
 .. literalinclude:: ../example/session.js
     :language: js
 
-Table
------
+TableModel
+----------
 
 The Table class provides several methods and properties for accessing the table records.
-Each method will return table rows wrapped in a Record_ class.
+Each method will return table rows wrapped in a RecordModel_ class.
 
 Methods and propertes:
 
@@ -33,31 +47,31 @@ Methods and propertes:
     values: any[];
 
     /// returns all records in table.
-    all() : Record[];
+    all() : RecordModel[];
 
     /// returns all records matching a given filter.
-    filter( predicate: ( record: Record ) => boolean ) : Record[];
+    filter( predicate: ( record: RecordModel ) => boolean ) : RecordModel[];
 
     /// returns a single record by id.
-    get( id:string|number ) : Record;
+    get( id:string|number ) : RecordModel;
 
     /// returns a single record by id. null if not found.
-    getOrDefault(id: number | string) : Record | null;
+    getOrDefault(id: number | string) : RecordModel | null;
 
     /// checks whether a record exists.
     exists(id: number | string) : bool;
 
     /// inserts one or more records. 
     /// returns the first inserted record.
-    insert( data: any ) : Record;
+    insert( data: any ) : RecordModel;
 
     /// updates one or more records. 
     /// returns the first updated record.
-    update( data: any ) : Record;
+    update( data: any ) : RecordModel;
 
     /// upserts one or more records. 
     /// returns the first upserted record.
-    upsert( data: any ) : Record;
+    upsert( data: any ) : RecordModel;
 
     /// deletes a single record by it's primary key.
     delete( id: string ) : void;
@@ -70,10 +84,10 @@ Methods and propertes:
     The update/insert/upsert operations accepts nested data and will be normalized according to your schema definition.
     The normalized relations will also be updated/inserted to its respective tables. 
 
-Record
-------
+RecordModel
+-----------
 
-The Record class wraps an table row and provides methods and propertes for the given row/entity. 
+The RecordModel class wraps an table row and provides methods and propertes for the given row/entity. 
 
 Methods and propertes:
 
@@ -92,20 +106,22 @@ Methods and propertes:
     delete() : void;
 
 
-In addition to the methods and propertes defined above, the Record class will also contain properties for accessing foreign relations.
-Given the following schema:: 
+In addition to the methods and propertes defined above, the RecordModel class will also contain properties for accessing foreign relations.
+Given the following schema:
+
+.. code-block:: js
 
     {
         "Table1" : {
-            id: { type: "PK" }
+            "id": { type: "PK" }
         },
         "Table2" : {
-            id: { type: "PK" },
-            ref: { references: "Table1", relationName: "rels" }
+            "id": { type: "PK" },
+            "ref": { references: "Table1", relationName: "rels" }
         }
     };
 
-The Record class for "Table1" will contain a property "rels" of type RecordSet_. The RecordSet_ wraps all records in "Table2" relating to "Table1" by its PK.
+The Record class for "Table1" will contain a property "rels" of type RecordSetModel_. The RecordSetModel_ wraps all records in "Table2" relating to "Table1" by its PK.
 The Record class for "Table2" will contain a property named "ref" which holds a Record of "Table1".
 
 .. code-block:: js
@@ -134,10 +150,23 @@ The Record class for "Table2" will contain a property named "ref" which holds a 
     // Table2 records has the "ref" property. 
     Table2.get(1).ref.value.body === "some text";
 
-RecordSet
----------
+    ---
 
-The RecordSet class wraps a relation between two tables. 
+    // Since we have defined the relationName "rels" on the "Table2.ref" field, the following insert is equivalent to the first two.
+    Table1.insert({
+        id: 1,
+        body: "some text",
+        rels: [
+            { id: 1, ref: 1 },
+            { id: 2, ref: 1 },
+            { id: 3, ref: 2 }        
+        ]
+    });
+
+RecordSetModel
+--------------
+
+The RecordSetModel class wraps a relation between two tables. 
 
 Methods and propertes:
 
@@ -153,11 +182,10 @@ Methods and propertes:
     length : number;
 
     /// returns all records in the set.
-    all() : Record[];
+    all() : RecordModel[];
 
     /// updates the records with new data.
     update( data: any ) : this;
 
     /// deletes all records in the set.
     delete() : void;
-

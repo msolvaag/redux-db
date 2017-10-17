@@ -37,7 +37,7 @@ var TableModel = /** @class */ (function () {
     }
     TableModel.prototype.all = function () {
         var _this = this;
-        return this.state.ids.map(function (id) { return _this.schema.db.factory.newRecord(id, _this); });
+        return this.state.ids.map(function (id) { return _this.schema.db.factory.newRecordModel(id, _this); });
     };
     Object.defineProperty(TableModel.prototype, "length", {
         get: function () {
@@ -67,7 +67,7 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype.get = function (id) {
         if (!this.exists(id))
             throw new Error("No \"" + this.schema.name + "\" record with id: " + id + " exists.");
-        return this.schema.db.factory.newRecord(utils.asID(id), this);
+        return this.schema.db.factory.newRecordModel(utils.asID(id), this);
     };
     TableModel.prototype.getOrDefault = function (id) {
         return this.exists(id) ? this.get(id) : null;
@@ -78,7 +78,7 @@ var TableModel = /** @class */ (function () {
         var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
         if (!field)
             throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
-        return new TableRecordSetModel(this, field, { id: id });
+        return new RecordSetModel(this, field, { id: id });
     };
     TableModel.prototype.value = function (id) {
         return this.state.byId[utils.ensureID(id)];
@@ -127,7 +127,7 @@ var TableModel = /** @class */ (function () {
         this.dirty = true;
         this.state = __assign({}, this.state, { ids: utils.mergeIds(this.state.ids, table.ids, true), byId: __assign({}, this.state.byId, table.byId) });
         this._updateIndexes(table);
-        return table.ids.map(function (id) { return _this.schema.db.factory.newRecord(id, _this); });
+        return table.ids.map(function (id) { return _this.schema.db.factory.newRecordModel(id, _this); });
     };
     TableModel.prototype.updateNormalized = function (table) {
         var _this = this;
@@ -143,7 +143,7 @@ var TableModel = /** @class */ (function () {
                 state.byId[id] = newRecord;
                 dirty = true;
             }
-            return _this.schema.db.factory.newRecord(id, _this);
+            return _this.schema.db.factory.newRecordModel(id, _this);
         });
         if (dirty) {
             this.dirty = true;
@@ -224,28 +224,31 @@ var TableModel = /** @class */ (function () {
     return TableModel;
 }());
 exports.TableModel = TableModel;
-var TableRecordModel = /** @class */ (function () {
-    function TableRecordModel(id, table) {
+var RecordModel = /** @class */ (function () {
+    function RecordModel(id, table) {
         this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
-    Object.defineProperty(TableRecordModel.prototype, "value", {
+    Object.defineProperty(RecordModel.prototype, "value", {
         get: function () {
             return this.table.value(this.id);
+        },
+        set: function (data) {
+            this.update(data);
         },
         enumerable: true,
         configurable: true
     });
-    TableRecordModel.prototype.delete = function () {
+    RecordModel.prototype.delete = function () {
         this.table.delete(this.id);
     };
-    TableRecordModel.prototype.update = function (data) {
+    RecordModel.prototype.update = function (data) {
         this.table.update(data);
         return this;
     };
-    return TableRecordModel;
+    return RecordModel;
 }());
-exports.TableRecordModel = TableRecordModel;
+exports.RecordModel = RecordModel;
 var RecordFieldModel = /** @class */ (function () {
     function RecordFieldModel(schema, record) {
         this.schema = utils.ensureParam("schema", schema);
@@ -262,61 +265,61 @@ var RecordFieldModel = /** @class */ (function () {
     return RecordFieldModel;
 }());
 exports.RecordFieldModel = RecordFieldModel;
-var TableRecordSetModel = /** @class */ (function () {
-    function TableRecordSetModel(table, schema, owner) {
+var RecordSetModel = /** @class */ (function () {
+    function RecordSetModel(table, schema, owner) {
         this.table = utils.ensureParam("table", table);
         this.schema = utils.ensureParam("schema", schema);
         this.owner = utils.ensureParam("owner", owner);
     }
-    Object.defineProperty(TableRecordSetModel.prototype, "value", {
+    Object.defineProperty(RecordSetModel.prototype, "value", {
         get: function () {
             return this.map(function (r) { return r.value; });
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(TableRecordSetModel.prototype, "ids", {
+    Object.defineProperty(RecordSetModel.prototype, "ids", {
         get: function () {
             return this.table.index(this.schema.name, this.owner.id);
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(TableRecordSetModel.prototype, "length", {
+    Object.defineProperty(RecordSetModel.prototype, "length", {
         get: function () {
             return this.ids.length;
         },
         enumerable: true,
         configurable: true
     });
-    TableRecordSetModel.prototype.all = function () {
+    RecordSetModel.prototype.all = function () {
         var _this = this;
-        return this.ids.map(function (id) { return _this.table.schema.db.factory.newRecord(id, _this.table); });
+        return this.ids.map(function (id) { return _this.table.schema.db.factory.newRecordModel(id, _this.table); });
     };
-    TableRecordSetModel.prototype.map = function (callback) {
+    RecordSetModel.prototype.map = function (callback) {
         return this.all().map(callback);
     };
-    TableRecordSetModel.prototype.add = function (data) {
+    RecordSetModel.prototype.add = function (data) {
         this.table.insert(this._normalize(data));
     };
-    TableRecordSetModel.prototype.remove = function (data) {
+    RecordSetModel.prototype.remove = function (data) {
         var _this = this;
         this._normalize(data).forEach(function (obj) {
             var pk = _this.table.schema.getPrimaryKey(obj);
             _this.table.delete(pk);
         });
     };
-    TableRecordSetModel.prototype.update = function (data) {
+    RecordSetModel.prototype.update = function (data) {
         this.table.update(this._normalize(data));
         return this;
     };
-    TableRecordSetModel.prototype.delete = function () {
+    RecordSetModel.prototype.delete = function () {
         var _this = this;
         this.ids.forEach(function (id) { return _this.table.delete(id); });
     };
-    TableRecordSetModel.prototype._normalize = function (data) {
+    RecordSetModel.prototype._normalize = function (data) {
         return this.table.schema.inferRelations(data, this.schema, this.owner.id);
     };
-    return TableRecordSetModel;
+    return RecordSetModel;
 }());
-exports.TableRecordSetModel = TableRecordSetModel;
+exports.RecordSetModel = RecordSetModel;

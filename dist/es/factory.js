@@ -8,7 +8,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-import { TableModel, RecordFieldModel, TableRecordSetModel, TableRecordModel } from "./models";
+import { TableModel, RecordFieldModel, RecordSetModel, RecordModel } from "./models";
 import { TableSchemaModel } from "./schema";
 var DefaultModelFactory = /** @class */ (function () {
     function DefaultModelFactory() {
@@ -20,7 +20,7 @@ var DefaultModelFactory = /** @class */ (function () {
     DefaultModelFactory.prototype.newTableModel = function (session, state, schema) {
         return new TableModel(session, state, schema);
     };
-    DefaultModelFactory.prototype.newRecord = function (id, table) {
+    DefaultModelFactory.prototype.newRecordModel = function (id, table) {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this.createRecordModelClass(table.schema)))(id, table);
     };
     DefaultModelFactory.prototype.newRecordField = function (schema, record) {
@@ -35,7 +35,7 @@ var DefaultModelFactory = /** @class */ (function () {
         var refTable = record.table.session.tables[schema.table.name];
         if (!refTable)
             throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
-        return new TableRecordSetModel(refTable, schema, record);
+        return new RecordSetModel(refTable, schema, record);
     };
     DefaultModelFactory.prototype.newRecordRelation = function (schema, record) {
         var refTable = record.table.session.tables[schema.table.name];
@@ -45,7 +45,7 @@ var DefaultModelFactory = /** @class */ (function () {
         if (id === undefined)
             return null;
         else
-            return this.newRecord(id, refTable);
+            return this.newRecordModel(id, refTable);
     };
     DefaultModelFactory.prototype.createRecordModelClass = function (schema) {
         var _this = this;
@@ -57,7 +57,7 @@ var DefaultModelFactory = /** @class */ (function () {
                 return _this;
             }
             return Record;
-        }(TableRecordModel));
+        }(RecordModel));
         var defineProperty = function (name, field, factory, cache) {
             if (cache === void 0) { cache = true; }
             if (name === "id")

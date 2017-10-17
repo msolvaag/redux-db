@@ -1,5 +1,5 @@
 import { Session, Table, TableRecord, TableRecordSet, DatabaseSchema, TableSchema, FieldSchema, TableState, TableDDL, ModelFactory } from "./def";
-import { TableModel, RecordFieldModel, TableRecordSetModel, TableRecordModel } from "./models";
+import { TableModel, RecordFieldModel, RecordSetModel, RecordModel } from "./models";
 import { TableSchemaModel, FieldSchemaModel } from "./schema";
 import * as utils from "./utils";
 
@@ -14,7 +14,7 @@ export class DefaultModelFactory implements ModelFactory {
         return new TableModel(session, state, schema);
     }
 
-    newRecord(id: string, table: Table): TableRecord {
+    newRecordModel(id: string, table: Table): TableRecord {
         return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this.createRecordModelClass(table.schema)))(id, table);
     }
 
@@ -34,7 +34,7 @@ export class DefaultModelFactory implements ModelFactory {
         if (!refTable)
             throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
-        return new TableRecordSetModel(refTable, schema, record);
+        return new RecordSetModel(refTable, schema, record);
     }
 
     protected newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null {
@@ -44,11 +44,11 @@ export class DefaultModelFactory implements ModelFactory {
 
         const id = refTable.index(schema.name, record.id)[0];
         if (id === undefined) return null;
-        else return this.newRecord(id, refTable);
+        else return this.newRecordModel(id, refTable);
     }
 
     protected createRecordModelClass(schema: TableSchema): { new(id: string, table: Table): TableRecord } {
-        class Record extends TableRecordModel<any> {
+        class Record extends RecordModel<any> {
             _fields: { [key: string]: any } = {};
 
             constructor(id: string, table: Table) {

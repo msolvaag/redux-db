@@ -78,7 +78,7 @@ export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
 export interface ModelFactory {
     newTableModel(session: Session, state: TableState, schema: TableSchema): Table;
     newTableSchema(db: DatabaseSchema, name: string, schema: TableDDL): TableSchema;
-    newRecord(id: string, table: Table): TableRecord;
+    newRecordModel(id: string, table: Table): TableRecord;
 }
 export interface SchemaDDL {
     [key: string]: TableDDL;

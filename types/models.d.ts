@@ -22,7 +22,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     index(name: string, fk: string): string[];
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
-    getByFk(fieldName: string, id: number | string): TableRecordSetModel<R, T>;
+    getByFk(fieldName: string, id: number | string): RecordSetModel<R, T>;
     value(id: number | string): T;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
@@ -40,11 +40,11 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);
 }
-export declare class TableRecordModel<T> implements TableRecord<T> {
-    table: Table;
+export declare class RecordModel<T> implements TableRecord<T> {
+    table: Table<any, T>;
     id: string;
-    constructor(id: string, table: Table);
-    readonly value: T;
+    constructor(id: string, table: Table<any, T>);
+    value: T;
     delete(): void;
     update(data: Partial<T>): this;
 }
@@ -55,7 +55,7 @@ export declare class RecordFieldModel<T> {
     constructor(schema: FieldSchema, record: TableRecord<T>);
     readonly value: any;
 }
-export declare class TableRecordSetModel<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
+export declare class RecordSetModel<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
     readonly table: Table<R, T>;
     readonly schema: FieldSchema;
     readonly owner: {
