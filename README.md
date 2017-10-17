@@ -70,6 +70,9 @@ This project is inspired by libraries such as [normalizr](https://www.npmjs.com/
 
 ## Changelog
 
+#### v0.8.0
+* Added support for providing a custom model factory.
+
 #### v0.7.0
 * Added support for PK fields to also reference foreign tables. 
 * Improved error handling for some cases.
