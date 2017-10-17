@@ -49,7 +49,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     all(): R[] {
-        return this.state.ids.map(id => this.schema.db.factory.newRecord<T>(id, this) as R);
+        return this.state.ids.map(id => this.schema.db.factory.newRecord(id, this) as R);
     }
 
     get length() {
@@ -78,7 +78,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         if (!this.exists(id))
             throw new Error(`No "${this.schema.name}" record with id: ${id} exists.`);
 
-        return this.schema.db.factory.newRecord<T>(utils.asID(id), this) as R;
+        return this.schema.db.factory.newRecord(utils.asID(id), this) as R;
     }
 
     getOrDefault(id: number | string) {
@@ -163,7 +163,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         };
         this._updateIndexes(table);
 
-        return table.ids.map(id => this.schema.db.factory.newRecord<T>(id, this) as R);
+        return table.ids.map(id => this.schema.db.factory.newRecord(id, this) as R);
     }
 
     updateNormalized(table: TableState<T>) {
@@ -184,7 +184,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
                 dirty = true;
             }
 
-            return this.schema.db.factory.newRecord<T>(id, this) as R;
+            return this.schema.db.factory.newRecord(id, this) as R;
         });
 
         if (dirty) {
@@ -348,7 +348,7 @@ export class TableRecordSetModel<R extends TableRecord<T>, T=any> implements Tab
     }
 
     all() {
-        return this.ids.map(id => this.table.schema.db.factory.newRecord<T>(id, this.table) as R);
+        return this.ids.map(id => this.table.schema.db.factory.newRecord(id, this.table) as R);
     }
 
     map<M>(callback: (record: R) => M) {

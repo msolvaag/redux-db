@@ -14,8 +14,8 @@ export class DefaultModelFactory implements ModelFactory {
         return new TableModel(session, state, schema);
     }
 
-    newRecord<T>(id: string, table: Table): TableRecord<T> {
-        return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this.createRecordModelClass<T>(table.schema)))(id, table);
+    newRecord(id: string, table: Table): TableRecord {
+        return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this.createRecordModelClass(table.schema)))(id, table);
     }
 
     protected newRecordField(schema: FieldSchema, record: TableRecord) {
@@ -47,8 +47,8 @@ export class DefaultModelFactory implements ModelFactory {
         else return this.newRecord(id, refTable);
     }
 
-    protected createRecordModelClass<T>(schema: TableSchema): { new(id: string, table: Table): TableRecord<T> } {
-        class Record extends TableRecordModel<T> {
+    protected createRecordModelClass(schema: TableSchema): { new(id: string, table: Table): TableRecord } {
+        class Record extends TableRecordModel<any> {
             _fields: { [key: string]: any } = {};
 
             constructor(id: string, table: Table) {

@@ -100,7 +100,7 @@ export interface TableRecordSet<R extends TableRecord<T>=any, T=any> {
 export interface ModelFactory {
     newTableModel(session: Session, state: TableState, schema: TableSchema): Table;
     newTableSchema(db: DatabaseSchema, name: string, schema: TableDDL): TableSchema;
-    newRecord<T>(id: string, table: Table): TableRecord<T>;
+    newRecord(id: string, table: Table): TableRecord;
 }
 
 /// Defines a database schema
