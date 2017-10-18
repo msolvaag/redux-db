@@ -38,7 +38,7 @@ export const selectPost = createSelector(
         const { BlogPost } = myDb.selectTables(tables);
 
         // get the Record by id
-        const postModel = BlogPost.get(id);
+        const postModel = BlogPost.getOrDefault(id);
 
         return postModel && _serializePost(postModel);
     }

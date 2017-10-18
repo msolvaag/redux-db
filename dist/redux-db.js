@@ -614,6 +614,17 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
 define("factory", ["require", "exports", "models", "schema"], function (require, exports, models_1, schema_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var createRecordModelClass = function (BaseClass) {
+        return /** @class */ (function (_super) {
+            __extends(ExtendedRecordModel, _super);
+            function ExtendedRecordModel(id, table) {
+                var _this = _super.call(this, id, table) || this;
+                _this.__fields = {};
+                return _this;
+            }
+            return ExtendedRecordModel;
+        }(BaseClass));
+    };
     var DefaultModelFactory = /** @class */ (function () {
         function DefaultModelFactory() {
             this._recordClass = {};
@@ -625,7 +636,7 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             return new models_1.TableModel(session, state, schema);
         };
         DefaultModelFactory.prototype.newRecordModel = function (id, table) {
-            return new (this._recordClass[table.schema.name] || (this._recordClass[table.schema.name] = this.createRecordModelClass(table.schema)))(id, table);
+            return new (this._createRecordModel(table.schema))(id, table);
         };
         DefaultModelFactory.prototype.newRecordField = function (schema, record) {
             if (!schema.isForeignKey)
@@ -651,30 +662,29 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             else
                 return this.newRecordModel(id, refTable);
         };
-        DefaultModelFactory.prototype.createRecordModelClass = function (schema) {
+        DefaultModelFactory.prototype.getRecordBaseClass = function (schema) {
+            return models_1.RecordModel;
+        };
+        DefaultModelFactory.prototype._createRecordModel = function (schema) {
             var _this = this;
-            var Record = /** @class */ (function (_super) {
-                __extends(Record, _super);
-                function Record(id, table) {
-                    var _this = _super.call(this, id, table) || this;
-                    _this._fields = {};
-                    return _this;
-                }
-                return Record;
-            }(models_1.RecordModel));
-            var defineProperty = function (name, field, factory, cache) {
-                if (cache === void 0) { cache = true; }
-                if (name === "id")
-                    throw new Error("The property \"" + field.table.name + ".id\" is a reserved name. Please specify another name using the \"propName\" definition.");
-                Object.defineProperty(Record.prototype, name, {
-                    get: function () {
-                        return cache ? (this._fields[name] || (this._fields[name] = factory(field, this))) : factory(field, this);
-                    }
-                });
-            };
-            schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty(f.propName, f, _this.newRecordField.bind(_this)); });
-            schema.relations.forEach(function (f) { return f.relationName && defineProperty(f.relationName, f, f.unique ? _this.newRecordRelation.bind(_this) : _this.newRecordSet.bind(_this), !f.unique); });
-            return Record;
+            if (this._recordClass[schema.name])
+                return this._recordClass[schema.name];
+            else {
+                var ExtendedRecordModel_1 = createRecordModelClass(this.getRecordBaseClass(schema));
+                var defineProperty_1 = function (name, field, factory, cache) {
+                    if (cache === void 0) { cache = true; }
+                    if (name === "id")
+                        throw new Error("The property \"" + field.table.name + ".id\" is a reserved name. Please specify another name using the \"propName\" definition.");
+                    Object.defineProperty(ExtendedRecordModel_1.prototype, name, {
+                        get: function () {
+                            return cache ? (this.__fields[name] || (this.__fields[name] = factory(field, this))) : factory(field, this);
+                        }
+                    });
+                };
+                schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty_1(f.propName, f, _this.newRecordField.bind(_this)); });
+                schema.relations.forEach(function (f) { return f.relationName && defineProperty_1(f.relationName, f, f.unique ? _this.newRecordRelation.bind(_this) : _this.newRecordSet.bind(_this), !f.unique); });
+                return this._recordClass[schema.name] = ExtendedRecordModel_1;
+            }
         };
         return DefaultModelFactory;
     }());

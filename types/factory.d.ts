@@ -1,5 +1,13 @@
 import { Session, Table, TableRecord, TableRecordSet, DatabaseSchema, TableSchema, FieldSchema, TableState, TableDDL, ModelFactory } from "./def";
-import { RecordFieldModel } from "./models";
+import { RecordFieldModel, RecordModel } from "./models";
+export interface RecordClass {
+    new (id: string, table: Table): TableRecord;
+}
+export interface ExtendedRecordModel extends TableRecord {
+    __fields: {
+        [key: string]: any;
+    };
+}
 export declare class DefaultModelFactory implements ModelFactory {
     private _recordClass;
     newTableSchema(db: DatabaseSchema, name: string, schema: TableDDL): TableSchema;
@@ -8,7 +16,6 @@ export declare class DefaultModelFactory implements ModelFactory {
     protected newRecordField(schema: FieldSchema, record: TableRecord): TableRecord<any> | RecordFieldModel<any> | null;
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet;
     protected newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null;
-    protected createRecordModelClass(schema: TableSchema): {
-        new (id: string, table: Table): TableRecord;
-    };
+    protected getRecordBaseClass(schema: TableSchema): typeof RecordModel;
+    private _createRecordModel(schema);
 }

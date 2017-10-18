@@ -29,8 +29,8 @@ class CustomRecordModel extends RecordModel {
 }
 
 class CustomModelFactory extends DefaultModelFactory {
-    newRecordModel(id, table) {
-        return new CustomRecordModel(id, table);
+    getRecordClass(schema) {
+        return CustomRecordModel;
     }
 
     newTableModel(session, state, schema) {
