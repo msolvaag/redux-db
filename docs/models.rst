@@ -6,7 +6,7 @@ To access and manipulate your normalized state redux-db provides you with a simp
 
 Database
 --------
-Your schema definition must be provided to a Database class instance. The database instance is created by:
+Your schema definition must be provided to a Database class instance:
 
 .. code-block:: js
 
@@ -65,16 +65,27 @@ Methods and propertes:
     /// returns the first inserted record.
     insert( data: any ) : RecordModel;
 
+    /// inserts one or more records. 
+    /// returns the inserted records.
+    insertMany( data: any ) : RecordModel[];
+
     /// updates one or more records. 
     /// returns the first updated record.
     update( data: any ) : RecordModel;
+
+    /// updates one or more records. 
+    /// returns the updated records.
+    update( data: any ) : RecordModel[];
 
     /// upserts one or more records. 
     /// returns the first upserted record.
     upsert( data: any ) : RecordModel;
 
     /// deletes a single record by it's primary key.
-    delete( id: string ) : void;
+    delete( id: string ) : boolean;
+
+    /// deletes all records in table.
+    deleteAll() : void;
 
     /// get a single the record value
     value( id:number | string ) : any | undefined;
