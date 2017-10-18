@@ -75,7 +75,7 @@ Methods and propertes:
 
     /// updates one or more records. 
     /// returns the updated records.
-    update( data: any ) : RecordModel[];
+    updateMany( data: any ) : RecordModel[];
 
     /// upserts one or more records. 
     /// returns the first upserted record.
