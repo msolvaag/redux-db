@@ -29,7 +29,7 @@ class CustomRecordModel extends RecordModel {
 }
 
 class CustomModelFactory extends DefaultModelFactory {
-    getRecordClass(schema) {
+    getRecordBaseClass(schema) {
         return CustomRecordModel;
     }
 
