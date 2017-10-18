@@ -215,7 +215,10 @@ var TableModel = /** @class */ (function () {
         if (cascade.length) {
             var model_1 = this.get(id);
             model_1 && cascade.forEach(function (schema) {
-                model_1[schema.relationName].delete();
+                var relation = model_1[schema.relationName];
+                if (relation) {
+                    relation.delete();
+                }
             });
         }
     };
