@@ -278,7 +278,10 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
             const model = this.get(id) as any;
 
             model && cascade.forEach(schema => {
-                model[schema.relationName as string].delete();
+                const relation = model[schema.relationName as string];
+                if (relation) {
+                    relation.delete();
+                }
             });
         }
     }
