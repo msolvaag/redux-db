@@ -202,8 +202,11 @@ export class FieldSchemaModel implements FieldSchema {
     /// Connects this schema with the referenced table.
     /// Used internally in the setup of the schema object model.
     connect(schemas: TableSchema[]) {
-        if (this.references)
+        if (this.references) {
             this._refTable = schemas.filter(tbl => tbl.name === this.references)[0];
+            if (!this._refTable)
+                throw new Error(`The field schema "${this.table.name}.${this.name}" has an invalid reference to unknown table "${this.references}".`);
+        }
     }
 
     /// Gets the value of the field for the given data.

@@ -164,8 +164,11 @@ var FieldSchemaModel = /** @class */ (function () {
     /// Used internally in the setup of the schema object model.
     FieldSchemaModel.prototype.connect = function (schemas) {
         var _this = this;
-        if (this.references)
+        if (this.references) {
             this._refTable = schemas.filter(function (tbl) { return tbl.name === _this.references; })[0];
+            if (!this._refTable)
+                throw new Error("The field schema \"" + this.table.name + "." + this.name + "\" has an invalid reference to unknown table \"" + this.references + "\".");
+        }
     };
     /// Gets the value of the field for the given data.
     FieldSchemaModel.prototype.getValue = function (data, record) {

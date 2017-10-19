@@ -47,7 +47,7 @@ export class Database implements DatabaseSchema {
 
             const tableSchema = this.tables.filter(s => s.name === tableName)[0];
             if (!tableSchema)
-                throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
+                throw new Error(`Could not select table. The table "${tableName}" is not defined in schema.`);
 
             return tableSchema;
         });

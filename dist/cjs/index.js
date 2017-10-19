@@ -53,7 +53,7 @@ var Database = /** @class */ (function () {
         var tableSchemas = Object.keys(state).map(function (tableName) {
             var tableSchema = _this.tables.filter(function (s) { return s.name === tableName; })[0];
             if (!tableSchema)
-                throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
+                throw new Error("Could not select table. The table \"" + tableName + "\" is not defined in schema.");
             return tableSchema;
         });
         return DatabaseSession.Partial(state, tableSchemas, this);

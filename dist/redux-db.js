@@ -596,8 +596,11 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
         /// Used internally in the setup of the schema object model.
         FieldSchemaModel.prototype.connect = function (schemas) {
             var _this = this;
-            if (this.references)
+            if (this.references) {
                 this._refTable = schemas.filter(function (tbl) { return tbl.name === _this.references; })[0];
+                if (!this._refTable)
+                    throw new Error("The field schema \"" + this.table.name + "." + this.name + "\" has an invalid reference to unknown table \"" + this.references + "\".");
+            }
         };
         /// Gets the value of the field for the given data.
         FieldSchemaModel.prototype.getValue = function (data, record) {
@@ -739,7 +742,7 @@ define("index", ["require", "exports", "utils", "factory", "models"], function (
             var tableSchemas = Object.keys(state).map(function (tableName) {
                 var tableSchema = _this.tables.filter(function (s) { return s.name === tableName; })[0];
                 if (!tableSchema)
-                    throw new Error("Cloud not select table. The schema with name: " + tableName + " is not defined.");
+                    throw new Error("Could not select table. The table \"" + tableName + "\" is not defined in schema.");
                 return tableSchema;
             });
             return DatabaseSession.Partial(state, tableSchemas, this);
