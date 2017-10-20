@@ -69,6 +69,7 @@ export declare class RecordSetModel<R extends TableRecord<T>, T = any> implement
     readonly length: number;
     all(): R[];
     map<M>(callback: (record: R) => M): M[];
+    filter(callback: (record: R) => boolean): R[];
     add(data: T | T[]): void;
     remove(data: Partial<T> | Partial<T>[]): void;
     update(data: Partial<T> | Partial<T>[]): this;

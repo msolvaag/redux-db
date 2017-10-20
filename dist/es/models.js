@@ -300,6 +300,9 @@ var RecordSetModel = /** @class */ (function () {
     RecordSetModel.prototype.map = function (callback) {
         return this.all().map(callback);
     };
+    RecordSetModel.prototype.filter = function (callback) {
+        return this.all().filter(callback);
+    };
     RecordSetModel.prototype.add = function (data) {
         this.table.insert(this._normalize(data));
     };

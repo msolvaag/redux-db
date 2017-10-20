@@ -74,6 +74,7 @@ export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
     update(data: Partial<T> | Partial<T>[]): TableRecordSet<R, T>;
     delete(): void;
     map<M>(callback: (record: R) => M): M[];
+    filter(callback: (record: R) => boolean): R[];
 }
 export interface ModelFactory {
     newTableModel(session: Session, state: TableState, schema: TableSchema): Table;

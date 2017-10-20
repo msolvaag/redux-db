@@ -95,6 +95,7 @@ export interface TableRecordSet<R extends TableRecord<T>=any, T=any> {
     delete(): void;
 
     map<M>(callback: (record: R) => M): M[];
+    filter(callback: (record: R) => boolean): R[];
 }
 
 export interface ModelFactory {

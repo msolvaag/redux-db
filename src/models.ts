@@ -362,6 +362,10 @@ export class RecordSetModel<R extends TableRecord<T>, T=any> implements TableRec
         return this.all().map(callback);
     }
 
+    filter(callback: (record: R) => boolean) {
+        return this.all().filter(callback);
+    }
+
     add(data: T | T[]) {
         this.table.insert(this._normalize(data));
     }
