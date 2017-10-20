@@ -75,6 +75,7 @@ var DefaultModelFactory = /** @class */ (function () {
                     throw new Error("The property \"" + field.table.name + ".id\" is a reserved name. Please specify another name using the \"propName\" definition.");
                 Object.defineProperty(ExtendedRecordModel_1.prototype, name, {
                     get: function () {
+                        // TODO: Improve the instance cache mechanism. Invalidate when the field value changes..
                         return cache ? (this.__fields[name] || (this.__fields[name] = factory(field, this))) : factory(field, this);
                     }
                 });

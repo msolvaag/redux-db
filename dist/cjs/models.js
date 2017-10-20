@@ -84,7 +84,9 @@ var TableModel = /** @class */ (function () {
         return this.state.byId[utils.ensureID(id)];
     };
     TableModel.prototype.exists = function (id) {
-        return this.state.byId[utils.ensureID(id)] !== undefined;
+        if (!utils.isValidID(id))
+            return false;
+        return this.state.byId[utils.asID(id)] !== undefined;
     };
     TableModel.prototype.insert = function (data) {
         return this.insertMany(data)[0];

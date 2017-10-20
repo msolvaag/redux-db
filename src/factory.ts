@@ -41,7 +41,7 @@ export class DefaultModelFactory implements ModelFactory {
         if (!schema.isForeignKey)
             return new RecordFieldModel(schema, record);
 
-        const refTable = schema.references && record.table.session.tables[schema.references] as Table;
+        const refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
             throw new Error(`The foreign key: "${schema.name}" references an unregistered table: "${schema.references}" in the current session.`);
 
@@ -49,7 +49,7 @@ export class DefaultModelFactory implements ModelFactory {
     }
 
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet {
-        const refTable = record.table.session.tables[schema.table.name] as Table;
+        const refTable = record.table.session.tables[schema.table.name];
         if (!refTable)
             throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
@@ -57,7 +57,7 @@ export class DefaultModelFactory implements ModelFactory {
     }
 
     protected newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null {
-        const refTable = record.table.session.tables[schema.table.name] as Table;
+        const refTable = record.table.session.tables[schema.table.name];
         if (!refTable)
             throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
@@ -80,6 +80,7 @@ export class DefaultModelFactory implements ModelFactory {
                 if (name === "id") throw new Error(`The property "${field.table.name}.id" is a reserved name. Please specify another name using the "propName" definition.`);
                 Object.defineProperty(ExtendedRecordModel.prototype, name, {
                     get: function (this: ExtendedRecordModel) {
+                        // TODO: Improve the instance cache mechanism. Invalidate when the field value changes..
                         return cache ? (this.__fields[name] || (this.__fields[name] = factory(field, this))) : factory(field, this);
                     }
                 });

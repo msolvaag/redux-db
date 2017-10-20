@@ -99,7 +99,8 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
     }
 
     exists(id: number | string) {
-        return this.state.byId[utils.ensureID(id)] !== undefined;
+        if (!utils.isValidID(id)) return false;
+        return this.state.byId[utils.asID(id)] !== undefined;
     }
 
     insert(data: T | T[]): R {

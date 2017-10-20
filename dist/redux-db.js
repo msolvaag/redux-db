@@ -193,7 +193,9 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             return this.state.byId[utils.ensureID(id)];
         };
         TableModel.prototype.exists = function (id) {
-            return this.state.byId[utils.ensureID(id)] !== undefined;
+            if (!utils.isValidID(id))
+                return false;
+            return this.state.byId[utils.asID(id)] !== undefined;
         };
         TableModel.prototype.insert = function (data) {
             return this.insertMany(data)[0];
@@ -686,6 +688,7 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
                         throw new Error("The property \"" + field.table.name + ".id\" is a reserved name. Please specify another name using the \"propName\" definition.");
                     Object.defineProperty(ExtendedRecordModel_1.prototype, name, {
                         get: function () {
+                            // TODO: Improve the instance cache mechanism. Invalidate when the field value changes..
                             return cache ? (this.__fields[name] || (this.__fields[name] = factory(field, this))) : factory(field, this);
                         }
                     });
