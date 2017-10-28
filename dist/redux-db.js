@@ -189,6 +189,13 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
                 throw new Error("No foreign key named: " + fieldName + " in the schema: \"" + this.schema.name + "\".");
             return new RecordSetModel(this, field, { id: id });
         };
+        TableModel.prototype.getFieldValue = function (id, field) {
+            var record = this.getOrDefault(id);
+            if (record)
+                return record.value[field];
+            else
+                return undefined;
+        };
         TableModel.prototype.value = function (id) {
             return this.state.byId[utils.ensureID(id)];
         };

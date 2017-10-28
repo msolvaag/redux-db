@@ -42,7 +42,7 @@ export interface FieldSchema {
     getRecordValue(record: any): any;
 }
 
-export interface Table<R extends TableRecord<T> = TableRecord, T=any> {
+export interface Table<R extends TableRecord<T> = TableRecord, T=Record<string,any>> {
     session: Session;
     schema: TableSchema;
     state: TableState;
@@ -57,6 +57,7 @@ export interface Table<R extends TableRecord<T> = TableRecord, T=any> {
     exists(id: string | number): boolean;
     index(name: string, fk: string): string[];
     value(id: string | number): T;
+    getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
 
     insert(data: T | T[]): R;
     insertMany(data: T | T[]): R[];

@@ -1,4 +1,7 @@
 # redux-db
+[![NPM downloads](https://img.shields.io/npm/dm/redux-db.svg?style=flat-square)](https://www.npmjs.com/package/redux-db)
+[![NPM package](https://img.shields.io/npm/v/redux-db.svg?style=flat-square)](https://www.npmjs.com/package/redux-db)
+
 redux-db provides a normalized [redux](http://redux.js.org) store and easy object management.
 
 ## Why

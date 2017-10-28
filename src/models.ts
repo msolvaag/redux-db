@@ -33,7 +33,7 @@ export class DbNormalizeContext implements NormalizeContext {
     }
 }
 
-export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implements Table<R, T> {
+export class TableModel<R extends TableRecord<T> = TableRecord, T extends Record<string, any> = Record<string, any>> implements Table<R, T> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -92,6 +92,14 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T=any> implement
         const field = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName)[0];
         if (!field) throw new Error(`No foreign key named: ${fieldName} in the schema: "${this.schema.name}".`);
         return new RecordSetModel<R, T>(this, field, { id: id });
+    }
+
+    getFieldValue(id: string | number, field: keyof T) {
+        const record = this.getOrDefault(id);
+        if (record)
+            return record.value[field];
+        else
+            return undefined;
     }
 
     value(id: number | string) {

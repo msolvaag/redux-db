@@ -9,7 +9,7 @@ export declare class DbNormalizeContext implements NormalizeContext {
     constructor(schema: TableSchema);
     emit(tableName: string, record: any): void;
 }
-export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any> implements Table<R, T> {
+export declare class TableModel<R extends TableRecord<T> = TableRecord, T extends Record<string, any> = Record<string, any>> implements Table<R, T> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -23,6 +23,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T = any>
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
     getByFk(fieldName: string, id: number | string): RecordSetModel<R, T>;
+    getFieldValue(id: string | number, field: keyof T): T[keyof T];
     value(id: number | string): T;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
