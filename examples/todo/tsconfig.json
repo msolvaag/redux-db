@@ -2,28 +2,24 @@
   "compileOnSave": false,
   "compilerOptions": {
     "noEmitOnError": true,
-    "noEmitHelpers": false,
-    "importHelpers": false,
+    "noEmitHelpers": true,
+    "importHelpers": true,
     "removeComments": false,
     "target": "es5",
-    "outDir": "./dist/es",
-    "sourceMap": false,
+    "outDir": "./wwwroot/",
+    "sourceMap": true,
     "noImplicitAny": true,
-    "module": "es2015",
-    "moduleResolution": "node",
+    "module": "commonjs",
     "jsx": "react",
     "strict": true,
     "strictNullChecks": true,
+    "allowJs": true,
     "alwaysStrict": true,
-    "declaration": true,
-    "declarationDir": "./types"
+    "baseUrl": "./",
+    "traceResolution": true
   },
   "exclude": [
     "node_modules",
-    "wwwroot",
-    "types",
-    "test",
-    "docs",
-    "examples"
+    "wwwroot"
   ]
 }

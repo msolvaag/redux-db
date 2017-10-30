@@ -116,4 +116,4 @@ export class DatabaseSession implements Session {
     }
 }
 
-export { Table, TableRecord, TableRecordSet, TableMap, Reducer, DefaultModelFactory };
+export { Table, TableRecord, TableRecordSet, TableMap, Reducer, SchemaDDL as Schema, DefaultModelFactory };

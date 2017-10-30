@@ -26,7 +26,7 @@ The TableModel_ class helps to query and perform CRUD operations easily.
 
 To begin a new session and perform some action:
 
-.. literalinclude:: ../example/session.js
+.. literalinclude:: ./example/session.js
     :language: js
 
 TableModel

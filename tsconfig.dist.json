@@ -21,6 +21,6 @@
     "wwwroot",
     "types",
     "test",
-    "example"
+    "docs"
   ]
 }
