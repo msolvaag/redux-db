@@ -10,7 +10,8 @@ import {
     Table,
     TableRecord,
     TableRecordSet,
-    Session
+    Session,
+    RecordValue
 } from "./def";
 import * as utils from "./utils";
 
@@ -33,7 +34,7 @@ export class DbNormalizeContext implements NormalizeContext {
     }
 }
 
-export class TableModel<R extends TableRecord<T> = TableRecord, T extends Record<string, any> = Record<string, any>> implements Table<R, T> {
+export class TableModel<T extends RecordValue, R extends TableRecord<T>> implements Table<T, R> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -102,7 +103,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T extends Record
             return undefined;
     }
 
-    value(id: number | string) {
+    getValue(id: number | string) {
         return this.state.byId[utils.ensureID(id)];
     }
 
@@ -119,7 +120,7 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T extends Record
         return this._normalizedAction(data, this.insertNormalized);
     }
 
-    update(data: Partial<T> | Partial<T>[]): R {
+    update(data: Partial<T> | Partial<T>[]) {
         return this.updateMany(data)[0];
     }
 
@@ -297,16 +298,16 @@ export class TableModel<R extends TableRecord<T> = TableRecord, T extends Record
 }
 
 export class RecordModel<T> implements TableRecord<T> {
-    table: Table<any, T>;
+    table: Table<T>;
     id: string;
 
-    constructor(id: string, table: Table<any, T>) {
+    constructor(id: string, table: Table<T>) {
         this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
 
     get value(): T {
-        return this.table.value(this.id);
+        return this.table.getValue(this.id);
     }
 
     set value(data: T) {
@@ -341,11 +342,11 @@ export class RecordFieldModel<T> {
 
 export class RecordSetModel<R extends TableRecord<T>, T=any> implements TableRecordSet<R, T> {
 
-    readonly table: Table<R, T>;
+    readonly table: Table<T, R>;
     readonly schema: FieldSchema;
     readonly owner: { id: string };
 
-    constructor(table: Table<R, T>, schema: FieldSchema, owner: { id: string }) {
+    constructor(table: Table<T, R>, schema: FieldSchema, owner: { id: string }) {
         this.table = utils.ensureParam("table", table);
         this.schema = utils.ensureParam("schema", schema);
         this.owner = utils.ensureParam("owner", owner);
