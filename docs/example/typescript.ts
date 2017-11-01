@@ -12,13 +12,13 @@ export const schema = {
 }
 
 // Data models
-export interface Project{
+export interface Project {
     id: number,
     title: string;
 }
-export interface Task{
-   id: number;
-   projectId: number;
+export interface Task {
+    id: number;
+    projectId: number;
 }
 
 // Schema models
@@ -31,16 +31,16 @@ export interface TaskRecord extends ReduxDB.TableRecord<Task> {
 }
 
 export interface Session {
-    Project: ReduxDB.Table<ProjectRecord>;
-    Task: ReduxDB.Table<TaskRecord>;
+    Project: ReduxDB.Table<Project, ProjectRecord>;
+    Task: ReduxDB.Table<Task, TaskRecord>;
 }
 
 // Reducer
-export const dbReducer = ( session: Session, action: { type:string, payload:any } ) => {
+export const dbReducer = (session: Session, action: { type: string, payload: any }) => {
     const { Project, Task } = session;
 
     switch (action.type) {
-        case "SOME_ACTION":{
+        case "SOME_ACTION": {
             const project = Project.get(action.payload);
             // project.tasks === typeof RecordSet<TaskRecord>
             // project.tasks.map( t=> t.value === typeof Task )
