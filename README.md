@@ -59,6 +59,9 @@ export const dbReducer = db.combineReducers(
 ## Documentation
 Head over to [http://redux-db.readthedocs.io](http://redux-db.readthedocs.io/en/latest/).
 
+## Examples
+You will find an extensive example using redux-db to create a basic "todo" app in the /examples folder.
+
 ## Contact / feedback
 Feel free to create issues and PR's.
 
