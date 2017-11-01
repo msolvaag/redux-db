@@ -1,4 +1,4 @@
-import * as ReduxDB from "../../src/index";
+import * as ReduxDB from "../../../src/index";
 
 // Given the schema
 export const schema: ReduxDB.Schema = {

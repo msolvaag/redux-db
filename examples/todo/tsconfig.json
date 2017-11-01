@@ -15,7 +15,7 @@
     "strictNullChecks": true,
     "allowJs": true,
     "alwaysStrict": true,
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "traceResolution": true
   },
   "exclude": [

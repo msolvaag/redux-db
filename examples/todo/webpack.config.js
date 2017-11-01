@@ -10,7 +10,7 @@ console.log(`******** WEBPACK ${environment} ********`);
 const config = {
     entry: {
         client: [
-            './index.tsx'
+            './src/index.tsx'
         ],
         client_style: [
             './style/index.scss'
