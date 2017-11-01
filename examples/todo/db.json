@@ -34,15 +34,15 @@
     },
     {
       "taskId": 2,
-      "value": "Making it easier",
-      "author": 2,
-      "id": 7
-    },
-    {
-      "taskId": 2,
       "value": "Think Different",
       "author": 1,
       "id": 8
+    },
+    {
+      "taskId": 2,
+      "value": "Making it easier",
+      "author": 2,
+      "id": 9
     }
   ],
   "users": [

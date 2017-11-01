@@ -1,10 +1,6 @@
 import { Session, dbInstance } from "./schema";
-import { APP_LOAD, APP_LOAD_DONE, APP_ERROR, DELETE_TASK_DONE, UI_SET_TASK_FILTER, UPDATE_TASK_DONE, ADD_COMMENT_DONE, DELETE_COMMENT_DONE, LOAD_TASKS_DONE, LOAD_USERS_DONE } from "./actions";
-
-export interface Action {
-    type: string;
-    payload: any;
-}
+import { DONE, APP_LOAD, APP_ERROR, UI_SET_TASK_FILTER, LOAD_TASKS, LOAD_USERS, DELETE_TASK, UPDATE_TASK, ADD_COMMENT, DELETE_COMMENT, CREATE_TASK } from "./actions";
+import { Reducer } from 'redux';
 
 // db reducer
 export const dbReducer = dbInstance.combineReducers(
@@ -12,28 +8,28 @@ export const dbReducer = dbInstance.combineReducers(
         const { Task, Comment, User } = session;
 
         switch (action.type) {
-            case LOAD_TASKS_DONE:
+            case DONE(LOAD_TASKS):
+            case DONE(CREATE_TASK):
                 Task.upsert(action.payload);
                 break;
 
-            case LOAD_USERS_DONE:
+            case DONE(LOAD_USERS):
                 User.upsert(action.payload);
                 break;
 
-            case DELETE_TASK_DONE: {
+            case DONE(DELETE_TASK):
                 Task.delete(action.payload);
                 break;
-            }
 
-            case UPDATE_TASK_DONE:
+            case DONE(UPDATE_TASK):
                 Task.update(action.payload);
                 break;
 
-            case ADD_COMMENT_DONE:
+            case DONE(ADD_COMMENT):
                 Comment.insert(action.payload);
                 break;
 
-            case DELETE_COMMENT_DONE:
+            case DONE(DELETE_COMMENT):
                 Comment.delete(action.payload);
                 break;
         }
@@ -41,18 +37,18 @@ export const dbReducer = dbInstance.combineReducers(
 );
 
 // ui reducer
-export const uiReducer = (state: TodoApp.UIState = { loading: false, error: null, taskFilter: "open" }, action: Action) => {
+export const uiReducer: Reducer<TodoApp.UIState> = (state = { loading: false, error: null, taskFilter: "open" }, action) => {
     switch (action.type) {
 
         case APP_LOAD:
-            return { ...state, loading: true } as TodoApp.UIState;
-        case APP_LOAD_DONE:
-            return { ...state, loading: false } as TodoApp.UIState;
+            return { ...state, loading: true };
+        case DONE(APP_LOAD):
+            return { ...state, loading: false };
         case APP_ERROR:
-            return { ...state, error: action.payload } as TodoApp.UIState;
+            return { ...state, error: action.payload };
 
         case UI_SET_TASK_FILTER:
-            return { ...state, taskFilter: action.payload } as TodoApp.UIState;
+            return { ...state, taskFilter: action.payload };
         default:
             return state;
     }

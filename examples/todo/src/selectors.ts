@@ -11,9 +11,7 @@ export interface CommentViewModel extends TodoApp.Comment {
     authorName: string;
 }
 
-export interface UserViewModel extends TodoApp.User {
-
-}
+export interface UserViewModel extends TodoApp.User { }
 
 const taskSelector = createStructuredSelector({
     Task: (state: any) => state.db.Task,

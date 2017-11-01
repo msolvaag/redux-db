@@ -1,6 +1,6 @@
-import * as ReduxDB from "../../../src/index";
+import * as ReduxDB from "../../../src/index"; // "redux-db"
 
-// Given the schema
+// the schema
 export const schema: ReduxDB.Schema = {
     "Task": {
         "id": { type: "PK" },
@@ -21,10 +21,23 @@ export const schema: ReduxDB.Schema = {
     "Label": {
         "id": { type: "PK" }
     }
-}
+};
+
+// create db instance
+export const dbInstance = ReduxDB.createDatabase(schema, {
+    onNormalize: {
+        "TaskLabel": (record, ctx) => {
+            const { id, name, taskId } = record;
+
+            ctx.emit("Label", { id, name });
+
+            return { labelId: id, taskId };
+        }
+    }
+});
+
 
 // Schema models
-
 export interface UserRecord extends ReduxDB.TableRecord<TodoApp.User> {
     tasks: ReduxDB.TableRecordSet<TaskRecord>;
     comments: ReduxDB.TableRecordSet<CommentRecord>;
@@ -49,15 +62,3 @@ export interface Session extends ReduxDB.TableMap {
     Comment: CommentTable;
     User: UserTable;
 }
-
-export const dbInstance = ReduxDB.createDatabase(schema, {
-    onNormalize: {
-        "TaskLabel": (record, ctx) => {
-            const { id, name, taskId } = record;
-
-            ctx.emit("Label", { id, name });
-
-            return { labelId: id, taskId };
-        }
-    }
-});
