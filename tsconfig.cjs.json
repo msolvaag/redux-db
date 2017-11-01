@@ -20,6 +20,7 @@
     "wwwroot",
     "types",
     "test",
-    "docs"
+    "docs",
+    "examples"
   ]
 }

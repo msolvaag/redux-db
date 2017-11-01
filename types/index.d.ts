@@ -26,4 +26,4 @@ export declare class DatabaseSession implements Session {
     commit(): any;
     static Partial<T extends TableMap = any>(state: any, tableSchemas: TableSchema[], db: Database): T;
 }
-export { Table, TableRecord, TableRecordSet, TableMap, Reducer, DefaultModelFactory };
+export { Table, TableRecord, TableRecordSet, TableMap, Reducer, SchemaDDL as Schema, DefaultModelFactory };

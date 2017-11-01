@@ -1,4 +1,4 @@
-import { DatabaseSchema, TableSchema, FieldSchema, TableState, NormalizedState, NormalizeContext, Table, TableRecord, TableRecordSet, Session } from "./def";
+import { DatabaseSchema, TableSchema, FieldSchema, TableState, NormalizedState, NormalizeContext, Table, TableRecord, TableRecordSet, Session, RecordValue } from "./def";
 export declare class DbNormalizeContext implements NormalizeContext {
     schema: TableSchema;
     db: DatabaseSchema;
@@ -9,7 +9,7 @@ export declare class DbNormalizeContext implements NormalizeContext {
     constructor(schema: TableSchema);
     emit(tableName: string, record: any): void;
 }
-export declare class TableModel<R extends TableRecord<T> = TableRecord, T extends Record<string, any> = Record<string, any>> implements Table<R, T> {
+export declare class TableModel<T extends RecordValue, R extends TableRecord<T>> implements Table<T, R> {
     readonly session: Session;
     readonly schema: TableSchema;
     state: TableState<T>;
@@ -24,7 +24,7 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T extend
     getOrDefault(id: number | string): R | null;
     getByFk(fieldName: string, id: number | string): RecordSetModel<R, T>;
     getFieldValue(id: string | number, field: keyof T): T[keyof T];
-    value(id: number | string): T;
+    getValue(id: number | string): T;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
     insertMany(data: T | T[]): R[];
@@ -42,9 +42,9 @@ export declare class TableModel<R extends TableRecord<T> = TableRecord, T extend
     private _deleteCascade(id);
 }
 export declare class RecordModel<T> implements TableRecord<T> {
-    table: Table<any, T>;
+    table: Table<T>;
     id: string;
-    constructor(id: string, table: Table<any, T>);
+    constructor(id: string, table: Table<T>);
     value: T;
     delete(): void;
     update(data: Partial<T>): this;
@@ -57,12 +57,12 @@ export declare class RecordFieldModel<T> {
     readonly value: any;
 }
 export declare class RecordSetModel<R extends TableRecord<T>, T = any> implements TableRecordSet<R, T> {
-    readonly table: Table<R, T>;
+    readonly table: Table<T, R>;
     readonly schema: FieldSchema;
     readonly owner: {
         id: string;
     };
-    constructor(table: Table<R, T>, schema: FieldSchema, owner: {
+    constructor(table: Table<T, R>, schema: FieldSchema, owner: {
         id: string;
     });
     readonly value: T[];
