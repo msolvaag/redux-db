@@ -5,7 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Route } from "react-router";
 
 import { store } from "./store";
-import { App } from "./app";
+import { App } from "./components/app";
 import { APP_LOAD, APP_ERROR } from "./actions";
 
 store.dispatch({ type: APP_LOAD });

@@ -1,34 +1,51 @@
 {
-    "tasks": [{
+  "tasks": [{
+      "id": 1,
+      "title": "test",
+      "status": "open",
+      "owner": 2,
+      "labels": [{
         "id": 1,
-        "title": "test",
-        "ownerId": 1,
-        "comments": [{
-            "id": 1,
-            "value": "this is a comment",
-            "author": {
-                "id": 1,
-                "name": "Tim"
-            }
-        }]
-    }, {
-        "id": 2,
-        "title": "Task 2",
-        "ownerId": 2,
-        "comments": [{
-            "id": 2,
-            "value": "this is a comment",
-            "author": {
-                "id": 2,
-                "name": "Cook"
-            }
-        }, {
-            "id": 3,
-            "value": "this is a comment",
-            "author": {
-                "id": 1,
-                "name": "Tim"
-            }
-        }]
-    }]
+        "name": "High prio"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "Task 2",
+      "status": "open",
+      "owner": 1,
+      "labels": [{
+        "id": 1,
+        "name": "High prio"
+      }]
+    }
+  ],
+  "comments": [{
+      "taskId": 1,
+      "value": "Where do you want to go today?",
+      "author": 2,
+      "id": 6
+    },
+    {
+      "taskId": 2,
+      "value": "Making it easier",
+      "author": 2,
+      "id": 7
+    },
+    {
+      "taskId": 2,
+      "value": "Think Different",
+      "author": 1,
+      "id": 8
+    }
+  ],
+  "users": [{
+      "id": 1,
+      "name": "Tim Cook"
+    },
+    {
+      "id": 2,
+      "name": "Satya Nadella"
+    }
+  ]
 }

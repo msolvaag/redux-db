@@ -22,7 +22,8 @@ const config = {
         publicPath: '/dist/'
     },
     devServer: {
-        contentBase: './wwwroot'
+        contentBase: './wwwroot',
+        historyApiFallback: true
     },
     module: {
         rules: [{

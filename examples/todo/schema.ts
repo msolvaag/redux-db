@@ -1,15 +1,10 @@
 import * as ReduxDB from "../../src/index";
 
-
 // Given the schema
 export const schema: ReduxDB.Schema = {
-    "Project": {
-        "id": { type: "PK" }
-    },
     "Task": {
         "id": { type: "PK" },
-        "projectId": { propName: "project", references: "Project", relationName: "tasks" },
-        "ownerId": { propName: "owner", references: "User", relationName: "tasks" }
+        "owner": { references: "User", relationName: "tasks" }
     },
     "User": {
         "id": { type: "PK" }
@@ -17,55 +12,52 @@ export const schema: ReduxDB.Schema = {
     "Comment": {
         "id": { type: "PK" },
         "taskId": { propName: "task", references: "Task", relationName: "comments" },
-        "author": { propName: "author", references: "User", relationName: "comments" }
+        "author": { references: "User", relationName: "comments" }
+    },
+    "TaskLabel": {
+        "labelId": { propName: "label", references: "Label", relationName: "tasks" },
+        "taskId": { propName: "task", references: "Task", relationName: "labels" }
+    },
+    "Label": {
+        "id": { type: "PK" }
     }
 }
 
-// Data models
-export interface User {
-    id: number;
-    name: string;
-}
-export interface Project {
-    id: number,
-    title: string;
-}
-export interface Task {
-    id: number;
-    projectId: number;
-    title: string;
-}
-export interface Comment {
-    id: number;
-    taskId: number;
-    value: string;
-    authorId: number;
-}
-
 // Schema models
-export interface ProjectRecord extends ReduxDB.TableRecord<Project> {
+
+export interface UserRecord extends ReduxDB.TableRecord<TodoApp.User> {
     tasks: ReduxDB.TableRecordSet<TaskRecord>;
+    comments: ReduxDB.TableRecordSet<CommentRecord>;
 }
 
-export interface UserRecord extends ReduxDB.TableRecord<User> {
-
-}
-
-export interface TaskRecord extends ReduxDB.TableRecord<Task> {
-    project: ProjectRecord;
+export interface TaskRecord extends ReduxDB.TableRecord<TodoApp.Task> {
     comments: ReduxDB.TableRecordSet<CommentRecord>;
     owner: UserRecord;
 }
 
-export interface CommentRecord extends ReduxDB.TableRecord<Comment> {
+export interface CommentRecord extends ReduxDB.TableRecord<TodoApp.Comment> {
     task: TaskRecord;
     author: UserRecord;
 }
 
+export type TaskTable = ReduxDB.Table<TodoApp.Task, TaskRecord>;
+export type UserTable = ReduxDB.Table<TodoApp.User, UserRecord>;
+export type CommentTable = ReduxDB.Table<TodoApp.Comment, CommentRecord>;
+
 export interface Session extends ReduxDB.TableMap {
-    Project: ReduxDB.Table<Project, ProjectRecord>;
-    Task: ReduxDB.Table<Task, TaskRecord>;
-    Comment: ReduxDB.Table<Comment, CommentRecord>;
+    Task: TaskTable;
+    Comment: CommentTable;
+    User: UserTable;
 }
 
-export const dbInstance = ReduxDB.createDatabase(schema);
+export const dbInstance = ReduxDB.createDatabase(schema, {
+    onNormalize: {
+        "TaskLabel": (record, ctx) => {
+            const { id, name, taskId } = record;
+
+            ctx.emit("Label", { id, name });
+
+            return { labelId: id, taskId };
+        }
+    }
+});
