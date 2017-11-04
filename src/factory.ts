@@ -62,9 +62,8 @@ export class DefaultModelFactory implements ModelFactory {
         if (!refTable)
             throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
-        const id = refTable.index(schema.name, record.id)[0];
-        if (id === undefined) return null;
-        else return this.newRecordModel(id, refTable);
+        let id = refTable.index(schema.name, record.id)[0];
+        return this.newRecordModel(id, refTable);
     }
 
     protected getRecordBaseClass(schema: TableSchema) {

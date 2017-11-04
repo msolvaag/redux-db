@@ -243,10 +243,17 @@ var RecordModel = /** @class */ (function () {
     }
     Object.defineProperty(RecordModel.prototype, "value", {
         get: function () {
-            return this.table.getValue(this.id);
+            return this.valueOrDefault || {};
         },
         set: function (data) {
             this.update(data);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RecordModel.prototype, "valueOrDefault", {
+        get: function () {
+            return this.table.getValue(this.id);
         },
         enumerable: true,
         configurable: true
@@ -255,6 +262,7 @@ var RecordModel = /** @class */ (function () {
         this.table.delete(this.id);
     };
     RecordModel.prototype.update = function (data) {
+        this.table.schema.injectKeys(data, this);
         this.table.update(data);
         return this;
     };

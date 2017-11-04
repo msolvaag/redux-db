@@ -16,6 +16,7 @@ export interface TableSchema {
     getForeignKeys(record: any): ForeignKey[];
     isModified(x: any, y: any): boolean;
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
+    injectKeys(data: any, record: TableRecord): void;
     normalize(data: any, context: NormalizeContext): string[];
 }
 export interface FieldSchema {
@@ -45,7 +46,7 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
     getOrDefault(id: string | number): R | null;
     getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
     getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
-    getValue(id: string | number): T;
+    getValue(id: string | number): T | undefined;
     all(): R[];
     filter(callback: (record: R) => boolean): R[];
     exists(id: string | number): boolean;
@@ -63,6 +64,7 @@ export interface TableRecord<T extends RecordValue = RecordValue> {
     id: string;
     table: Table<T>;
     value: T;
+    valueOrDefault: T | undefined;
     update(data: Partial<T>): TableRecord<T>;
     delete(): void;
 }

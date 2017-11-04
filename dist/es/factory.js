@@ -54,10 +54,7 @@ var DefaultModelFactory = /** @class */ (function () {
         if (!refTable)
             throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
         var id = refTable.index(schema.name, record.id)[0];
-        if (id === undefined)
-            return null;
-        else
-            return this.newRecordModel(id, refTable);
+        return this.newRecordModel(id, refTable);
     };
     DefaultModelFactory.prototype.getRecordBaseClass = function (schema) {
         return RecordModel;

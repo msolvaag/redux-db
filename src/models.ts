@@ -65,7 +65,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this.all().filter(predicate);
     }
 
-    index(name: string, fk: string): string[] {
+    index(name: string, fk: string) {
         utils.ensureParamString("value", name);
         utils.ensureParamString("fk", fk);
 
@@ -112,11 +112,11 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this.state.byId[utils.asID(id)] !== undefined;
     }
 
-    insert(data: T | T[]): R {
+    insert(data: T | T[]) {
         return this.insertMany(data)[0];
     }
 
-    insertMany(data: T | T[]): R[] {
+    insertMany(data: T | T[]) {
         return this._normalizedAction(data, this.insertNormalized);
     }
 
@@ -124,7 +124,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this.updateMany(data)[0];
     }
 
-    updateMany(data: Partial<T> | Partial<T>[]): R[] {
+    updateMany(data: Partial<T> | Partial<T>[]) {
         return this._normalizedAction(data, this.updateNormalized);
     }
 
@@ -162,7 +162,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
             this.all().forEach(d => d.delete());
     }
 
-    insertNormalized(table: TableState<T>) {
+    insertNormalized(table: TableState<T>): R[] {
         utils.ensureParam("table", table);
 
         this.dirty = true;
@@ -176,7 +176,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return table.ids.map(id => this.schema.db.factory.newRecordModel(id, this) as R);
     }
 
-    updateNormalized(table: TableState<T>) {
+    updateNormalized(table: TableState<T>): R[] {
         utils.ensureParam("table", table);
 
         let state = { ... this.state }, dirty = false;
@@ -206,7 +206,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return records;
     }
 
-    upsertNormalized(norm: TableState<T>): R[] {
+    upsertNormalized(norm: TableState<T>) {
         utils.ensureParam("table", norm);
 
         const toUpdate: TableState<T> = { ids: [], byId: {}, indexes: {} };
@@ -297,7 +297,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
     }
 }
 
-export class RecordModel<T> implements TableRecord<T> {
+export class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<T>;
     id: string;
 
@@ -306,12 +306,16 @@ export class RecordModel<T> implements TableRecord<T> {
         this.table = utils.ensureParam("table", table);
     }
 
-    get value(): T {
-        return this.table.getValue(this.id);
+    get value() {
+        return this.valueOrDefault || <T>{};
     }
 
     set value(data: T) {
         this.update(data);
+    }
+
+    get valueOrDefault() {
+        return this.table.getValue(this.id);
     }
 
     delete() {
@@ -319,6 +323,7 @@ export class RecordModel<T> implements TableRecord<T> {
     }
 
     update(data: Partial<T>) {
+        this.table.schema.injectKeys(data, this);
         this.table.update(data);
         return this;
     }

@@ -1,5 +1,6 @@
 import * as utils from "./utils";
 import { DatabaseSchema, TableSchema, FieldSchema, NormalizedState, TableDDL, FieldDDL, NormalizeContext, ComputeContext, FieldType } from "./def";
+import { TableRecord } from "./index";
 
 // Holds the schema definition for a table.
 export class TableSchemaModel implements TableSchema {
@@ -117,6 +118,19 @@ export class TableSchemaModel implements TableSchema {
                 }
             }
             return { ...obj, [rel.name]: ownerId };
+        });
+    }
+
+    injectKeys(data: any, record: TableRecord) {
+        if (!data || typeof data !== "object") return data;
+
+        // inject primary or foreign keys
+        let keys = this._primaryKeyFields;
+        if (!keys.length) keys = this._foreignKeyFields;
+
+        keys.forEach(key => {
+            if (data[key.name] === undefined)
+                data[key.name] = key.getRecordValue(record);
         });
     }
 

@@ -41,11 +41,12 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);
 }
-export declare class RecordModel<T> implements TableRecord<T> {
+export declare class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<T>;
     id: string;
     constructor(id: string, table: Table<T>);
     value: T;
+    readonly valueOrDefault: T | undefined;
     delete(): void;
     update(data: Partial<T>): this;
 }
