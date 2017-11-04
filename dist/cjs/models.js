@@ -88,7 +88,10 @@ var TableModel = /** @class */ (function () {
             return undefined;
     };
     TableModel.prototype.getValue = function (id) {
-        return this.state.byId[utils.ensureID(id)];
+        if (utils.isValidID(id))
+            return this.state.byId[id];
+        else
+            return undefined;
     };
     TableModel.prototype.exists = function (id) {
         if (!utils.isValidID(id))

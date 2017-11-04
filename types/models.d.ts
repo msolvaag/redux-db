@@ -24,7 +24,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     getOrDefault(id: number | string): R | null;
     getByFk(fieldName: string, id: number | string): RecordSetModel<R, T>;
     getFieldValue(id: string | number, field: keyof T): T[keyof T];
-    getValue(id: number | string): T;
+    getValue(id: number | string): T | undefined;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
     insertMany(data: T | T[]): R[];
