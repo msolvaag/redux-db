@@ -318,6 +318,10 @@ export class RecordModel<T extends RecordValue> implements TableRecord<T> {
         return this.table.getValue(this.id);
     }
 
+    get hasValue() {
+        return this.valueOrDefault !== undefined;
+    }
+
     delete() {
         this.table.delete(this.id);
     }

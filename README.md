@@ -76,6 +76,13 @@ This project is inspired by libraries such as [normalizr](https://www.npmjs.com/
 
 ## Changelog
 
+#### v0.9.0
+* Bugfixes and improvements
+* BREAKING CHANGES:
+    - Foreign key properties on record models does no longer return null, when the reference is not found.
+    - RecordModel.value property returns an empty object if the record is not present in table.
+    - Added "hasValue" and "valueOrDefault" properties to RecordModel class.
+
 #### v0.8.0
 * Added support for providing a custom model factory.
 * BREAKING CHANGE: some exported interfaces are renamed
