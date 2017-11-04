@@ -302,7 +302,7 @@ export class RecordModel<T extends RecordValue> implements TableRecord<T> {
     id: string;
 
     constructor(id: string, table: Table<T>) {
-        this.id = utils.ensureParam("id", id);
+        this.id = id;
         this.table = utils.ensureParam("table", table);
     }
 

@@ -236,7 +236,7 @@ var TableModel = /** @class */ (function () {
 export { TableModel };
 var RecordModel = /** @class */ (function () {
     function RecordModel(id, table) {
-        this.id = utils.ensureParam("id", id);
+        this.id = id;
         this.table = utils.ensureParam("table", table);
     }
     Object.defineProperty(RecordModel.prototype, "value", {

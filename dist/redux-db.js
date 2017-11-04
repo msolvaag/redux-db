@@ -347,7 +347,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     exports.TableModel = TableModel;
     var RecordModel = /** @class */ (function () {
         function RecordModel(id, table) {
-            this.id = utils.ensureParam("id", id);
+            this.id = id;
             this.table = utils.ensureParam("table", table);
         }
         Object.defineProperty(RecordModel.prototype, "value", {
