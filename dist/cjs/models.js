@@ -87,7 +87,7 @@ var TableModel = /** @class */ (function () {
         else
             return undefined;
     };
-    TableModel.prototype.value = function (id) {
+    TableModel.prototype.getValue = function (id) {
         return this.state.byId[utils.ensureID(id)];
     };
     TableModel.prototype.exists = function (id) {
@@ -243,7 +243,7 @@ var RecordModel = /** @class */ (function () {
     }
     Object.defineProperty(RecordModel.prototype, "value", {
         get: function () {
-            return this.table.value(this.id);
+            return this.table.getValue(this.id);
         },
         set: function (data) {
             this.update(data);

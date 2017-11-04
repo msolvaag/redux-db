@@ -16,11 +16,11 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("src/def", ["require", "exports"], function (require, exports) {
+define("def", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("src/utils", ["require", "exports"], function (require, exports) {
+define("utils", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.toArray = function (obj) {
@@ -115,7 +115,7 @@ define("src/utils", ["require", "exports"], function (require, exports) {
         return true;
     };
 });
-define("src/models", ["require", "exports", "src/utils"], function (require, exports, utils) {
+define("models", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     /// Holds context state when normalizing data
@@ -448,7 +448,7 @@ define("src/models", ["require", "exports", "src/utils"], function (require, exp
     }());
     exports.RecordSetModel = RecordSetModel;
 });
-define("src/schema", ["require", "exports", "src/utils"], function (require, exports, utils) {
+define("schema", ["require", "exports", "utils"], function (require, exports, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Holds the schema definition for a table.
@@ -629,7 +629,7 @@ define("src/schema", ["require", "exports", "src/utils"], function (require, exp
     }());
     exports.FieldSchemaModel = FieldSchemaModel;
 });
-define("src/factory", ["require", "exports", "src/models", "src/schema"], function (require, exports, models_1, schema_1) {
+define("factory", ["require", "exports", "models", "schema"], function (require, exports, models_1, schema_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var createRecordModelClass = function (BaseClass) {
@@ -709,7 +709,7 @@ define("src/factory", ["require", "exports", "src/models", "src/schema"], functi
     }());
     exports.DefaultModelFactory = DefaultModelFactory;
 });
-define("src/index", ["require", "exports", "src/utils", "src/factory", "src/models"], function (require, exports, utils, factory_1, models_2) {
+define("index", ["require", "exports", "utils", "factory", "models"], function (require, exports, utils, factory_1, models_2) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
@@ -818,31 +818,4 @@ define("src/index", ["require", "exports", "src/utils", "src/factory", "src/mode
         return DatabaseSession;
     }());
     exports.DatabaseSession = DatabaseSession;
-});
-define("examples/schema", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    // Given the schema
-    exports.schema = {
-        "Project": {
-            "id": { type: "PK" }
-        },
-        "Task": {
-            "id": { type: "PK" },
-            "projectId": { propName: "project", references: "Project", relationName: "tasks" }
-        }
-    };
-    // Reducer
-    exports.dbReducer = function (session, action) {
-        var Project = session.Project, Task = session.Task;
-        switch (action.type) {
-            case "SOME_ACTION": {
-                var project = Project.get(action.payload);
-                var name_1 = Project.getFieldValue(0, "title");
-                // project.tasks === typeof RecordSet<TaskRecord>
-                // project.tasks.map( t=> t.value === typeof Task )
-                break;
-            }
-        }
-    };
 });

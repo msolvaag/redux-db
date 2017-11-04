@@ -1,26 +1,32 @@
 {
-  "tasks": [{
+  "tasks": [
+    {
       "id": 1,
       "title": "test",
       "status": "open",
       "owner": 2,
-      "labels": [{
-        "id": 1,
-        "name": "High prio"
-      }]
+      "labels": [
+        {
+          "id": 1,
+          "name": "High prio"
+        }
+      ]
     },
     {
       "id": 2,
       "title": "Task 2",
       "status": "open",
       "owner": 1,
-      "labels": [{
-        "id": 1,
-        "name": "High prio"
-      }]
+      "labels": [
+        {
+          "id": 1,
+          "name": "High prio"
+        }
+      ]
     }
   ],
-  "comments": [{
+  "comments": [
+    {
       "taskId": 1,
       "value": "Where do you want to go today?",
       "author": 2,
@@ -28,18 +34,19 @@
     },
     {
       "taskId": 2,
-      "value": "Making it easier",
-      "author": 2,
-      "id": 7
-    },
-    {
-      "taskId": 2,
       "value": "Think Different",
       "author": 1,
       "id": 8
+    },
+    {
+      "taskId": 2,
+      "value": "Making it easier",
+      "author": 2,
+      "id": 9
     }
   ],
-  "users": [{
+  "users": [
+    {
       "id": 1,
       "name": "Tim Cook"
     },

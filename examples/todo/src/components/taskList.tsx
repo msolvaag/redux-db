@@ -6,6 +6,7 @@ import { deleteTask, updateTask } from "../actions";
 import { selectFilteredTasks, TaskViewModel } from "../selectors";
 
 import { TaskMenu } from "./taskListMenu";
+import { NewTask } from "./newTask";
 
 export interface TaskListProps {
     tasks: TaskViewModel[];
@@ -28,7 +29,7 @@ class TaskListComponent extends React.Component<TaskListProps> {
     render() {
         return <div>
             <TaskMenu />
-            <div className="card">
+            <div className="card mb-4">
                 <table className="table">
                     <thead>
                         <tr>
@@ -59,6 +60,7 @@ class TaskListComponent extends React.Component<TaskListProps> {
                     </tbody>
                 </table>
             </div>
+            <NewTask />
         </div >;
     }
 }

@@ -8,9 +8,9 @@ declare namespace TodoApp {
 
     interface Task {
         id: number;
-        projectId: number;
         title: string;
-        status: string;
+        status: "open" | "closed";
+        owner: number;
     }
 
     interface Comment {
@@ -30,4 +30,9 @@ declare namespace TodoApp {
         ui: UIState;
         db: any;
     }
+}
+
+declare interface Action {
+    type: string;
+    payload: any;
 }
