@@ -367,6 +367,13 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(RecordModel.prototype, "hasValue", {
+            get: function () {
+                return this.valueOrDefault !== undefined;
+            },
+            enumerable: true,
+            configurable: true
+        });
         RecordModel.prototype.delete = function () {
             this.table.delete(this.id);
         };

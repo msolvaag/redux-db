@@ -65,6 +65,7 @@ export interface TableRecord<T extends RecordValue = RecordValue> {
     table: Table<T>;
     value: T;
     valueOrDefault: T | undefined;
+    hasValue: boolean;
     update(data: Partial<T>): TableRecord<T>;
     delete(): void;
 }

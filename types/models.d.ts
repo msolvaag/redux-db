@@ -47,6 +47,7 @@ export declare class RecordModel<T extends RecordValue> implements TableRecord<T
     constructor(id: string, table: Table<T>);
     value: T;
     readonly valueOrDefault: T | undefined;
+    readonly hasValue: boolean;
     delete(): void;
     update(data: Partial<T>): this;
 }
