@@ -35,7 +35,8 @@ export interface FieldSchema {
     getValue(data: any, record?: any): any;
     getRecordValue(record: any): any;
 }
-export interface Table<R extends TableRecord<T> = TableRecord, T = Record<string, any>> {
+export declare type RecordValue = Record<string, any>;
+export interface Table<T extends RecordValue = RecordValue, R extends TableRecord<T> = TableRecord<T>> {
     session: Session;
     schema: TableSchema;
     state: TableState;
@@ -43,12 +44,12 @@ export interface Table<R extends TableRecord<T> = TableRecord, T = Record<string
     get(id: string | number): R;
     getOrDefault(id: string | number): R | null;
     getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
+    getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
+    getValue(id: string | number): T;
     all(): R[];
     filter(callback: (record: R) => boolean): R[];
     exists(id: string | number): boolean;
     index(name: string, fk: string): string[];
-    value(id: string | number): T;
-    getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
     insert(data: T | T[]): R;
     insertMany(data: T | T[]): R[];
     update(data: Partial<T> | Partial<T>[]): R;
@@ -58,9 +59,9 @@ export interface Table<R extends TableRecord<T> = TableRecord, T = Record<string
     deleteAll(): void;
     upsertNormalized(table: TableState<T>): void;
 }
-export interface TableRecord<T = any> {
+export interface TableRecord<T extends RecordValue = RecordValue> {
     id: string;
-    table: Table;
+    table: Table<T>;
     value: T;
     update(data: Partial<T>): TableRecord<T>;
     delete(): void;

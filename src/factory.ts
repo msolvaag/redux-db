@@ -45,7 +45,8 @@ export class DefaultModelFactory implements ModelFactory {
         if (!refTable)
             throw new Error(`The foreign key: "${schema.name}" references an unregistered table: "${schema.references}" in the current session.`);
 
-        return refTable.getOrDefault(schema.getRecordValue(record));
+        const recordId = schema.getRecordValue(record);
+        return this.newRecordModel(recordId, refTable);
     }
 
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet {
