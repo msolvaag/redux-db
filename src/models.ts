@@ -104,7 +104,10 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
     }
 
     getValue(id: number | string) {
-        return this.state.byId[utils.ensureID(id)];
+        if (utils.isValidID(id))
+            return this.state.byId[id];
+        else
+            return undefined;
     }
 
     exists(id: number | string) {
