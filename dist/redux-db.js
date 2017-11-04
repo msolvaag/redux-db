@@ -662,7 +662,8 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             var refTable = schema.references && record.table.session.tables[schema.references];
             if (!refTable)
                 throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
-            return refTable.getOrDefault(schema.getRecordValue(record));
+            var recordId = schema.getRecordValue(record);
+            return this.newRecordModel(recordId, refTable);
         };
         DefaultModelFactory.prototype.newRecordSet = function (schema, record) {
             var refTable = record.table.session.tables[schema.table.name];
