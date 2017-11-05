@@ -65,6 +65,10 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this.all().filter(predicate);
     }
 
+    map<M>(mapFn: (record: R, index: number) => M): M[] {
+        return this.all().map(mapFn);
+    }
+
     index(name: string, fk: string) {
         utils.ensureParamString("value", name);
         utils.ensureParamString("fk", fk);
@@ -305,24 +309,16 @@ export class RecordModel<T extends RecordValue> implements TableRecord<T> {
     id: string;
 
     constructor(id: string, table: Table<T>) {
-        this.id = id;
+        this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
 
     get value() {
-        return this.valueOrDefault || <T>{};
+        return this.table.getValue(this.id) || <T>{};
     }
 
     set value(data: T) {
         this.update(data);
-    }
-
-    get valueOrDefault() {
-        return this.table.getValue(this.id);
-    }
-
-    get hasValue() {
-        return this.valueOrDefault !== undefined;
     }
 
     delete() {

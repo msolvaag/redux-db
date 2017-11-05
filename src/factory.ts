@@ -46,7 +46,8 @@ export class DefaultModelFactory implements ModelFactory {
             throw new Error(`The foreign key: "${schema.name}" references an unregistered table: "${schema.references}" in the current session.`);
 
         const recordId = schema.getRecordValue(record);
-        return this.newRecordModel(recordId, refTable);
+        if (recordId === undefined) return null;
+        return refTable.getOrDefault(recordId);
     }
 
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet {
@@ -63,6 +64,7 @@ export class DefaultModelFactory implements ModelFactory {
             throw new Error(`The table: "${schema.table.name}" does not exist in the current session.`);
 
         let id = refTable.index(schema.name, record.id)[0];
+        if (id === undefined) return null;
         return this.newRecordModel(id, refTable);
     }
 
@@ -86,7 +88,7 @@ export class DefaultModelFactory implements ModelFactory {
                 });
             };
 
-            schema.fields.forEach(f => (f.isForeignKey || !f.isPrimaryKey) && defineProperty(f.propName, f, this.newRecordField.bind(this)));
+            schema.fields.forEach(f => (f.isForeignKey || !f.isPrimaryKey) && defineProperty(f.propName, f, this.newRecordField.bind(this), false));
             schema.relations.forEach(f => f.relationName && defineProperty(f.relationName, f, f.unique ? this.newRecordRelation.bind(this) : this.newRecordSet.bind(this), !f.unique));
 
             return this._recordClass[schema.name] = ExtendedRecordModel;

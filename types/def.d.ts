@@ -49,6 +49,7 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
     getValue(id: string | number): T | undefined;
     all(): R[];
     filter(callback: (record: R) => boolean): R[];
+    map<M>(mapFn: (record: R, index: number) => M): M[];
     exists(id: string | number): boolean;
     index(name: string, fk: string): string[];
     insert(data: T | T[]): R;
@@ -64,8 +65,6 @@ export interface TableRecord<T extends RecordValue = RecordValue> {
     id: string;
     table: Table<T>;
     value: T;
-    valueOrDefault: T | undefined;
-    hasValue: boolean;
     update(data: Partial<T>): TableRecord<T>;
     delete(): void;
 }

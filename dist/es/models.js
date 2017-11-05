@@ -54,6 +54,9 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype.filter = function (predicate) {
         return this.all().filter(predicate);
     };
+    TableModel.prototype.map = function (mapFn) {
+        return this.all().map(mapFn);
+    };
     TableModel.prototype.index = function (name, fk) {
         utils.ensureParamString("value", name);
         utils.ensureParamString("fk", fk);
@@ -239,29 +242,15 @@ var TableModel = /** @class */ (function () {
 export { TableModel };
 var RecordModel = /** @class */ (function () {
     function RecordModel(id, table) {
-        this.id = id;
+        this.id = utils.ensureParam("id", id);
         this.table = utils.ensureParam("table", table);
     }
     Object.defineProperty(RecordModel.prototype, "value", {
         get: function () {
-            return this.valueOrDefault || {};
+            return this.table.getValue(this.id) || {};
         },
         set: function (data) {
             this.update(data);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(RecordModel.prototype, "valueOrDefault", {
-        get: function () {
-            return this.table.getValue(this.id);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(RecordModel.prototype, "hasValue", {
-        get: function () {
-            return this.valueOrDefault !== undefined;
         },
         enumerable: true,
         configurable: true

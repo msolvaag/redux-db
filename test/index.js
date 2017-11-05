@@ -73,7 +73,7 @@ test('update record', function (t) {
         body: "updated again"
     });
 
-    t.assert(recordModel.value.body === "updated again", "Record is updated using partial updates");    
+    t.assert(recordModel.value.body === "updated again", "Record is updated using partial updates");
 
     state = session.commit();
     const newTableState = state["BlogPost"];
@@ -148,6 +148,28 @@ test('get by foreign key', function (t) {
     const commentsByPost = Comment.getByFk("post", 1);
 
     t.deepEqual(commentsByPost.value, post.comments.value, "getByFk is equivalent to get by owner property");
+});
+
+test('record model has dynamic properties', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const {
+        Comment,
+        BlogPost,
+        User
+    } = session.tables;
+    const post = BlogPost.get(1);
+
+    post.update({
+        author: "user10"
+    });
+
+    t.assert(!post.author, "Updating a record FK to an non existing record clears the value");
+    User.insert({
+        username: "user10"
+    });
+    t.assert(post.author.value.username === "user10", "Inserting the missing record is reflected immediately");
 });
 
 test('add one 2 one relationship', function (t) {

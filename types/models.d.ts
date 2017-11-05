@@ -19,6 +19,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     readonly length: number;
     readonly values: T[];
     filter(predicate: (record: R, index: number) => boolean): R[];
+    map<M>(mapFn: (record: R, index: number) => M): M[];
     index(name: string, fk: string): string[];
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
@@ -46,8 +47,6 @@ export declare class RecordModel<T extends RecordValue> implements TableRecord<T
     id: string;
     constructor(id: string, table: Table<T>);
     value: T;
-    readonly valueOrDefault: T | undefined;
-    readonly hasValue: boolean;
     delete(): void;
     update(data: Partial<T>): this;
 }

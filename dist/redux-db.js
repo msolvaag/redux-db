@@ -165,6 +165,9 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
         TableModel.prototype.filter = function (predicate) {
             return this.all().filter(predicate);
         };
+        TableModel.prototype.map = function (mapFn) {
+            return this.all().map(mapFn);
+        };
         TableModel.prototype.index = function (name, fk) {
             utils.ensureParamString("value", name);
             utils.ensureParamString("fk", fk);
@@ -350,29 +353,15 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     exports.TableModel = TableModel;
     var RecordModel = /** @class */ (function () {
         function RecordModel(id, table) {
-            this.id = id;
+            this.id = utils.ensureParam("id", id);
             this.table = utils.ensureParam("table", table);
         }
         Object.defineProperty(RecordModel.prototype, "value", {
             get: function () {
-                return this.valueOrDefault || {};
+                return this.table.getValue(this.id) || {};
             },
             set: function (data) {
                 this.update(data);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(RecordModel.prototype, "valueOrDefault", {
-            get: function () {
-                return this.table.getValue(this.id);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(RecordModel.prototype, "hasValue", {
-            get: function () {
-                return this.valueOrDefault !== undefined;
             },
             enumerable: true,
             configurable: true
@@ -803,7 +792,9 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             if (!refTable)
                 throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
             var recordId = schema.getRecordValue(record);
-            return this.newRecordModel(recordId, refTable);
+            if (recordId === undefined)
+                return null;
+            return refTable.getOrDefault(recordId);
         };
         DefaultModelFactory.prototype.newRecordSet = function (schema, record) {
             var refTable = record.table.session.tables[schema.table.name];
@@ -816,6 +807,8 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             if (!refTable)
                 throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
             var id = refTable.index(schema.name, record.id)[0];
+            if (id === undefined)
+                return null;
             return this.newRecordModel(id, refTable);
         };
         DefaultModelFactory.prototype.getRecordBaseClass = function (schema) {
@@ -838,7 +831,7 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
                         }
                     });
                 };
-                schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty_1(f.propName, f, _this.newRecordField.bind(_this)); });
+                schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty_1(f.propName, f, _this.newRecordField.bind(_this), false); });
                 schema.relations.forEach(function (f) { return f.relationName && defineProperty_1(f.relationName, f, f.unique ? _this.newRecordRelation.bind(_this) : _this.newRecordSet.bind(_this), !f.unique); });
                 return this._recordClass[schema.name] = ExtendedRecordModel_1;
             }
