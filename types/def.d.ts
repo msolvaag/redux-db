@@ -41,6 +41,8 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
+    values: T[];
+
     get(id: string | number): R;
     getOrDefault(id: string | number): R | null;
     getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
