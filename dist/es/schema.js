@@ -104,6 +104,18 @@ var TableSchemaModel = /** @class */ (function () {
             var _a, _b;
         });
     };
+    TableSchemaModel.prototype.injectKeys = function (data, record) {
+        if (!data || typeof data !== "object")
+            return data;
+        // inject primary or foreign keys
+        var keys = this._primaryKeyFields;
+        if (!keys.length)
+            keys = this._foreignKeyFields;
+        keys.forEach(function (key) {
+            if (data[key.name] === undefined)
+                data[key.name] = key.getRecordValue(record);
+        });
+    };
     /// Gets the value of the PK for the given record.
     TableSchemaModel.prototype.getPrimaryKey = function (record) {
         var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);

@@ -1,4 +1,5 @@
 import { DatabaseSchema, TableSchema, FieldSchema, TableDDL, FieldDDL, NormalizeContext, FieldType } from "./def";
+import { TableRecord } from "./index";
 export declare class TableSchemaModel implements TableSchema {
     readonly db: DatabaseSchema;
     readonly name: string;
@@ -12,6 +13,7 @@ export declare class TableSchemaModel implements TableSchema {
     connect(schemas: TableSchema[]): void;
     normalize(data: any, context: NormalizeContext): string[];
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
+    injectKeys(data: any, record: TableRecord): any;
     getPrimaryKey(record: any): string;
     getForeignKeys(record: any): {
         name: string;

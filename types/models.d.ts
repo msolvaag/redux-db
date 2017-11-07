@@ -19,12 +19,13 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     readonly length: number;
     readonly values: T[];
     filter(predicate: (record: R, index: number) => boolean): R[];
+    map<M>(mapFn: (record: R, index: number) => M): M[];
     index(name: string, fk: string): string[];
     get(id: number | string): R;
     getOrDefault(id: number | string): R | null;
     getByFk(fieldName: string, id: number | string): RecordSetModel<R, T>;
     getFieldValue(id: string | number, field: keyof T): T[keyof T];
-    getValue(id: number | string): T;
+    getValue(id: number | string): T | undefined;
     exists(id: number | string): boolean;
     insert(data: T | T[]): R;
     insertMany(data: T | T[]): R[];
@@ -41,7 +42,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);
 }
-export declare class RecordModel<T> implements TableRecord<T> {
+export declare class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<T>;
     id: string;
     constructor(id: string, table: Table<T>);

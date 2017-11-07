@@ -56,7 +56,7 @@ test('insert record', function (t) {
 
 
 test('update record', function (t) {
-    t.plan(1);
+    t.plan(3);
 
     const session = db.createSession(state);
     const {
@@ -67,13 +67,21 @@ test('update record', function (t) {
         body: "updated"
     });
 
+    t.assert(recordModel.value.body === "updated", "Record is updated");
+
+    recordModel.update({
+        body: "updated again"
+    });
+
+    t.assert(recordModel.value.body === "updated again", "Record is updated using partial updates");
+
     state = session.commit();
     const newTableState = state["BlogPost"];
 
     t.deepEqual(newTableState.byId["1"], {
         id: 1,
         author: "user1",
-        body: "updated"
+        body: "updated again"
     }, "State is updated with the given data");
 });
 
@@ -86,7 +94,7 @@ test('update non-modified record', function (t) {
     } = session.tables;
     const recordModel = BlogPost.update({
         id: 1,
-        body: "updated"
+        body: "updated again"
     });
 
     const newState = session.commit();
@@ -140,6 +148,28 @@ test('get by foreign key', function (t) {
     const commentsByPost = Comment.getByFk("post", 1);
 
     t.deepEqual(commentsByPost.value, post.comments.value, "getByFk is equivalent to get by owner property");
+});
+
+test('record model has dynamic properties', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const {
+        Comment,
+        BlogPost,
+        User
+    } = session.tables;
+    const post = BlogPost.get(1);
+
+    post.update({
+        author: "user10"
+    });
+
+    t.assert(!post.author, "Updating a record FK to an non existing record clears the value");
+    User.insert({
+        username: "user10"
+    });
+    t.assert(post.author.value.username === "user10", "Inserting the missing record is reflected immediately");
 });
 
 test('add one 2 one relationship', function (t) {

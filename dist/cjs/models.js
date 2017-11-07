@@ -56,6 +56,9 @@ var TableModel = /** @class */ (function () {
     TableModel.prototype.filter = function (predicate) {
         return this.all().filter(predicate);
     };
+    TableModel.prototype.map = function (mapFn) {
+        return this.all().map(mapFn);
+    };
     TableModel.prototype.index = function (name, fk) {
         utils.ensureParamString("value", name);
         utils.ensureParamString("fk", fk);
@@ -88,7 +91,10 @@ var TableModel = /** @class */ (function () {
             return undefined;
     };
     TableModel.prototype.getValue = function (id) {
-        return this.state.byId[utils.ensureID(id)];
+        if (utils.isValidID(id))
+            return this.state.byId[id];
+        else
+            return undefined;
     };
     TableModel.prototype.exists = function (id) {
         if (!utils.isValidID(id))
@@ -243,7 +249,7 @@ var RecordModel = /** @class */ (function () {
     }
     Object.defineProperty(RecordModel.prototype, "value", {
         get: function () {
-            return this.table.getValue(this.id);
+            return this.table.getValue(this.id) || {};
         },
         set: function (data) {
             this.update(data);
@@ -255,6 +261,7 @@ var RecordModel = /** @class */ (function () {
         this.table.delete(this.id);
     };
     RecordModel.prototype.update = function (data) {
+        this.table.schema.injectKeys(data, this);
         this.table.update(data);
         return this;
     };

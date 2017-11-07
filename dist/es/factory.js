@@ -40,7 +40,10 @@ var DefaultModelFactory = /** @class */ (function () {
         var refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
             throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
-        return refTable.getOrDefault(schema.getRecordValue(record));
+        var recordId = schema.getRecordValue(record);
+        if (recordId === undefined)
+            return null;
+        return refTable.getOrDefault(recordId);
     };
     DefaultModelFactory.prototype.newRecordSet = function (schema, record) {
         var refTable = record.table.session.tables[schema.table.name];
@@ -55,8 +58,7 @@ var DefaultModelFactory = /** @class */ (function () {
         var id = refTable.index(schema.name, record.id)[0];
         if (id === undefined)
             return null;
-        else
-            return this.newRecordModel(id, refTable);
+        return this.newRecordModel(id, refTable);
     };
     DefaultModelFactory.prototype.getRecordBaseClass = function (schema) {
         return RecordModel;
@@ -78,7 +80,7 @@ var DefaultModelFactory = /** @class */ (function () {
                     }
                 });
             };
-            schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty_1(f.propName, f, _this.newRecordField.bind(_this)); });
+            schema.fields.forEach(function (f) { return (f.isForeignKey || !f.isPrimaryKey) && defineProperty_1(f.propName, f, _this.newRecordField.bind(_this), false); });
             schema.relations.forEach(function (f) { return f.relationName && defineProperty_1(f.relationName, f, f.unique ? _this.newRecordRelation.bind(_this) : _this.newRecordSet.bind(_this), !f.unique); });
             return this._recordClass[schema.name] = ExtendedRecordModel_1;
         }
