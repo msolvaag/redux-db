@@ -46,13 +46,10 @@ var TableModel = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(TableModel.prototype, "values", {
-        get: function () {
-            return this.all().map(function (r) { return r.value; });
-        },
-        enumerable: true,
-        configurable: true
-    });
+    TableModel.prototype.getValues = function () {
+        var _this = this;
+        return this.state.ids.map(function (id) { return _this.state.byId[id]; });
+    };
     TableModel.prototype.filter = function (predicate) {
         return this.all().filter(predicate);
     };
