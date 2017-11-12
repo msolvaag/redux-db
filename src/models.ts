@@ -57,8 +57,8 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this.state.ids.length;
     }
 
-    get values() {
-        return this.all().map(r => r.value);
+    getValues() {
+        return this.state.ids.map(id => this.state.byId[id]);
     }
 
     filter(predicate: (record: R, index: number) => boolean) {

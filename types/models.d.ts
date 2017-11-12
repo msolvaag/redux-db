@@ -17,7 +17,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     constructor(session: Session, state: TableState<T> | undefined, schema: TableSchema);
     all(): R[];
     readonly length: number;
-    readonly values: T[];
+    getValues(): T[];
     filter(predicate: (record: R, index: number) => boolean): R[];
     map<M>(mapFn: (record: R, index: number) => M): M[];
     index(name: string, fk: string): string[];

@@ -56,6 +56,7 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
     getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
     getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
     getValue(id: string | number): T | undefined;
+    getValues(): T[];
 
     all(): R[];
     filter(callback: (record: R) => boolean): R[];
