@@ -139,7 +139,10 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return this._normalizedAction(data, this.upsertNormalized)[0];
     }
 
-    delete(id: string | number) {
+    delete(id: string | number | Partial<T>) {
+        if (typeof id !== "string" && typeof id !== "number")
+            id = this.schema.getPrimaryKey(id);
+
         if (!this.exists(id)) return false;
         id = utils.asID(id);
 

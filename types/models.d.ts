@@ -32,7 +32,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     update(data: Partial<T> | Partial<T>[]): R;
     updateMany(data: Partial<T> | Partial<T>[]): R[];
     upsert(data: Partial<T> | Partial<T>[]): R;
-    delete(id: string | number): boolean;
+    delete(id: string | number | Partial<T>): boolean;
     deleteAll(): void;
     insertNormalized(table: TableState<T>): R[];
     updateNormalized(table: TableState<T>): R[];

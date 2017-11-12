@@ -72,7 +72,7 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
 
     upsert(data: Partial<T> | Partial<T>[]): R;
 
-    delete(id: string | number): boolean;
+    delete(id: string | number | Partial<T>): boolean;
     deleteAll(): void;
 
     upsertNormalized(table: TableState<T>): void;

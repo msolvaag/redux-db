@@ -112,6 +112,8 @@ var TableModel = /** @class */ (function () {
         return this._normalizedAction(data, this.upsertNormalized)[0];
     };
     TableModel.prototype.delete = function (id) {
+        if (typeof id !== "string" && typeof id !== "number")
+            id = this.schema.getPrimaryKey(id);
         if (!this.exists(id))
             return false;
         id = utils.asID(id);
