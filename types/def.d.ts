@@ -99,7 +99,7 @@ export interface FieldDDL {
     cascade?: boolean;
     unique?: boolean;
     notNull?: boolean;
-    value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
+    value?: (record: any, context?: ComputeContext<any>) => any;
 }
 export interface ComputeContext<T> {
     schema: FieldSchema;

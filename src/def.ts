@@ -144,7 +144,7 @@ export interface FieldDDL {
     notNull?: boolean;
 
     /// Defines a custom value factory for each record.
-    value?: <T, V>(record: T, context?: ComputeContext<T>) => V;
+    value?: (record: any, context?: ComputeContext<any>) => any;
 }
 
 /// Represents a context used in a custom value factory.

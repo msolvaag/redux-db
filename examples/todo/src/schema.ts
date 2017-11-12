@@ -19,7 +19,8 @@ export const schema: ReduxDB.Schema = {
         "taskId": { propName: "task", references: "Task", relationName: "labels" }
     },
     "Label": {
-        "id": { type: "PK" }
+        "id": { type: "PK" },
+        "mod": { type: "PK", value: r => r.id + r.type }
     }
 };
 
