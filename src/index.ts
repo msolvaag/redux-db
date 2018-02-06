@@ -1,4 +1,4 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, Reducer } from "./def";
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, MissingKeyHook, Reducer } from "./def";
 import * as utils from "./utils";
 import { DefaultModelFactory } from "./factory";
 export * from "./models";
@@ -13,6 +13,7 @@ export class Database implements DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
     normalizeHooks: { [key: string]: Normalizer };
+    onMissingPk?: MissingKeyHook;
     factory: ModelFactory;
 
     constructor(schema: SchemaDDL, options?: DatabaseOptions) {
@@ -21,6 +22,7 @@ export class Database implements DatabaseSchema {
         this.options = { ...defaultOptions, ...options };
         this.normalizeHooks = this.options.onNormalize || {};
         this.factory = this.options.factory || new DefaultModelFactory();
+        this.onMissingPk = this.options.onMissingPk || undefined;
 
         this.tables = Object.keys(schema).map(tableName => this.factory.newTableSchema(this, tableName, schema[tableName]));
         this.tables.forEach(table => table.connect(this.tables));

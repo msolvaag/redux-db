@@ -126,6 +126,11 @@ var TableSchemaModel = /** @class */ (function () {
             return p && k ? (p + "_" + k) : k;
         }, null);
         var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+        if (!pk && this.db.onMissingPk) {
+            var apk = this.db.onMissingPk(record, this);
+            if (apk)
+                pk = apk;
+        }
         if (!pk)
             throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
         return pk;

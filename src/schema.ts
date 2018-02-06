@@ -143,7 +143,12 @@ export class TableSchemaModel implements TableSchema {
             return p && k ? (p + "_" + k) : k;
         }, <string | null | undefined | number>null);
 
-        const pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+        let pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+
+        if (!pk && this.db.onMissingPk) {
+            const apk = this.db.onMissingPk(record, this);
+            if (apk) pk = apk;
+        }
 
         if (!pk)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);

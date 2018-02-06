@@ -1,4 +1,4 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, Reducer } from "./def";
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, MissingKeyHook, Reducer } from "./def";
 import { DefaultModelFactory } from "./factory";
 export * from "./models";
 export declare const createDatabase: (schema: SchemaDDL, options?: DatabaseOptions | undefined) => Database;
@@ -8,6 +8,7 @@ export declare class Database implements DatabaseSchema {
     normalizeHooks: {
         [key: string]: Normalizer;
     };
+    onMissingPk?: MissingKeyHook;
     factory: ModelFactory;
     constructor(schema: SchemaDDL, options?: DatabaseOptions);
     combineReducers(...reducers: Reducer[]): (state: any, action: any) => any;

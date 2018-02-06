@@ -20,6 +20,7 @@ var Database = /** @class */ (function () {
         this.options = __assign({}, defaultOptions, options);
         this.normalizeHooks = this.options.onNormalize || {};
         this.factory = this.options.factory || new DefaultModelFactory();
+        this.onMissingPk = this.options.onMissingPk || undefined;
         this.tables = Object.keys(schema).map(function (tableName) { return _this.factory.newTableSchema(_this, tableName, schema[tableName]); });
         this.tables.forEach(function (table) { return table.connect(_this.tables); });
     }

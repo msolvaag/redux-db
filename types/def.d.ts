@@ -118,18 +118,23 @@ export interface NormalizeContext {
 export interface Normalizer {
     (record: any, context: NormalizeContext): any;
 }
+export interface MissingKeyHook {
+    (record: any, schema: TableSchema): string | null | undefined;
+}
 export interface DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
     normalizeHooks?: {
         [key: string]: Normalizer;
     };
+    onMissingPk?: MissingKeyHook;
     factory: ModelFactory;
 }
 export interface DatabaseOptions {
     onNormalize?: {
         [key: string]: Normalizer;
     };
+    onMissingPk?: MissingKeyHook;
     cascadeAsDefault?: boolean;
     factory?: ModelFactory;
 }

@@ -473,6 +473,7 @@ define("index", ["require", "exports", "utils", "factory", "models"], function (
             this.options = __assign({}, defaultOptions, options);
             this.normalizeHooks = this.options.onNormalize || {};
             this.factory = this.options.factory || new factory_1.DefaultModelFactory();
+            this.onMissingPk = this.options.onMissingPk || undefined;
             this.tables = Object.keys(schema).map(function (tableName) { return _this.factory.newTableSchema(_this, tableName, schema[tableName]); });
             this.tables.forEach(function (table) { return table.connect(_this.tables); });
         }
@@ -684,6 +685,11 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 return p && k ? (p + "_" + k) : k;
             }, null);
             var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+            if (!pk && this.db.onMissingPk) {
+                var apk = this.db.onMissingPk(record, this);
+                if (apk)
+                    pk = apk;
+            }
             if (!pk)
                 throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
             return pk;
