@@ -147,7 +147,13 @@ export class TableSchemaModel implements TableSchema {
 
         if (!pk && this.db.onMissingPk) {
             const apk = this.db.onMissingPk(record, this);
-            if (apk) pk = apk;
+            if (apk) {
+                if (this._primaryKeyFields.length === 1) {
+                    const pkPropName = this._primaryKeyFields[0].propName;
+                    record[pkPropName] = apk;
+                }
+                pk = apk;
+            }
         }
 
         if (!pk)
