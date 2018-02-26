@@ -128,8 +128,13 @@ var TableSchemaModel = /** @class */ (function () {
         var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
         if (!pk && this.db.onMissingPk) {
             var apk = this.db.onMissingPk(record, this);
-            if (apk)
+            if (apk) {
+                if (this._primaryKeyFields.length === 1) {
+                    var pkPropName = this._primaryKeyFields[0].propName;
+                    record[pkPropName] = apk;
+                }
                 pk = apk;
+            }
         }
         if (!pk)
             throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
