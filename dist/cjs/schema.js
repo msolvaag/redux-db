@@ -41,7 +41,7 @@ var TableSchemaModel = /** @class */ (function () {
         var _this = this;
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
-        var ctx = utils.ensureParam("context", context); // || new DbNormalizeContext(this);
+        var ctx = utils.ensureParam("context", context);
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
         return utils.ensureArray(data).map(function (obj) {
@@ -50,7 +50,9 @@ var TableSchemaModel = /** @class */ (function () {
             var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
-            var pk = _this.getPrimaryKey(obj);
+            var pk = ctx.normalizePKs ? _this._normalizePrimaryKey(obj) : _this._getPrimaryKey(obj);
+            if (!pk)
+                throw new Error("Failed to normalize primary key for record of type \"" + _this.name + "\". Make sure record(s) have a primary key value before trying to insert or update a table.");
             var fks = _this.getForeignKeys(obj);
             var tbl = ctx.output[_this.name];
             if (!tbl.byId[pk])
@@ -120,24 +122,34 @@ var TableSchemaModel = /** @class */ (function () {
     };
     /// Gets the value of the PK for the given record.
     TableSchemaModel.prototype.getPrimaryKey = function (record) {
+        var pk = this._getPrimaryKey(record);
+        if (!pk)
+            throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
+        return pk;
+    };
+    /// Gets the value of the PK for the given record. Does not throw if none found.
+    TableSchemaModel.prototype._getPrimaryKey = function (record) {
         var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
         var combinedPk = lookup.reduce(function (p, n) {
             var k = n.getValue(record);
             return p && k ? (p + "_" + k) : k;
         }, null);
-        var pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
+        return utils.isValidID(combinedPk) && utils.asID(combinedPk);
+    };
+    /// Normalizes the given record with a primary key field. Returns the key value.
+    TableSchemaModel.prototype._normalizePrimaryKey = function (record) {
+        var pk = this._getPrimaryKey(record);
+        // Invoke the "onMissingPk" hook if PK not found.
         if (!pk && this.db.onMissingPk) {
-            var apk = this.db.onMissingPk(record, this);
-            if (apk) {
-                if (this._primaryKeyFields.length === 1) {
-                    var pkPropName = this._primaryKeyFields[0].propName;
-                    record[pkPropName] = apk;
-                }
-                pk = apk;
+            var generatedPk = this.db.onMissingPk(record, this);
+            if (generatedPk) {
+                // if the PK is generated and we have a single PK field definition, then inject it into the record.
+                if (this._primaryKeyFields.length === 1)
+                    record[this._primaryKeyFields[0].propName] = generatedPk;
+                // TODO: Handle multiple PK field defs. We may need the "onMissingPK" hook to return an object defining each key value. BUT this seems like a rare scenario..
+                pk = generatedPk;
             }
         }
-        if (!pk)
-            throw new Error("Failed to get primary key for record of type \"" + this.name + "\".");
         return pk;
     };
     /// Gets the values of the FK's for the given record.

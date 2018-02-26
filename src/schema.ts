@@ -40,7 +40,7 @@ export class TableSchemaModel implements TableSchema {
         if (typeof (data) !== "object" && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
 
-        const ctx = utils.ensureParam("context", context); // || new DbNormalizeContext(this);
+        const ctx = utils.ensureParam("context", context);
 
         if (!ctx.output[this.name])
             ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
@@ -53,7 +53,11 @@ export class TableSchemaModel implements TableSchema {
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
 
-            const pk = this.getPrimaryKey(obj);
+            const pk = ctx.normalizePKs ? this._normalizePrimaryKey(obj) : this._getPrimaryKey(obj);
+
+            if (!pk)
+                throw new Error(`Failed to normalize primary key for record of type \"${this.name}\". Make sure record(s) have a primary key value before trying to insert or update a table.`);
+
             const fks = this.getForeignKeys(obj);
             const tbl = ctx.output[this.name];
 
@@ -136,29 +140,42 @@ export class TableSchemaModel implements TableSchema {
 
     /// Gets the value of the PK for the given record.
     getPrimaryKey(record: any) {
-        const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-
-        let combinedPk = lookup.reduce((p, n) => {
-            const k = n.getValue(record);
-            return p && k ? (p + "_" + k) : k;
-        }, <string | null | undefined | number>null);
-
-        let pk = utils.isValidID(combinedPk) && utils.asID(combinedPk);
-
-        if (!pk && this.db.onMissingPk) {
-            const apk = this.db.onMissingPk(record, this);
-            if (apk) {
-                if (this._primaryKeyFields.length === 1) {
-                    const pkPropName = this._primaryKeyFields[0].propName;
-                    record[pkPropName] = apk;
-                }
-                pk = apk;
-            }
-        }
+        const pk = this._getPrimaryKey(record);
 
         if (!pk)
             throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
 
+        return pk;
+    }
+
+    /// Gets the value of the PK for the given record. Does not throw if none found.
+    private _getPrimaryKey(record: any) {
+        const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
+
+        const combinedPk = lookup.reduce((p, n) => {
+            const k = n.getValue(record);
+            return p && k ? (p + "_" + k) : k;
+        }, <string | null | undefined | number>null);
+
+        return utils.isValidID(combinedPk) && utils.asID(combinedPk);
+    }
+
+    /// Normalizes the given record with a primary key field. Returns the key value.
+    private _normalizePrimaryKey(record: any) {
+        let pk = this._getPrimaryKey(record);
+
+        // Invoke the "onMissingPk" hook if PK not found.
+        if (!pk && this.db.onMissingPk) {
+            const generatedPk = this.db.onMissingPk(record, this);
+
+            if (generatedPk) {
+                // if the PK is generated and we have a single PK field definition, then inject it into the record.
+                if (this._primaryKeyFields.length === 1) record[this._primaryKeyFields[0].propName] = generatedPk;
+                // TODO: Handle multiple PK field defs. We may need the "onMissingPK" hook to return an object defining each key value. BUT this seems like a rare scenario..
+
+                pk = generatedPk;
+            }
+        }
         return pk;
     }
 

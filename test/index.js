@@ -274,3 +274,26 @@ test('inserting data without PK. Using the PK hook.', function (t) {
     t.assert(post1.value.id === "injected_0", "Missing PK's is set on the value also.");
     t.assert(post2.value.id === "injected_1", "Missing PK's is set on the value also.");
 });
+
+
+test('updating data without PK.', function (t) {
+    t.plan(2);
+
+    const session = db.createSession(state);
+    const {
+        BlogPost
+    } = session.tables;
+
+    let seq = 0;
+    db.onMissingPk = (record, schema) => {
+        return "injected_" + (seq++);
+    };
+
+    t.throws(() => {
+        const recordModel = BlogPost.update({
+            body: "updated"
+        });
+    }, "Updating a record without a valid ID fails even if the onMissingPk hook is defined.");
+
+    t.assert( seq===0, "The onMissingPk hook is never called during updates.");
+});

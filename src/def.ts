@@ -71,6 +71,7 @@ export interface Table<T extends RecordValue = RecordValue, R extends TableRecor
     updateMany(data: Partial<T> | Partial<T>[]): R[];
 
     upsert(data: Partial<T> | Partial<T>[]): R;
+    upsertRaw(data: any): R[];
 
     delete(id: string | number | Partial<T>): boolean;
     deleteAll(): void;
@@ -159,6 +160,7 @@ export interface NormalizeContext {
     db: DatabaseSchema;
     output: NormalizedState;
     emits: { [key: string]: any[] };
+    normalizePKs: boolean;
 
     emit(tableName: string, record: any): void;
 }

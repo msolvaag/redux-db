@@ -44,7 +44,7 @@ Methods and propertes:
 
     /// gets all raw record values
     /// equivalent to all().map( r => r.value )
-    values: any[];
+    getValues() : any[];
 
     /// returns all records in table.
     all() : RecordModel[];
@@ -87,7 +87,7 @@ Methods and propertes:
     /// deletes all records in table.
     deleteAll() : void;
 
-    /// get a single the record value
+    /// get a single record value
     value( id:number | string ) : any | undefined;
 
 .. note::

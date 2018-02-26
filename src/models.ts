@@ -21,10 +21,12 @@ export class DbNormalizeContext implements NormalizeContext {
     db: DatabaseSchema;
     output: NormalizedState = {};
     emits: { [key: string]: any[] } = {};
+    normalizePKs: boolean;
 
-    constructor(schema: TableSchema) {
+    constructor(schema: TableSchema, normalizePKs: boolean) {
         this.schema = schema;
         this.db = schema.db;
+        this.normalizePKs = normalizePKs;
     }
 
     /// Emits data for further normalization
@@ -124,7 +126,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
     }
 
     insertMany(data: T | T[]) {
-        return this._normalizedAction(data, this.insertNormalized);
+        return this._normalizedAction(data, this.insertNormalized, true);
     }
 
     update(data: Partial<T> | Partial<T>[]) {
@@ -132,11 +134,15 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
     }
 
     updateMany(data: Partial<T> | Partial<T>[]) {
-        return this._normalizedAction(data, this.updateNormalized);
+        return this._normalizedAction(data, this.updateNormalized, false);
     }
 
     upsert(data: Partial<T> | Partial<T>[]) {
-        return this._normalizedAction(data, this.upsertNormalized)[0];
+        return this._normalizedAction(data, this.upsertNormalized, true)[0];
+    }
+
+    upsertRaw(data: any) {
+        return this._normalizedAction(data, this.upsertNormalized, true);
     }
 
     delete(id: string | number | Partial<T>) {
@@ -240,16 +246,16 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         return refs;
     }
 
-    private _normalizedAction(data: Partial<T> | Partial<T>[], action: (norm: TableState) => R[]): R[] {
+    private _normalizedAction(data: Partial<T> | Partial<T>[], action: (norm: TableState) => R[], normalizePKs: boolean): R[] {
         utils.ensureParam("data", data);
         utils.ensureParam("action", action);
 
-        const norm = new DbNormalizeContext(this.schema);
-        this.schema.normalize(data, norm);
+        const ctx = new DbNormalizeContext(this.schema, normalizePKs);
+        this.schema.normalize(data, ctx);
 
-        const table = norm.output[this.schema.name];
+        const table = ctx.output[this.schema.name];
         const records = table ? action.call(this, table) : [];
-        this.session.upsert(norm);
+        this.session.upsert(ctx);
         return records;
     }
 
