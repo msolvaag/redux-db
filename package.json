@@ -20,6 +20,7 @@
     "redux",
     "database",
     "orm",
+    "db",
     "normalize"
   ],
   "author": "msolvaag",
