@@ -6,7 +6,8 @@ export declare class DbNormalizeContext implements NormalizeContext {
     emits: {
         [key: string]: any[];
     };
-    constructor(schema: TableSchema);
+    normalizePKs: boolean;
+    constructor(schema: TableSchema, normalizePKs: boolean);
     emit(tableName: string, record: any): void;
 }
 export declare class TableModel<T extends RecordValue, R extends TableRecord<T>> implements Table<T, R> {
@@ -38,7 +39,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     insertNormalized(table: TableState<T>): R[];
     updateNormalized(table: TableState<T>): R[];
     upsertNormalized(norm: TableState<T>): R[];
-    private _normalizedAction(data, action);
+    private _normalizedAction(data, action, normalizePKs);
     private _updateIndexes(table);
     private _cleanIndexes(id, record, indexes);
     private _deleteCascade(id);

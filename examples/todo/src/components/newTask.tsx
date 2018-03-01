@@ -11,8 +11,8 @@ interface Props {
 }
 
 class NewTaskComponent extends React.Component<Props> {
-    private _userSelect: HTMLSelectElement | null;
-    private _valueInput: HTMLInputElement | null;
+    private _userSelect: HTMLSelectElement | null = null;
+    private _valueInput: HTMLInputElement | null = null;
 
     createTask(e: React.MouseEvent<Element>) {
         e.preventDefault();

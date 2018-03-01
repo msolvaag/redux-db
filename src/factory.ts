@@ -14,7 +14,6 @@ export interface ExtendedRecordModel extends TableRecord {
 const createRecordModelClass = (BaseClass: RecordClass) => {
     return class ExtendedRecordModel extends BaseClass implements ExtendedRecordModel {
         __fields: { [key: string]: any } = {};
-        tull: string;
 
         constructor(id: string, table: Table) {
             super(id, table);

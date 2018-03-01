@@ -48,7 +48,7 @@ var TableSchemaModel = /** @class */ (function () {
             var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
             if (normalizeHook)
                 obj = normalizeHook(obj, ctx);
-            var pk = _this._normalizePrimaryKey(obj);
+            var pk = ctx.normalizePKs ? _this._normalizePrimaryKey(obj) : _this._getPrimaryKey(obj);
             if (!pk)
                 throw new Error("Failed to normalize primary key for record of type \"" + _this.name + "\". Make sure record(s) have a primary key value before trying to insert or update a table.");
             var fks = _this.getForeignKeys(obj);

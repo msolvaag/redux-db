@@ -120,11 +120,12 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     Object.defineProperty(exports, "__esModule", { value: true });
     /// Holds context state when normalizing data
     var DbNormalizeContext = /** @class */ (function () {
-        function DbNormalizeContext(schema) {
+        function DbNormalizeContext(schema, normalizePKs) {
             this.output = {};
             this.emits = {};
             this.schema = schema;
             this.db = schema.db;
+            this.normalizePKs = normalizePKs;
         }
         /// Emits data for further normalization
         DbNormalizeContext.prototype.emit = function (tableName, record) {
@@ -211,19 +212,19 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             return this.insertMany(data)[0];
         };
         TableModel.prototype.insertMany = function (data) {
-            return this._normalizedAction(data, this.insertNormalized);
+            return this._normalizedAction(data, this.insertNormalized, true);
         };
         TableModel.prototype.update = function (data) {
             return this.updateMany(data)[0];
         };
         TableModel.prototype.updateMany = function (data) {
-            return this._normalizedAction(data, this.updateNormalized);
+            return this._normalizedAction(data, this.updateNormalized, false);
         };
         TableModel.prototype.upsert = function (data) {
-            return this._normalizedAction(data, this.upsertNormalized)[0];
+            return this._normalizedAction(data, this.upsertNormalized, true)[0];
         };
         TableModel.prototype.upsertRaw = function (data) {
-            return this._normalizedAction(data, this.upsertNormalized);
+            return this._normalizedAction(data, this.upsertNormalized, true);
         };
         TableModel.prototype.delete = function (id) {
             if (typeof id !== "string" && typeof id !== "number")
@@ -297,14 +298,14 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this._updateIndexes(norm);
             return refs;
         };
-        TableModel.prototype._normalizedAction = function (data, action) {
+        TableModel.prototype._normalizedAction = function (data, action, normalizePKs) {
             utils.ensureParam("data", data);
             utils.ensureParam("action", action);
-            var norm = new DbNormalizeContext(this.schema);
-            this.schema.normalize(data, norm);
-            var table = norm.output[this.schema.name];
+            var ctx = new DbNormalizeContext(this.schema, normalizePKs);
+            this.schema.normalize(data, ctx);
+            var table = ctx.output[this.schema.name];
             var records = table ? action.call(this, table) : [];
-            this.session.upsert(norm);
+            this.session.upsert(ctx);
             return records;
         };
         TableModel.prototype._updateIndexes = function (table) {
@@ -612,7 +613,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 var normalizeHook = _this.db.normalizeHooks ? _this.db.normalizeHooks[_this.name] : null;
                 if (normalizeHook)
                     obj = normalizeHook(obj, ctx);
-                var pk = _this._normalizePrimaryKey(obj);
+                var pk = ctx.normalizePKs ? _this._normalizePrimaryKey(obj) : _this._getPrimaryKey(obj);
                 if (!pk)
                     throw new Error("Failed to normalize primary key for record of type \"" + _this.name + "\". Make sure record(s) have a primary key value before trying to insert or update a table.");
                 var fks = _this.getForeignKeys(obj);

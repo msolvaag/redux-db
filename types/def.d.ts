@@ -114,6 +114,7 @@ export interface NormalizeContext {
     emits: {
         [key: string]: any[];
     };
+    normalizePKs: boolean;
     emit(tableName: string, record: any): void;
 }
 export interface Normalizer {

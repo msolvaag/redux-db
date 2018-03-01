@@ -21,8 +21,7 @@
     "redux": "^3.7.2",
     "redux-observable": "^0.16.0",
     "reselect": "^3.0.1",
-    "rxjs": "^5.4.3",
-    "tslib": "^1.8.0"
+    "rxjs": "^5.4.3"
   },
   "devDependencies": {
     "@types/es6-promise": "0.0.33",
@@ -42,8 +41,10 @@
     "source-map-loader": "^0.2.3",
     "style-loader": "^0.19.0",
     "ts-loader": "^3.1.0",
-    "typescript": "^2.5.3",
+    "tslib": "^1.9.0",
+    "typescript": "^2.7.2",
     "webpack": "^3.8.1",
+    "webpack-cli": "^2.0.9",
     "webpack-dev-server": "^2.9.3"
   }
 }

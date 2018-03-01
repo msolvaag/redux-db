@@ -12,8 +12,8 @@ interface Props {
 }
 
 class NewCommentComponent extends React.Component<Props> {
-    private _userSelect: HTMLSelectElement | null;
-    private _valueInput: HTMLTextAreaElement | null;
+    private _userSelect: HTMLSelectElement | null = null;
+    private _valueInput: HTMLTextAreaElement | null = null;
 
     addComment(e: React.MouseEvent<Element>) {
         e.preventDefault();
