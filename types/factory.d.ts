@@ -17,5 +17,5 @@ export declare class DefaultModelFactory implements ModelFactory {
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet;
     protected newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null;
     protected getRecordBaseClass(schema: TableSchema): typeof RecordModel;
-    private _createRecordModel(schema);
+    private _createRecordModel;
 }

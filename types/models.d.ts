@@ -39,10 +39,10 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     insertNormalized(table: TableState<T>): R[];
     updateNormalized(table: TableState<T>): R[];
     upsertNormalized(norm: TableState<T>): R[];
-    private _normalizedAction(data, action, normalizePKs);
-    private _updateIndexes(table);
-    private _cleanIndexes(id, record, indexes);
-    private _deleteCascade(id);
+    private _normalizedAction;
+    private _updateIndexes;
+    private _cleanIndexes;
+    private _deleteCascade;
 }
 export declare class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<T>;
@@ -78,5 +78,5 @@ export declare class RecordSetModel<R extends TableRecord<T>, T = any> implement
     remove(data: Partial<T> | Partial<T>[]): void;
     update(data: Partial<T> | Partial<T>[]): this;
     delete(): void;
-    private _normalize(data);
+    private _normalize;
 }

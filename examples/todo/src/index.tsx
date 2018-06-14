@@ -14,7 +14,7 @@ const appRootElement = document.getElementById("root");
 
 window.onerror = function (msg, file, line, col, error) {
     if (!error)
-        error = new Error(msg);
+        error = new Error(msg.toString());
     store.dispatch({ type: APP_ERROR, payload: error });
 };
 

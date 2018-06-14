@@ -30,4 +30,4 @@ class TaskComponent extends React.Component<TaskProps> {
 export const TaskDetails = connect(
     (state: any, ownProps: TaskProps) => ({ task: selectTask(state, ownProps.match.params.taskId) }),
     ({ deleteTask, updateTask, deleteComment })
-)(TaskComponent) as React.ComponentClass;
+)(TaskComponent) as any as React.ComponentClass;

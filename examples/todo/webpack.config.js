@@ -58,6 +58,7 @@ const config = {
 };
 
 if (environment === "production") {
+    config.mode = "production";
     config.plugins = config.plugins.concat([
         new webpack.DefinePlugin({
             'process.env': {
@@ -68,6 +69,7 @@ if (environment === "production") {
         new OptimizeCssAssetsPlugin()
     ])
 } else {
+    config.mode = "development";
     config.devtool = 'simple-source-map';
     config.module.rules.push({
         enforce: "pre",

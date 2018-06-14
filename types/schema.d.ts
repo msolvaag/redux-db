@@ -15,8 +15,8 @@ export declare class TableSchemaModel implements TableSchema {
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     injectKeys(data: any, record: TableRecord): any;
     getPrimaryKey(record: any): string;
-    private _getPrimaryKey(record);
-    private _normalizePrimaryKey(record);
+    private _getPrimaryKey;
+    private _normalizePrimaryKey;
     getForeignKeys(record: any): {
         name: string;
         value: any;
