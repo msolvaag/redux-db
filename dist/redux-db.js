@@ -144,7 +144,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this.state = utils.ensureParam("state", state);
             var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes;
             if (!ids || !byId || !indexes)
-                throw new Error("The table \"" + this.schema.name + "\" has an invalid state.");
+                throw new Error("The table \"" + this.schema.name + "\" has an invalid state: " + JSON.stringify(state));
             if (!this.state.name)
                 this.state.name = schema.name;
         }

@@ -48,7 +48,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         this.state = utils.ensureParam("state", state);
 
         const { ids, byId, indexes } = this.state;
-        if (!ids || !byId || !indexes) throw new Error(`The table "${this.schema.name}" has an invalid state.`);
+        if (!ids || !byId || !indexes) throw new Error(`The table "${this.schema.name}" has an invalid state: ${JSON.stringify(state)}`);
 
         if (!this.state.name)
             this.state.name = schema.name;
