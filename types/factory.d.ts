@@ -11,11 +11,11 @@ export interface ExtendedRecordModel extends TableRecord {
 export declare class DefaultModelFactory implements ModelFactory {
     private _recordClass;
     newTableSchema(db: DatabaseSchema, name: string, schema: TableDDL): TableSchema;
-    newTableModel(session: Session, state: TableState, schema: TableSchema): Table;
+    newTableModel(session: Session, schema: TableSchema, state: TableState): Table;
     newRecordModel(id: string, table: Table): TableRecord;
     protected newRecordField(schema: FieldSchema, record: TableRecord): TableRecord<Record<string, any>> | RecordFieldModel<Record<string, any>> | null;
     protected newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet;
     protected newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null;
     protected getRecordBaseClass(schema: TableSchema): typeof RecordModel;
-    private _createRecordModel;
+    private _createRecordModel(schema);
 }

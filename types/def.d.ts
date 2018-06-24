@@ -83,7 +83,7 @@ export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
     filter(callback: (record: R) => boolean): R[];
 }
 export interface ModelFactory {
-    newTableModel(session: Session, state: TableState, schema: TableSchema): Table;
+    newTableModel(session: Session, schema: TableSchema, state: TableState): Table;
     newTableSchema(db: DatabaseSchema, name: string, schema: TableDDL): TableSchema;
     newRecordModel(id: string, table: Table): TableRecord;
 }

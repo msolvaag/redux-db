@@ -96,7 +96,6 @@ var TableSchemaModel = /** @class */ (function () {
             return data;
         var otherFks = rel.table.fields.filter(function (f) { return f.isForeignKey && f !== rel; });
         return utils.ensureArray(data).map(function (obj) {
-            var _a, _b;
             if (typeof obj === "number" || typeof obj === "string") {
                 if (otherFks.length === 1) {
                     obj = (_a = {}, _a[otherFks[0].name] = obj, _a);
@@ -106,6 +105,7 @@ var TableSchemaModel = /** @class */ (function () {
                 }
             }
             return __assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
+            var _a, _b;
         });
     };
     TableSchemaModel.prototype.injectKeys = function (data, record) {

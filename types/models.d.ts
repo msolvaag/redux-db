@@ -15,7 +15,7 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     readonly schema: TableSchema;
     state: TableState<T>;
     dirty: boolean;
-    constructor(session: Session, state: TableState<T> | undefined, schema: TableSchema);
+    constructor(session: Session, schema: TableSchema, state?: TableState<T>);
     all(): R[];
     readonly length: number;
     getValues(): T[];
@@ -39,10 +39,10 @@ export declare class TableModel<T extends RecordValue, R extends TableRecord<T>>
     insertNormalized(table: TableState<T>): R[];
     updateNormalized(table: TableState<T>): R[];
     upsertNormalized(norm: TableState<T>): R[];
-    private _normalizedAction;
-    private _updateIndexes;
-    private _cleanIndexes;
-    private _deleteCascade;
+    private _normalizedAction(data, action, normalizePKs);
+    private _updateIndexes(table);
+    private _cleanIndexes(id, record, indexes);
+    private _deleteCascade(id);
 }
 export declare class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<T>;
@@ -78,5 +78,5 @@ export declare class RecordSetModel<R extends TableRecord<T>, T = any> implement
     remove(data: Partial<T> | Partial<T>[]): void;
     update(data: Partial<T> | Partial<T>[]): this;
     delete(): void;
-    private _normalize;
+    private _normalize(data);
 }

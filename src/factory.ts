@@ -28,8 +28,8 @@ export class DefaultModelFactory implements ModelFactory {
         return new TableSchemaModel(db, name, schema);
     }
 
-    newTableModel(session: Session, state: TableState, schema: TableSchema): Table {
-        return new TableModel(session, state, schema);
+    newTableModel(session: Session, schema: TableSchema, state: TableState): Table {
+        return new TableModel(session, schema, state);
     }
 
     newRecordModel(id: string, table: Table): TableRecord {

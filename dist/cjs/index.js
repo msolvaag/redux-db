@@ -60,11 +60,11 @@ var Database = /** @class */ (function () {
         return DatabaseSession.Partial(state, tableSchemas, this);
     };
     Database.prototype.selectTable = function (tableState, schemaName) {
-        var _a;
         var name = schemaName || tableState["name"];
         if (!name)
             throw new Error("Failed to select table. Could not identify table schema.");
         return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
+        var _a;
     };
     return Database;
 }());
@@ -76,7 +76,7 @@ var DatabaseSession = /** @class */ (function () {
         this.state = state;
         this.db = schema;
         this.options = options;
-        this.tables = utils.toObject(schema.tables.map(function (t) { return _this.db.factory.newTableModel(_this, state[t.name], t); }), function (t) { return t.schema.name; });
+        this.tables = utils.toObject(schema.tables.map(function (t) { return _this.db.factory.newTableModel(_this, t, state[t.name]); }), function (t) { return t.schema.name; });
     }
     DatabaseSession.prototype.upsert = function (ctx) {
         var _this = this;
@@ -98,11 +98,11 @@ var DatabaseSession = /** @class */ (function () {
         if (this.options.readOnly)
             throw new Error("Invalid attempt to alter a readonly session.");
         Object.keys(this.tables).forEach(function (table) {
-            var _a;
             var oldState = _this.state[table];
             var newState = _this.tables[table].state;
             if (oldState !== newState)
                 _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+            var _a;
         });
         return this.state;
     };

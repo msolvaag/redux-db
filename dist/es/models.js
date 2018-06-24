@@ -25,12 +25,12 @@ var DbNormalizeContext = /** @class */ (function () {
 }());
 export { DbNormalizeContext };
 var TableModel = /** @class */ (function () {
-    function TableModel(session, state, schema) {
+    function TableModel(session, schema, state) {
         if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
         this.dirty = false;
         this.session = utils.ensureParam("session", session);
-        this.state = utils.ensureParam("state", state);
         this.schema = utils.ensureParam("schema", schema);
+        this.state = utils.ensureParam("state", state);
         if (!this.state.name)
             this.state.name = schema.name;
     }

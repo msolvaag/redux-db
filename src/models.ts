@@ -42,10 +42,10 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
     state: TableState<T>;
     dirty = false;
 
-    constructor(session: Session, state: TableState<T> = { ids: [], byId: {}, indexes: {} }, schema: TableSchema) {
+    constructor(session: Session, schema: TableSchema, state: TableState<T> = { ids: [], byId: {}, indexes: {} }) {
         this.session = utils.ensureParam("session", session);
-        this.state = utils.ensureParam("state", state);
         this.schema = utils.ensureParam("schema", schema);
+        this.state = utils.ensureParam("state", state);
 
         if (!this.state.name)
             this.state.name = schema.name;

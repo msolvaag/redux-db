@@ -30,8 +30,8 @@ var DefaultModelFactory = /** @class */ (function () {
     DefaultModelFactory.prototype.newTableSchema = function (db, name, schema) {
         return new schema_1.TableSchemaModel(db, name, schema);
     };
-    DefaultModelFactory.prototype.newTableModel = function (session, state, schema) {
-        return new models_1.TableModel(session, state, schema);
+    DefaultModelFactory.prototype.newTableModel = function (session, schema, state) {
+        return new models_1.TableModel(session, schema, state);
     };
     DefaultModelFactory.prototype.newRecordModel = function (id, table) {
         return new (this._createRecordModel(table.schema))(id, table);

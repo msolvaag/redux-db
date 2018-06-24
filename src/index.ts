@@ -77,7 +77,7 @@ export class DatabaseSession implements Session {
         this.db = schema;
         this.options = options;
         this.tables = utils.toObject(
-            schema.tables.map(t => this.db.factory.newTableModel(this, state[t.name], t)), t => t.schema.name);
+            schema.tables.map(t => this.db.factory.newTableModel(this, t, state[t.name])), t => t.schema.name);
     }
 
     upsert(ctx: NormalizeContext) {
