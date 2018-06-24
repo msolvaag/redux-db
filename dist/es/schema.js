@@ -7,6 +7,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 import * as utils from "./utils";
+import { TYPE_ATTR, TYPE_MODIFIED, TYPE_PK } from './constants';
 // Holds the schema definition for a table.
 var TableSchemaModel = /** @class */ (function () {
     function TableSchemaModel(db, name, schema) {
@@ -18,7 +19,7 @@ var TableSchemaModel = /** @class */ (function () {
             .map(function (fieldName) { return new FieldSchemaModel(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
         this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
         this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
-        this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
+        this._stampFields = this.fields.filter(function (f) { return f.type === TYPE_MODIFIED; });
     }
     Object.defineProperty(TableSchemaModel.prototype, "relations", {
         /// Gets the FK's that references this table.
@@ -168,11 +169,11 @@ export { TableSchemaModel };
 var FieldSchemaModel = /** @class */ (function () {
     function FieldSchemaModel(table, name, schema, cascadeAsDefault) {
         this.table = utils.ensureParam("table", table);
-        this.type = schema.type || "ATTR";
+        this.type = schema.type || TYPE_ATTR;
         this.name = name;
         this.propName = schema.propName || name;
         this._valueFactory = schema.value ? schema.value.bind(this) : null;
-        this.isPrimaryKey = schema.type === "PK";
+        this.isPrimaryKey = schema.type === TYPE_PK;
         this.isForeignKey = schema.references !== null && schema.references !== undefined;
         if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;

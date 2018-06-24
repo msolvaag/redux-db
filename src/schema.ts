@@ -1,6 +1,20 @@
 import * as utils from "./utils";
-import { DatabaseSchema, TableSchema, FieldSchema, NormalizedState, TableDDL, FieldDDL, NormalizeContext, ComputeContext, FieldType } from "./def";
-import { TableRecord } from "./index";
+import {
+    DatabaseSchema,
+    TableSchema,
+    FieldSchema,
+    TableDDL,
+    FieldDDL,
+    TableRecord,
+    NormalizeContext,
+    ComputeContext,
+    FieldType
+} from "./def";
+import {
+    TYPE_ATTR,
+    TYPE_MODIFIED,
+    TYPE_PK
+} from './constants';
 
 // Holds the schema definition for a table.
 export class TableSchemaModel implements TableSchema {
@@ -21,7 +35,7 @@ export class TableSchemaModel implements TableSchema {
 
         this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
         this._foreignKeyFields = this.fields.filter(f => f.isForeignKey);
-        this._stampFields = this.fields.filter(f => f.type === "MODIFIED");
+        this._stampFields = this.fields.filter(f => f.type === TYPE_MODIFIED);
     }
 
     /// Gets the FK's that references this table.
@@ -216,11 +230,11 @@ export class FieldSchemaModel implements FieldSchema {
     constructor(table: TableSchema, name: string, schema: FieldDDL, cascadeAsDefault: boolean) {
         this.table = utils.ensureParam("table", table);
 
-        this.type = schema.type || "ATTR";
+        this.type = schema.type || TYPE_ATTR;
         this.name = name;
         this.propName = schema.propName || name;
         this._valueFactory = schema.value ? schema.value.bind(this) : null;
-        this.isPrimaryKey = schema.type === "PK";
+        this.isPrimaryKey = schema.type === TYPE_PK;
         this.isForeignKey = schema.references !== null && schema.references !== undefined;
 
         if (this.isPrimaryKey || this.isForeignKey) {

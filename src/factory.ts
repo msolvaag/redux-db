@@ -1,7 +1,6 @@
 import { Session, Table, TableRecord, TableRecordSet, DatabaseSchema, TableSchema, FieldSchema, TableState, TableDDL, ModelFactory } from "./def";
 import { TableModel, RecordFieldModel, RecordSetModel, RecordModel } from "./models";
-import { TableSchemaModel, FieldSchemaModel } from "./schema";
-import * as utils from "./utils";
+import { TableSchemaModel } from "./schema";
 
 export interface RecordClass {
     new(id: string, table: Table): TableRecord;

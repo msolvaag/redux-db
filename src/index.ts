@@ -1,7 +1,27 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, MissingKeyHook, Reducer } from "./def";
+import {
+    SchemaDDL,
+    DatabaseSchema,
+    TableSchema,
+    Table,
+    TableRecord,
+    TableRecordSet,
+    DatabaseOptions,
+    SessionOptions,
+    Session,
+    ModelFactory,
+    TableMap,
+    DatabaseState,
+    NormalizeContext,
+    Normalizer,
+    MissingKeyHook,
+    Reducer,
+    FieldType
+} from "./def";
 import * as utils from "./utils";
 import { DefaultModelFactory } from "./factory";
+
 export * from "./models";
+export * from "./constants";
 
 const defaultOptions: DatabaseOptions = {
     cascadeAsDefault: false
@@ -77,7 +97,7 @@ export class DatabaseSession implements Session {
         this.db = schema;
         this.options = options;
         this.tables = utils.toObject(
-            schema.tables.map(t => this.db.factory.newTableModel(this, t, state[t.name])), t => t.schema.name);
+            schema.tables.map(tableSchema => this.db.factory.newTableModel(this, tableSchema, state[tableSchema.name])), t => t.schema.name);
     }
 
     upsert(ctx: NormalizeContext) {
@@ -118,4 +138,13 @@ export class DatabaseSession implements Session {
     }
 }
 
-export { Table, TableRecord, TableRecordSet, TableMap, Reducer, SchemaDDL as Schema, DefaultModelFactory };
+export {
+    Table,
+    TableRecord,
+    TableRecordSet,
+    TableMap,
+    Reducer,
+    SchemaDDL as Schema,
+    DefaultModelFactory,
+    FieldType
+};

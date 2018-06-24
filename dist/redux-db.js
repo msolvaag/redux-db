@@ -16,6 +16,13 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+define("constants", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.TYPE_PK = "PK";
+    exports.TYPE_ATTR = "ATTR";
+    exports.TYPE_MODIFIED = "MODIFIED";
+});
 define("def", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -144,7 +151,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
             this.state = utils.ensureParam("state", state);
             var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes;
             if (!ids || !byId || !indexes)
-                throw new Error("The table \"" + this.schema.name + "\" has an invalid state: " + JSON.stringify(state));
+                throw new Error("The table \"" + this.schema.name + "\" has an invalid state: " + state);
             if (!this.state.name)
                 this.state.name = schema.name;
         }
@@ -461,118 +468,7 @@ define("models", ["require", "exports", "utils"], function (require, exports, ut
     }());
     exports.RecordSetModel = RecordSetModel;
 });
-define("index", ["require", "exports", "utils", "factory", "models"], function (require, exports, utils, factory_1, models_1) {
-    "use strict";
-    function __export(m) {
-        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-    }
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.DefaultModelFactory = factory_1.DefaultModelFactory;
-    __export(models_1);
-    var defaultOptions = {
-        cascadeAsDefault: false
-    };
-    exports.createDatabase = function (schema, options) { return new Database(schema, options); };
-    var Database = /** @class */ (function () {
-        function Database(schema, options) {
-            var _this = this;
-            utils.ensureParam("schema", schema);
-            this.options = __assign({}, defaultOptions, options);
-            this.normalizeHooks = this.options.onNormalize || {};
-            this.factory = this.options.factory || new factory_1.DefaultModelFactory();
-            this.onMissingPk = this.options.onMissingPk || undefined;
-            this.tables = Object.keys(schema).map(function (tableName) { return _this.factory.newTableSchema(_this, tableName, schema[tableName]); });
-            this.tables.forEach(function (table) { return table.connect(_this.tables); });
-        }
-        Database.prototype.combineReducers = function () {
-            var _this = this;
-            var reducers = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                reducers[_i] = arguments[_i];
-            }
-            return function (state, action) {
-                if (state === void 0) { state = {}; }
-                return _this.reduce(state, action, reducers);
-            };
-        };
-        Database.prototype.reduce = function (state, action, reducers, arg) {
-            var session = this.createSession(state);
-            utils.ensureArray(reducers).forEach(function (reducer) { return reducer(session.tables, action, arg); });
-            return session.commit();
-        };
-        Database.prototype.createSession = function (state, options) {
-            return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
-        };
-        Database.prototype.selectTables = function (state) {
-            var _this = this;
-            var tableSchemas = Object.keys(state).map(function (tableName) {
-                var tableSchema = _this.tables.filter(function (s) { return s.name === tableName; })[0];
-                if (!tableSchema)
-                    throw new Error("Could not select table. The table \"" + tableName + "\" is not defined in schema.");
-                return tableSchema;
-            });
-            return DatabaseSession.Partial(state, tableSchemas, this);
-        };
-        Database.prototype.selectTable = function (tableState, schemaName) {
-            var name = schemaName || tableState["name"];
-            if (!name)
-                throw new Error("Failed to select table. Could not identify table schema.");
-            return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
-            var _a;
-        };
-        return Database;
-    }());
-    exports.Database = Database;
-    var DatabaseSession = /** @class */ (function () {
-        function DatabaseSession(state, schema, options) {
-            if (state === void 0) { state = {}; }
-            var _this = this;
-            this.state = state;
-            this.db = schema;
-            this.options = options;
-            this.tables = utils.toObject(schema.tables.map(function (t) { return _this.db.factory.newTableModel(_this, t, state[t.name]); }), function (t) { return t.schema.name; });
-        }
-        DatabaseSession.prototype.upsert = function (ctx) {
-            var _this = this;
-            if (this.options.readOnly)
-                throw new Error("Invalid attempt to alter a readonly session.");
-            Object.keys(ctx.output).forEach(function (name) {
-                if (name !== ctx.schema.name) {
-                    _this.tables[name].upsertNormalized(ctx.output[name]);
-                }
-            });
-            Object.keys(ctx.emits).forEach(function (name) {
-                if (name !== ctx.schema.name) {
-                    _this.tables[name].upsert(ctx.emits[name]);
-                }
-            });
-        };
-        DatabaseSession.prototype.commit = function () {
-            var _this = this;
-            if (this.options.readOnly)
-                throw new Error("Invalid attempt to alter a readonly session.");
-            Object.keys(this.tables).forEach(function (table) {
-                var oldState = _this.state[table];
-                var newState = _this.tables[table].state;
-                if (oldState !== newState)
-                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
-                var _a;
-            });
-            return this.state;
-        };
-        DatabaseSession.Partial = function (state, tableSchemas, db) {
-            return new DatabaseSession(state, {
-                tables: tableSchemas,
-                options: db.options,
-                factory: db.factory,
-                normalizeHooks: db.normalizeHooks
-            }, { readOnly: true }).tables;
-        };
-        return DatabaseSession;
-    }());
-    exports.DatabaseSession = DatabaseSession;
-});
-define("schema", ["require", "exports", "utils"], function (require, exports, utils) {
+define("schema", ["require", "exports", "utils", "constants"], function (require, exports, utils, constants_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Holds the schema definition for a table.
@@ -586,7 +482,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
                 .map(function (fieldName) { return new FieldSchemaModel(_this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true); });
             this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
-            this._stampFields = this.fields.filter(function (f) { return f.type === "MODIFIED"; });
+            this._stampFields = this.fields.filter(function (f) { return f.type === constants_1.TYPE_MODIFIED; });
         }
         Object.defineProperty(TableSchemaModel.prototype, "relations", {
             /// Gets the FK's that references this table.
@@ -736,11 +632,11 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     var FieldSchemaModel = /** @class */ (function () {
         function FieldSchemaModel(table, name, schema, cascadeAsDefault) {
             this.table = utils.ensureParam("table", table);
-            this.type = schema.type || "ATTR";
+            this.type = schema.type || constants_1.TYPE_ATTR;
             this.name = name;
             this.propName = schema.propName || name;
             this._valueFactory = schema.value ? schema.value.bind(this) : null;
-            this.isPrimaryKey = schema.type === "PK";
+            this.isPrimaryKey = schema.type === constants_1.TYPE_PK;
             this.isForeignKey = schema.references !== null && schema.references !== undefined;
             if (this.isPrimaryKey || this.isForeignKey) {
                 this.references = schema.references;
@@ -787,7 +683,7 @@ define("schema", ["require", "exports", "utils"], function (require, exports, ut
     }());
     exports.FieldSchemaModel = FieldSchemaModel;
 });
-define("factory", ["require", "exports", "models", "schema"], function (require, exports, models_2, schema_1) {
+define("factory", ["require", "exports", "models", "schema"], function (require, exports, models_1, schema_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var createRecordModelClass = function (BaseClass) {
@@ -809,14 +705,14 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             return new schema_1.TableSchemaModel(db, name, schema);
         };
         DefaultModelFactory.prototype.newTableModel = function (session, schema, state) {
-            return new models_2.TableModel(session, schema, state);
+            return new models_1.TableModel(session, schema, state);
         };
         DefaultModelFactory.prototype.newRecordModel = function (id, table) {
             return new (this._createRecordModel(table.schema))(id, table);
         };
         DefaultModelFactory.prototype.newRecordField = function (schema, record) {
             if (!schema.isForeignKey)
-                return new models_2.RecordFieldModel(schema, record);
+                return new models_1.RecordFieldModel(schema, record);
             var refTable = schema.references && record.table.session.tables[schema.references];
             if (!refTable)
                 throw new Error("The foreign key: \"" + schema.name + "\" references an unregistered table: \"" + schema.references + "\" in the current session.");
@@ -829,7 +725,7 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             var refTable = record.table.session.tables[schema.table.name];
             if (!refTable)
                 throw new Error("The table: \"" + schema.table.name + "\" does not exist in the current session.");
-            return new models_2.RecordSetModel(refTable, schema, record);
+            return new models_1.RecordSetModel(refTable, schema, record);
         };
         DefaultModelFactory.prototype.newRecordRelation = function (schema, record) {
             var refTable = record.table.session.tables[schema.table.name];
@@ -841,7 +737,7 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
             return this.newRecordModel(id, refTable);
         };
         DefaultModelFactory.prototype.getRecordBaseClass = function (schema) {
-            return models_2.RecordModel;
+            return models_1.RecordModel;
         };
         DefaultModelFactory.prototype._createRecordModel = function (schema) {
             var _this = this;
@@ -868,4 +764,115 @@ define("factory", ["require", "exports", "models", "schema"], function (require,
         return DefaultModelFactory;
     }());
     exports.DefaultModelFactory = DefaultModelFactory;
+});
+define("index", ["require", "exports", "utils", "factory", "models"], function (require, exports, utils, factory_1, models_2) {
+    "use strict";
+    function __export(m) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+    }
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.DefaultModelFactory = factory_1.DefaultModelFactory;
+    __export(models_2);
+    var defaultOptions = {
+        cascadeAsDefault: false
+    };
+    exports.createDatabase = function (schema, options) { return new Database(schema, options); };
+    var Database = /** @class */ (function () {
+        function Database(schema, options) {
+            var _this = this;
+            utils.ensureParam("schema", schema);
+            this.options = __assign({}, defaultOptions, options);
+            this.normalizeHooks = this.options.onNormalize || {};
+            this.factory = this.options.factory || new factory_1.DefaultModelFactory();
+            this.onMissingPk = this.options.onMissingPk || undefined;
+            this.tables = Object.keys(schema).map(function (tableName) { return _this.factory.newTableSchema(_this, tableName, schema[tableName]); });
+            this.tables.forEach(function (table) { return table.connect(_this.tables); });
+        }
+        Database.prototype.combineReducers = function () {
+            var _this = this;
+            var reducers = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                reducers[_i] = arguments[_i];
+            }
+            return function (state, action) {
+                if (state === void 0) { state = {}; }
+                return _this.reduce(state, action, reducers);
+            };
+        };
+        Database.prototype.reduce = function (state, action, reducers, arg) {
+            var session = this.createSession(state);
+            utils.ensureArray(reducers).forEach(function (reducer) { return reducer(session.tables, action, arg); });
+            return session.commit();
+        };
+        Database.prototype.createSession = function (state, options) {
+            return new DatabaseSession(state, this, __assign({ readOnly: false }, options));
+        };
+        Database.prototype.selectTables = function (state) {
+            var _this = this;
+            var tableSchemas = Object.keys(state).map(function (tableName) {
+                var tableSchema = _this.tables.filter(function (s) { return s.name === tableName; })[0];
+                if (!tableSchema)
+                    throw new Error("Could not select table. The table \"" + tableName + "\" is not defined in schema.");
+                return tableSchema;
+            });
+            return DatabaseSession.Partial(state, tableSchemas, this);
+        };
+        Database.prototype.selectTable = function (tableState, schemaName) {
+            var name = schemaName || tableState["name"];
+            if (!name)
+                throw new Error("Failed to select table. Could not identify table schema.");
+            return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
+            var _a;
+        };
+        return Database;
+    }());
+    exports.Database = Database;
+    var DatabaseSession = /** @class */ (function () {
+        function DatabaseSession(state, schema, options) {
+            if (state === void 0) { state = {}; }
+            var _this = this;
+            this.state = state;
+            this.db = schema;
+            this.options = options;
+            this.tables = utils.toObject(schema.tables.map(function (tableSchema) { return _this.db.factory.newTableModel(_this, tableSchema, state[tableSchema.name]); }), function (t) { return t.schema.name; });
+        }
+        DatabaseSession.prototype.upsert = function (ctx) {
+            var _this = this;
+            if (this.options.readOnly)
+                throw new Error("Invalid attempt to alter a readonly session.");
+            Object.keys(ctx.output).forEach(function (name) {
+                if (name !== ctx.schema.name) {
+                    _this.tables[name].upsertNormalized(ctx.output[name]);
+                }
+            });
+            Object.keys(ctx.emits).forEach(function (name) {
+                if (name !== ctx.schema.name) {
+                    _this.tables[name].upsert(ctx.emits[name]);
+                }
+            });
+        };
+        DatabaseSession.prototype.commit = function () {
+            var _this = this;
+            if (this.options.readOnly)
+                throw new Error("Invalid attempt to alter a readonly session.");
+            Object.keys(this.tables).forEach(function (table) {
+                var oldState = _this.state[table];
+                var newState = _this.tables[table].state;
+                if (oldState !== newState)
+                    _this.state = __assign({}, _this.state, (_a = {}, _a[table] = newState, _a));
+                var _a;
+            });
+            return this.state;
+        };
+        DatabaseSession.Partial = function (state, tableSchemas, db) {
+            return new DatabaseSession(state, {
+                tables: tableSchemas,
+                options: db.options,
+                factory: db.factory,
+                normalizeHooks: db.normalizeHooks
+            }, { readOnly: true }).tables;
+        };
+        return DatabaseSession;
+    }());
+    exports.DatabaseSession = DatabaseSession;
 });

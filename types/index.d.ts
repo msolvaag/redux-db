@@ -1,4 +1,4 @@
-import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, MissingKeyHook, Reducer } from "./def";
+import { SchemaDDL, DatabaseSchema, TableSchema, Table, TableRecord, TableRecordSet, DatabaseOptions, SessionOptions, Session, ModelFactory, TableMap, DatabaseState, NormalizeContext, Normalizer, MissingKeyHook, Reducer, FieldType } from "./def";
 import { DefaultModelFactory } from "./factory";
 export * from "./models";
 export declare const createDatabase: (schema: SchemaDDL, options?: DatabaseOptions | undefined) => Database;
@@ -27,4 +27,4 @@ export declare class DatabaseSession implements Session {
     commit(): any;
     static Partial<T extends TableMap = any>(state: any, tableSchemas: TableSchema[], db: Database): T;
 }
-export { Table, TableRecord, TableRecordSet, TableMap, Reducer, SchemaDDL as Schema, DefaultModelFactory };
+export { Table, TableRecord, TableRecordSet, TableMap, Reducer, SchemaDDL as Schema, DefaultModelFactory, FieldType };

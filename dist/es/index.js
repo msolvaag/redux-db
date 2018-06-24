@@ -70,7 +70,7 @@ var DatabaseSession = /** @class */ (function () {
         this.state = state;
         this.db = schema;
         this.options = options;
-        this.tables = utils.toObject(schema.tables.map(function (t) { return _this.db.factory.newTableModel(_this, t, state[t.name]); }), function (t) { return t.schema.name; });
+        this.tables = utils.toObject(schema.tables.map(function (tableSchema) { return _this.db.factory.newTableModel(_this, tableSchema, state[tableSchema.name]); }), function (t) { return t.schema.name; });
     }
     DatabaseSession.prototype.upsert = function (ctx) {
         var _this = this;

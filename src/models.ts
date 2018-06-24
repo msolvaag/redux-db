@@ -2,7 +2,6 @@ import {
     DatabaseSchema,
     TableSchema,
     FieldSchema,
-    DatabaseState,
     TableState,
     TableIndex,
     NormalizedState,
@@ -14,6 +13,28 @@ import {
     RecordValue
 } from "./def";
 import * as utils from "./utils";
+
+
+const printObject = (o: any) => {
+    const cache: any[] = [];
+    return JSON.stringify(o, function (key, value) {
+        if (typeof value === 'object' && value !== null) {
+            if (cache.indexOf(value) !== -1) {
+                // Duplicate reference found
+                try {
+                    // If this value does not reference a parent it can be deduped
+                    return JSON.parse(JSON.stringify(value));
+                } catch (error) {
+                    // discard key if value cannot be deduped
+                    return;
+                }
+            }
+            // Store value in our collection
+            cache.push(value);
+        }
+        return value;
+    });
+};
 
 /// Holds context state when normalizing data
 export class DbNormalizeContext implements NormalizeContext {
@@ -48,7 +69,7 @@ export class TableModel<T extends RecordValue, R extends TableRecord<T>> impleme
         this.state = utils.ensureParam("state", state);
 
         const { ids, byId, indexes } = this.state;
-        if (!ids || !byId || !indexes) throw new Error(`The table "${this.schema.name}" has an invalid state: ${state}`);
+        if (!ids || !byId || !indexes) throw new Error(`The table "${this.schema.name}" has an invalid state: ${printObject(state)}`);
 
         if (!this.state.name)
             this.state.name = schema.name;

@@ -1,5 +1,4 @@
-import { DatabaseSchema, TableSchema, FieldSchema, TableDDL, FieldDDL, NormalizeContext, FieldType } from "./def";
-import { TableRecord } from "./index";
+import { DatabaseSchema, TableSchema, FieldSchema, TableDDL, FieldDDL, TableRecord, NormalizeContext, FieldType } from "./def";
 export declare class TableSchemaModel implements TableSchema {
     readonly db: DatabaseSchema;
     readonly name: string;

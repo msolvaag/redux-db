@@ -9,6 +9,27 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utils = require("./utils");
+var printObject = function (o) {
+    var cache = [];
+    return JSON.stringify(o, function (key, value) {
+        if (typeof value === 'object' && value !== null) {
+            if (cache.indexOf(value) !== -1) {
+                // Duplicate reference found
+                try {
+                    // If this value does not reference a parent it can be deduped
+                    return JSON.parse(JSON.stringify(value));
+                }
+                catch (error) {
+                    // discard key if value cannot be deduped
+                    return;
+                }
+            }
+            // Store value in our collection
+            cache.push(value);
+        }
+        return value;
+    });
+};
 /// Holds context state when normalizing data
 var DbNormalizeContext = /** @class */ (function () {
     function DbNormalizeContext(schema, normalizePKs) {
@@ -35,7 +56,7 @@ var TableModel = /** @class */ (function () {
         this.state = utils.ensureParam("state", state);
         var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes;
         if (!ids || !byId || !indexes)
-            throw new Error("The table \"" + this.schema.name + "\" has an invalid state: " + JSON.stringify(state));
+            throw new Error("The table \"" + this.schema.name + "\" has an invalid state: " + printObject(state));
         if (!this.state.name)
             this.state.name = schema.name;
     }
