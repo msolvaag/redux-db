@@ -4,11 +4,10 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Tape Tests",
-            "program": "${workspaceRoot}/node_modules/tape/bin/tape",
+            "name": "Jest Tests",
+            "program": "${workspaceRoot}/yarn",
             "args": [
-                "test/*.js",
-                "node_modules/.bin/tap-spec"
+                "test"
             ],
             "internalConsoleOptions": "openOnSessionStart"
         },

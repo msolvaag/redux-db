@@ -1,0 +1,34 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "jsRules": {},
+    "rules": {
+        "array-type": [
+            true,
+            "array"
+        ],
+        "interface-name": false,
+        "trailing-comma": false,
+        "arrow-parens": false,
+        "curly": [
+            true,
+            "as-needed"
+        ],
+        "member-access": [
+            true,
+            "no-public"
+        ],
+        "variable-name": [
+            true,
+            "check-format",
+            "allow-leading-underscore",
+            "allow-pascal-case"
+        ],
+        "max-classes-per-file": false,
+        "no-shadowed-variable": false,
+        "ban-types": false
+    },
+    "rulesDirectory": []
+}

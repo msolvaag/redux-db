@@ -3,7 +3,7 @@ export var toArray = function (obj) {
         return [];
     if (Array.isArray(obj))
         return obj;
-    else if (typeof obj === 'object')
+    else if (typeof obj === "object")
         return Object.keys(obj).map(function (key) { return obj[key]; });
     else
         return [];
@@ -45,9 +45,8 @@ export var toObject = function (a, key) {
 export var mergeIds = function (source, second, unique) {
     var hash = {};
     var i;
-    for (i = 0; i < source.length; i++) {
+    for (i = 0; i < source.length; i++)
         hash[source[i]] = true;
-    }
     for (i = 0; i < second.length; i++) {
         if (unique && hash[second[i]])
             throw new Error("Id merge operation violates unique constraint for id: \"" + second[i] + "\"");
@@ -55,37 +54,33 @@ export var mergeIds = function (source, second, unique) {
     }
     return Object.keys(hash);
 };
-// Compares two objects for simple equality. 
+// Compares two objects for simple equality.
 // Arrays are compared only at first level.
 export var isEqual = function (a, b) {
     if (a === b)
         return true;
-    var aKeys = Object.keys(a), bKeys = Object.keys(b), len = aKeys.length;
-    if (bKeys.length !== len) {
+    var aKeys = Object.keys(a);
+    var bKeys = Object.keys(b);
+    var len = aKeys.length;
+    if (bKeys.length !== len)
         return false;
-    }
     for (var i = 0; i < len; i++) {
         var key = aKeys[i];
         if (Array.isArray(a[key]) && Array.isArray(b[key]) && arrayIsShallowEqual(a[key], b[key]))
             continue;
-        if (a[key] !== b[key]) {
+        if (a[key] !== b[key])
             return false;
-        }
     }
     return true;
 };
 var arrayIsShallowEqual = function (a, b) {
-    if (a === b) {
+    if (a === b)
         return true;
-    }
     var len = a.length;
-    if (b.length !== len) {
+    if (b.length !== len)
         return false;
-    }
-    for (var i = 0; i < len; i++) {
-        if (a[i] !== b[i]) {
+    for (var i = 0; i < len; i++)
+        if (a[i] !== b[i])
             return false;
-        }
-    }
     return true;
 };
