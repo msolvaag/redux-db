@@ -1,4 +1,5 @@
 import { MapOf } from ".";
+import errors from "./errors";
 
 export const toArray = (obj: any) => {
     if (!obj)
@@ -28,18 +29,18 @@ export const isObject = (value: any) => {
 
 export const ensureParam = <T= any>(name: string, value: T) => {
     if (value === undefined)
-        throw new Error(`Missing a valid value for the argument "${name}"`);
+        throw new Error(errors.argument(name, "value"));
     return value;
 };
 export const ensureParamString = (name: string, value: any) => {
     if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
-        throw new Error(`Missing a valid string for the argument "${name}"`);
+        throw new Error(errors.argument(name, "string"));
     return value;
 };
 export const ensureParamObject = (name: string, value: any) => {
     const param = ensureParam(name, value);
     if (!isObject(param))
-        throw new Error(`Missing a valid object for the argument "${name}"`);
+        throw new Error(errors.argument(name, "object"));
     return param;
 };
 

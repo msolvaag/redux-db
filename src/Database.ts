@@ -19,7 +19,7 @@ const defaultOptions: DatabaseOptions = {
     cascadeAsDefault: false
 };
 
-const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, key: string, defaultFn: T) => {
+const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, key: string, defaultFn?: T) => {
     if (!map) return defaultFn;
     if (typeof map === "function")
         return map;
@@ -48,9 +48,9 @@ export default class Database implements DatabaseSchema {
     }
 
     getNormalizer = (schemaName: string) =>
-        getMappedFunction(this.options.onNormalize, schemaName, (obj: any) => obj)
+        getMappedFunction(this.options.onNormalize, schemaName)
     getPkGenerator = (schemaName: string) =>
-        getMappedFunction(this.options.onGeneratePK, schemaName, () => undefined)
+        getMappedFunction(this.options.onGeneratePK, schemaName)
     getRecordComparer = (schemaName: string) =>
         getMappedFunction(this.options.onRecordCompare, schemaName, isEqual)
 

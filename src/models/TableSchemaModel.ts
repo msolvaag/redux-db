@@ -172,8 +172,12 @@ export default class TableSchemaModel implements TableSchema {
             return this._stampFields.reduce((p, n) =>
                 p + (n.getValue(x) === n.getValue(y) ? 1 : 0), 0
             ) !== this._stampFields.length;
-        else
-            return !this.db.getRecordComparer(this.name)(x, y, this);
+        else {
+            const comparer = this.db.getRecordComparer(this.name);
+            if (comparer)
+                return !comparer(x, y, this);
+            return x === y;
+        }
     }
 
     /// Gets the value of the PK for the given record. Does not throw if none found.
@@ -191,21 +195,21 @@ export default class TableSchemaModel implements TableSchema {
     /// Normalizes the given record with a primary key field. Returns the key value.
     private _normalizePrimaryKey(record: any) {
         let pk = this._getPrimaryKey(record);
+        if (pk) return pk;
 
         // Invoke the "onGeneratePK" hook if PK not found.
-        if (!pk) {
-            const generatedPk = this.db.getPkGenerator(this.name)(record, this);
+        const generator = this.db.getPkGenerator(this.name);
+        if (!generator) return undefined;
 
-            if (generatedPk) {
-                // if the PK is generated and we have a single PK field definition, then inject it into the record.
-                if (this._primaryKeyFields.length === 1) record[this._primaryKeyFields[0].propName] = generatedPk;
-                // TODO: Handle multiple PK field defs.
-                // We may need the "onGeneratePK" hook to return an object defining each key value.
-                // BUT this seems like a rare scenario..
-
-                pk = generatedPk;
-            }
+        const generatedPk = generator(record, this);
+        if (generatedPk) {
+            // if the PK is generated and we have a single PK field definition, then inject it into the record.
+            if (this._primaryKeyFields.length === 1) record[this._primaryKeyFields[0].propName] = generatedPk;
+            // TODO: Handle multiple PK field defs.
+            // We may need the "onGeneratePK" hook to return an object defining each key value.
+            // BUT this seems like a rare scenario..
         }
-        return pk;
+
+        return generatedPk;
     }
 }

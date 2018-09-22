@@ -1,18 +1,23 @@
 // tslint:disable:object-literal-sort-keys
-
-import { TYPE_PK } from "../constants";
+import { INITIAL_STATE, TYPE_PK } from "../constants";
 import Database from "../Database";
+import DatabaseSession from "../DatabaseSession";
+import errors from "../errors";
+import TableModel from "../models/TableModel";
+import { isEqual } from "../utils";
 
 describe("constructor", () => {
 
     test("throws if no schema given", () => {
         const db = Database as any;
-        expect(() => new db()).toThrow();
+        expect(() => new db())
+            .toThrow(errors.argument("schema", "value"));
     });
 
     test("throws if invalid schema given", () => {
         const db = Database as any;
-        expect(() => new db([])).toThrow();
+        expect(() => new db([]))
+            .toThrow(errors.argument("schema", "object"));
     });
 
     test("creates table schemas", () =>
@@ -46,16 +51,146 @@ describe("getNormalizer", () => {
     const normalizer = jest.fn((val: any) => val);
     const tableName = "test";
 
+    test("returns undefined as default", () =>
+        expect(new Database({})
+            .getNormalizer(tableName)).toBeUndefined());
+
+    test("returns general normalizer", () =>
+        expect(new Database({}, { onNormalize: normalizer })
+            .getNormalizer(tableName)).toStrictEqual(normalizer));
+
+    test("returns normalizer specific to schema", () =>
+        expect(new Database({}, { onNormalize: { [tableName]: normalizer } })
+            .getNormalizer(tableName)).toStrictEqual(normalizer));
+});
+
+describe("getPkGenerator", () => {
+    const generator = jest.fn((val: any) => val);
+    const tableName = "test";
+
+    test("returns undefined as default", () =>
+        expect(new Database({})
+            .getPkGenerator(tableName)).toBeUndefined());
+
+    test("returns general normalizer", () =>
+        expect(new Database({}, { onGeneratePK: generator })
+            .getPkGenerator(tableName)).toStrictEqual(generator));
+
+    test("returns normalizer specific to schema", () =>
+        expect(new Database({}, { onGeneratePK: { [tableName]: generator } })
+            .getPkGenerator(tableName)).toStrictEqual(generator));
+});
+
+describe("getRecordComparer", () => {
+    const comparer = jest.fn((val: any) => val);
+    const tableName = "test";
+
+    test("returns isEqual as default", () =>
+        expect(new Database({})
+            .getRecordComparer(tableName)).toStrictEqual(isEqual));
+
+    test("returns general normalizer", () =>
+        expect(new Database({}, { onRecordCompare: comparer })
+            .getRecordComparer(tableName)).toStrictEqual(comparer));
+
+    test("returns normalizer specific to schema", () =>
+        expect(new Database({}, { onRecordCompare: { [tableName]: comparer } })
+            .getRecordComparer(tableName)).toStrictEqual(comparer));
+});
+
+describe("combineReducers", () => {
+    const db = new Database({});
+    const reducer1 = jest.fn();
+    const reducer2 = jest.fn();
+
+    const reducer = db.combineReducers(
+        reducer1,
+        reducer2
+    );
+
+    test("returns a single reducer function", () =>
+        expect(reducer).toBeInstanceOf(Function));
+
+    describe("when returned reducer is invoked", () => {
+        reducer({}, {});
+
+        test("calls combined reducers", () => {
+            expect(reducer1).toHaveBeenCalled();
+            expect(reducer2).toHaveBeenCalled();
+        });
+    });
+});
+
+describe("reduce", () => {
     const db = new Database({
-        [tableName]: { id: { type: TYPE_PK } }
-    }, { onNormalize: { [tableName]: normalizer } });
+        table1: { id: { type: TYPE_PK } },
+        table2: {}
+    });
 
+    describe("when called without args", () => {
+        const initialState = db.reduce();
+
+        test("returns initial state", () =>
+            expect(initialState).toEqual({
+                table1: INITIAL_STATE,
+                table2: INITIAL_STATE
+            }));
+    });
+
+    describe("when called with args", () => {
+        const action = { type: "ACTION" };
+        const reducer = jest.fn(({ table1 }) => {
+            table1.insert({ id: 1 });
+        });
+
+        test("invokes given reducers", () => {
+            db.reduce({}, action, reducer);
+            db.reduce({}, action, [reducer]);
+
+            expect(reducer).toBeCalledTimes(2);
+        });
+
+        test("returns modified state", () => {
+            const state = db.reduce({}, action, reducer);
+
+            expect(state).not.toEqual({
+                table1: INITIAL_STATE,
+                table2: INITIAL_STATE
+            });
+        });
+    });
+});
+
+describe("createSession", () => {
+    const db = new Database({});
+    const session = db.createSession({});
+
+    test("returns a immutable session instance", () =>
+        expect(session).toBeInstanceOf(DatabaseSession));
+
+    test("readOnly is false as default", () =>
+        expect(session.options.readOnly).toEqual(false));
+
+    test("options are propagated", () => {
+        const options = { readOnly: true, tableSchemas: [] };
+        expect(db.createSession({}, options).options).toEqual(options);
+    });
+});
+
+describe("selectTables", () => {
+    const db = new Database({
+        table1: { id: { type: TYPE_PK } },
+        table2: {}
+    });
     const state = db.reduce();
-    const { [tableName]: table } = db.createSession(state).tables;
+    const tables = db.selectTables(state);
 
-    table.insert({ id: 1 });
+    test("returns an map of table models", () => {
+        expect(tables.table1).toBeInstanceOf(TableModel);
+        expect(tables.table2).toBeInstanceOf(TableModel);
+    });
 
-    test("custom normalizer called", () =>
-        expect(normalizer).toHaveBeenCalled());
-
+    test("tables are in readonly mode", () =>
+        expect(() => tables.table1.insert({ id: 1 }))
+            .toThrow(errors.sessionReadonly()));
 });

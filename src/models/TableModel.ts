@@ -11,6 +11,7 @@ import {
 } from "../types";
 import * as utils from "../utils";
 import DbNormalizeContext from "./NormalizeContext";
+import { INITIAL_STATE } from "../constants";
 
 export default class TableModel<T extends RecordValue, R extends TableRecord<T>> implements Table<T, R> {
     readonly session: Session;
@@ -18,16 +19,13 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
     state: TableState<T>;
     dirty = false;
 
-    constructor(session: Session, schema: TableSchema, state: TableState<T> = { ids: [], byId: {}, indexes: {} }) {
+    constructor(session: Session, schema: TableSchema, state: TableState<T> = INITIAL_STATE) {
         this.session = utils.ensureParam("session", session);
         this.schema = utils.ensureParam("schema", schema);
         this.state = utils.ensureParam("state", state);
 
         const { ids, byId, indexes } = this.state;
         if (!ids || !byId || !indexes) throw new Error(errors.tableInvalidState(schema.name));
-
-        if (!this.state.name)
-            this.state.name = schema.name;
     }
 
     get length() {

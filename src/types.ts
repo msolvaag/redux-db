@@ -218,9 +218,9 @@ export interface DatabaseSchema {
     options: DatabaseOptions;
     factory: ModelFactory;
 
-    getNormalizer: (schemaName: string) => Normalizer;
-    getPkGenerator: (schemaName: string) => PkGenerator;
-    getRecordComparer: (schemaName: string) => RecordComparer;
+    getNormalizer: (schemaName: string) => Normalizer | undefined;
+    getPkGenerator: (schemaName: string) => PkGenerator | undefined;
+    getRecordComparer: (schemaName: string) => RecordComparer | undefined;
 }
 
 /// Represents the available options for creating a new database.

@@ -30,7 +30,6 @@
   },
   "homepage": "https://github.com/msolvaag/redux-db#readme",
   "dependencies": {
-    "tslint": "^5.11.0"
   },
   "devDependencies": {
     "@types/jest": "^23.3.2",
@@ -38,11 +37,9 @@
     "gulp-rename": "^1.4.0",
     "gulp-uglify": "^3.0.1",
     "jest": "^23.6.0",
-    "pump": "^3.0.0",
-    "tap-spec": "^5.0.0",
-    "tape": "^4.9.1",
     "ts-jest": "^23.10.1",
     "tslib": "^1.9.3",
+    "tslint": "^5.11.0",
     "typescript": "^3.0.3"
   }
 }

@@ -1,6 +1,7 @@
 // tslint:disable:max-line-length
 
 export default {
+    argument: (name: string, type: string) => `Missing a valid ${type} for the argument "${name}"`,
     fkInvalidReference: (key: string) => `The foreign key: "${key}" does not define a valid referenced table.`,
     fkReferenceNotInSession: (key: string, references: string) => `The foreign key: "${key}" references an unregistered table: "${references}" in the current session.`,
     fkUndefined: (table: string, key: string) => `No foreign key named: ${key} in the schema: "${table}".`,
