@@ -73,45 +73,42 @@ export interface FieldSchema {
     getRecordValue(record: any): any;
 }
 
-/// Represents an inmutable wrapper for a table in the db.
-export interface Table<T extends RecordValue = RecordValue, R extends TableRecord<T> = TableRecord<T>> {
+/// Represents an immutable wrapper for a table in the db.
+export interface Table<
+    T extends RecordValue = RecordValue,
+    R extends TableRecord<T> = TableRecord<T>
+    > {
     session: Session;
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
 
     /// Gets a single record by it's PK.
-    get(id: string | number): R;
-    /// Gets a single record by it's PK. Returns null if not found.
-    getOrDefault(id: string | number): R | null;
-    /// Gets a set of records referenced by a given field.
-    getByFk(fieldName: string, id: string | number): TableRecordSet<R, T>;
-    /// Gets the value of a given field.
-    getFieldValue<F extends keyof T>(id: string | number, field: F): T[F] | undefined;
+    get(id: string | number): R | undefined;
     /// Gets the value of a record by it's PK.
     getValue(id: string | number): T | undefined;
-    /// Gets all values in table.
-    getValues(): T[];
     /// Gets the index used for a given foreign key.
     getIndex(schemaName: string, fkId: string): string[];
 
     /// Gets all records in table.
     all(): R[];
+    /// Gets all values in table.
+    values(): T[];
     /// Checks whether a record exists in table.
     exists(id: string | number): boolean;
 
     /// Inserts single or multiple records.
     /// Returns the inserted records.
-    insert(data: T | T[]): R[];
+    insert(data: T | T[]): string[];
     /// Updates single or multiple records.
     /// Returns the updated records.
-    update(data: Partial<T> | Partial<T>[]): R[];
+    update(data: Partial<T> | Partial<T>[]): string[];
     /// Upserts single or multiple records.
     /// Returns the upserted records.
-    upsert(data: Partial<T> | Partial<T>[]): R[];
-    /// Deletes a single record by id or object.
+    upsert(data: Partial<T> | Partial<T>[]): string[];
+    /// Deletes single or multiple records by id or object.
     /// Returns true if record is successfully deleted.
-    delete(id: string | number | Partial<T>): boolean;
+    delete(data: string | number | Partial<T> | (string | number | Partial<T>)[]): boolean;
     /// Deletes all records in table.
     deleteAll(): void;
 
@@ -230,6 +227,7 @@ export interface DatabaseOptions {
     onRecordCompare?: MapOf<RecordComparer> | RecordComparer;
 
     cascadeAsDefault?: boolean;
+    strict?: boolean;
     factory?: ModelFactory;
 }
 

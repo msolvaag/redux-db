@@ -1,3 +1,4 @@
+import errors from "./errors";
 export var toArray = function (obj) {
     if (!obj)
         return [];
@@ -16,14 +17,22 @@ export var ensureArray = function (obj) {
     else
         return [obj];
 };
+export var isObject = function (value) {
+    return value !== null && !Array.isArray(value) && typeof value === "object";
+};
 export var ensureParam = function (name, value) {
     if (value === undefined)
-        throw new Error("Missing a valid value for the argument \"" + name + "\"");
+        throw new Error(errors.argument(name, "value"));
     return value;
 };
 export var ensureParamString = function (name, value) {
     if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
-        throw new Error("Missing a valid string for the argument \"" + name + "\"");
+        throw new Error(errors.argument(name, "string"));
+    return value;
+};
+export var ensureParamObject = function (name, value) {
+    if (!value || !isObject(value))
+        throw new Error(errors.argument(name, "object"));
     return value;
 };
 export var ensureID = function (id) {

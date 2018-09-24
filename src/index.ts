@@ -1,4 +1,4 @@
-import Database from "./Database";
+import Database from "./models/Database";
 import {
     DatabaseOptions,
     Schema
@@ -10,3 +10,6 @@ export * from "./constants";
 export * from "./models";
 export * from "./DefaultModelFactory";
 export * from "./types";
+
+import * as utils from "./utils";
+export { utils };

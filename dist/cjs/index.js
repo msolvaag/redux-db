@@ -8,3 +8,5 @@ exports.createDatabase = function (schema, options) { return new Database_1.defa
 __export(require("./constants"));
 __export(require("./models"));
 __export(require("./DefaultModelFactory"));
+var utils = require("./utils");
+exports.utils = utils;

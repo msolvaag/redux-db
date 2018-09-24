@@ -21,6 +21,7 @@
     "types",
     "test",
     "docs",
+    "extras",
     "examples"
   ]
 }

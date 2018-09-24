@@ -32,21 +32,28 @@ export const ensureParam = <T= any>(name: string, value: T) => {
         throw new Error(errors.argument(name, "value"));
     return value;
 };
+
 export const ensureParamString = (name: string, value: any) => {
     if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
         throw new Error(errors.argument(name, "string"));
     return value;
 };
+
 export const ensureParamObject = (name: string, value: any) => {
-    const param = ensureParam(name, value);
-    if (!isObject(param))
+    if (!value || !isObject(value))
         throw new Error(errors.argument(name, "object"));
-    return param;
+    return value;
 };
 
-export const ensureID = (id: string | number) => {
+export const ensureParamFunction = (name: string, value: any) => {
+    if (!value || typeof value !== "function")
+        throw new Error(errors.argument(name, "function"));
+    return value;
+};
+
+export const ensureID = (id: any) => {
     if (!isValidID(id))
-        throw new Error(`The given value is not a valid "id". An "id" must be a non-empty string or a number.`);
+        throw new Error(errors.invalidId());
     return asID(id);
 };
 
@@ -56,7 +63,7 @@ export const isValidID = (id: any) => {
 };
 
 // Ensures that the given id is a string
-export const asID = (id: string | number) => {
+export const asID = (id: any) => {
     return typeof id === "string" ? id : id.toString();
 };
 
@@ -72,7 +79,7 @@ export const mergeIds = (source: string[], second: string[], unique: boolean) =>
 
     for (i = 0; i < second.length; i++) {
         if (unique && hash[second[i]])
-            throw new Error(`Id merge operation violates unique constraint for id: "${second[i]}"`);
+            throw new Error(errors.uniqueConstraintViolation(second[i]));
         hash[second[i]] = true;
     }
     return Object.keys(hash);

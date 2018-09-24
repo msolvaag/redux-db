@@ -3,3 +3,5 @@ export var createDatabase = function (schema, options) { return new Database(sch
 export * from "./constants";
 export * from "./models";
 export * from "./DefaultModelFactory";
+import * as utils from "./utils";
+export { utils };

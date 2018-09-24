@@ -11,6 +11,7 @@ import {
     FieldSchema,
     ModelFactory,
     RecordClass,
+    RecordValue,
     Session,
     Table,
     TableDefinition,
@@ -43,7 +44,7 @@ export default class DefaultModelFactory implements ModelFactory {
 
     newRecordModel(id: string, table: Table) {
         const model = this.createRecordModel(table.schema);
-        return new model(id, table);
+        return new model(id, table) as TableRecord;
     }
 
     newRecordSetModel(table: Table, schema: FieldSchema, owner: TableRecord) {
@@ -87,7 +88,7 @@ export default class DefaultModelFactory implements ModelFactory {
 
         const recordId = schema.getRecordValue(record);
         if (recordId === undefined) return null;
-        return refTable.getOrDefault(recordId);
+        return refTable.get(recordId);
     }
 
     private _newRecordSet(schema: FieldSchema, record: TableRecord): TableRecordSet {

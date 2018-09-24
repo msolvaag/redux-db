@@ -1,0 +1,11 @@
+{
+  "name": "redux-db-ext",
+  "version": "0.0.0",
+  "description": "Extensions to redux-db",
+  "main": "index.js",
+  "author": "msolvaag",
+  "license": "MIT",
+  "dependencies": {
+    "redux-db": "../"
+  }
+}

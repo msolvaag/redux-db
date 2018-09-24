@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var errors_1 = require("./errors");
 exports.toArray = function (obj) {
     if (!obj)
         return [];
@@ -18,14 +19,22 @@ exports.ensureArray = function (obj) {
     else
         return [obj];
 };
+exports.isObject = function (value) {
+    return value !== null && !Array.isArray(value) && typeof value === "object";
+};
 exports.ensureParam = function (name, value) {
     if (value === undefined)
-        throw new Error("Missing a valid value for the argument \"" + name + "\"");
+        throw new Error(errors_1.default.argument(name, "value"));
     return value;
 };
 exports.ensureParamString = function (name, value) {
     if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
-        throw new Error("Missing a valid string for the argument \"" + name + "\"");
+        throw new Error(errors_1.default.argument(name, "string"));
+    return value;
+};
+exports.ensureParamObject = function (name, value) {
+    if (!value || !exports.isObject(value))
+        throw new Error(errors_1.default.argument(name, "object"));
     return value;
 };
 exports.ensureID = function (id) {

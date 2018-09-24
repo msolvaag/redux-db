@@ -27,6 +27,7 @@ define("errors", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = {
+        argument: function (name, type) { return "Missing a valid " + type + " for the argument \"" + name + "\""; },
         fkInvalidReference: function (key) { return "The foreign key: \"" + key + "\" does not define a valid referenced table."; },
         fkReferenceNotInSession: function (key, references) { return "The foreign key: \"" + key + "\" references an unregistered table: \"" + references + "\" in the current session."; },
         fkUndefined: function (table, key) { return "No foreign key named: " + key + " in the schema: \"" + table + "\"."; },
@@ -51,6 +52,7 @@ define("constants", ["require", "exports"], function (require, exports) {
     exports.TYPE_ATTR = "ATTR";
     exports.TYPE_MODIFIED = "MODIFIED";
     exports.RESERVED_PROPERTIES = ["id", "table", "value", "_fields"];
+    exports.INITIAL_STATE = { ids: [], byId: {}, indexes: {} };
 });
 define("models/RecordFieldModel", ["require", "exports", "utils"], function (require, exports, utils_1) {
     "use strict";
@@ -176,21 +178,19 @@ define("models/NormalizeContext", ["require", "exports"], function (require, exp
     }());
     exports.default = DbNormalizeContext;
 });
-define("models/TableModel", ["require", "exports", "errors", "utils", "models/NormalizeContext"], function (require, exports, errors_1, utils, NormalizeContext_1) {
+define("models/TableModel", ["require", "exports", "constants", "errors", "utils", "models/NormalizeContext"], function (require, exports, constants_1, errors_1, utils, NormalizeContext_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var TableModel = /** @class */ (function () {
         function TableModel(session, schema, state) {
-            if (state === void 0) { state = { ids: [], byId: {}, indexes: {} }; }
+            if (state === void 0) { state = constants_1.INITIAL_STATE; }
             this.dirty = false;
-            this.session = utils.ensureParam("session", session);
-            this.schema = utils.ensureParam("schema", schema);
-            this.state = utils.ensureParam("state", state);
+            this.session = utils.ensureParamObject("session", session);
+            this.schema = utils.ensureParamObject("schema", schema);
+            this.state = utils.ensureParamObject("state", state);
             var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes;
             if (!ids || !byId || !indexes)
                 throw new Error(errors_1.default.tableInvalidState(schema.name));
-            if (!this.state.name)
-                this.state.name = schema.name;
         }
         Object.defineProperty(TableModel.prototype, "length", {
             get: function () {
@@ -203,28 +203,17 @@ define("models/TableModel", ["require", "exports", "errors", "utils", "models/No
             var _this = this;
             return this.state.ids.map(function (id) { return _this.schema.db.factory.newRecordModel(id, _this); });
         };
-        TableModel.prototype.getValues = function () {
+        TableModel.prototype.values = function () {
             var _this = this;
             return this.state.ids.map(function (id) { return _this.state.byId[id]; });
         };
         TableModel.prototype.get = function (id) {
             if (!this.exists(id))
-                throw new Error(errors_1.default.recordNotFound(this.schema.name, id));
+                return undefined;
             return this.schema.db.factory.newRecordModel(utils.asID(id), this);
         };
-        TableModel.prototype.getOrDefault = function (id) {
-            return this.exists(id) ? this.get(id) : null;
-        };
-        TableModel.prototype.getByFk = function (fieldName, id) {
-            utils.ensureParam("fieldName", fieldName);
-            id = utils.ensureID(id);
-            var field = this.schema.fields.filter(function (f) { return f.isForeignKey && f.name === fieldName; })[0];
-            if (!field)
-                throw new Error(errors_1.default.fkUndefined(this.schema.name, fieldName));
-            return this.schema.db.factory.newRecordSetModel(this, field, { id: id });
-        };
         TableModel.prototype.getFieldValue = function (id, field) {
-            var record = this.getOrDefault(id);
+            var record = this.get(id);
             if (record)
                 return record.value[field];
             else
@@ -392,17 +381,17 @@ define("models/TableModel", ["require", "exports", "errors", "utils", "models/No
     }());
     exports.default = TableModel;
 });
-define("models/FieldSchemaModel", ["require", "exports", "constants", "utils"], function (require, exports, constants_1, utils_4) {
+define("models/FieldSchemaModel", ["require", "exports", "constants", "utils"], function (require, exports, constants_2, utils_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var FieldSchemaModel = /** @class */ (function () {
         function FieldSchemaModel(table, name, schema, cascadeAsDefault) {
             this.table = utils_4.ensureParam("table", table);
-            this.type = schema.type || constants_1.TYPE_ATTR;
+            this.type = schema.type || constants_2.TYPE_ATTR;
             this.name = name;
             this.propName = schema.propName || name;
             this._valueFactory = schema.value ? schema.value.bind(this) : null;
-            this.isPrimaryKey = schema.type === constants_1.TYPE_PK;
+            this.isPrimaryKey = schema.type === constants_2.TYPE_PK;
             this.isForeignKey = schema.references !== null && schema.references !== undefined;
             if (this.isPrimaryKey || this.isForeignKey) {
                 this.references = schema.references;
@@ -445,7 +434,7 @@ define("models/FieldSchemaModel", ["require", "exports", "constants", "utils"], 
     }());
     exports.default = FieldSchemaModel;
 });
-define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "models/FieldSchemaModel"], function (require, exports, constants_2, utils, FieldSchemaModel_1) {
+define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "models/FieldSchemaModel"], function (require, exports, constants_3, utils, FieldSchemaModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var TableSchemaModel = /** @class */ (function () {
@@ -460,7 +449,7 @@ define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "
             });
             this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
-            this._stampFields = this.fields.filter(function (f) { return f.type === constants_2.TYPE_MODIFIED; });
+            this._stampFields = this.fields.filter(function (f) { return f.type === constants_3.TYPE_MODIFIED; });
         }
         Object.defineProperty(TableSchemaModel.prototype, "relations", {
             /// Gets the FK's that references this table.
@@ -483,20 +472,21 @@ define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "
             if (!ctx.output[this.name])
                 ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
             return utils.ensureArray(data).map(function (obj) {
-                if (typeof obj !== "object")
+                if (!utils.isObject(obj))
                     throw new Error("Failed to normalize data. Given record is not a plain object.");
-                var normalizeHook = _this.db.getNormalizer(_this.name);
-                if (normalizeHook)
-                    obj = normalizeHook(obj, ctx);
-                var pk = ctx.normalizePKs ? _this._normalizePrimaryKey(obj) : _this._getPrimaryKey(obj);
+                var subject = obj;
+                var normalizer = _this.db.getNormalizer(_this.name);
+                if (normalizer)
+                    subject = normalizer(subject, ctx);
+                var pk = ctx.normalizePKs ? _this._normalizePrimaryKey(subject) : _this._getPrimaryKey(subject);
                 if (!pk)
                     throw new Error("Failed to normalize primary key for record of type \"" + _this.name + "\"."
                         + " Make sure record(s) have a primary key value before trying to insert or update a table.");
-                var fks = _this.getForeignKeys(obj);
+                var fks = _this.getForeignKeys(subject);
                 var tbl = ctx.output[_this.name];
                 if (!tbl.byId[pk])
                     tbl.ids.push(pk);
-                var record = tbl.byId[pk] = __assign({}, obj);
+                var record = tbl.byId[pk] = __assign({}, subject);
                 fks.forEach(function (fk) {
                     // if the FK is an object, then normalize it and replace object with it's PK.
                     if (typeof fk.value === "object" && fk.refTable) {
@@ -576,8 +566,12 @@ define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "
                 return this._stampFields.reduce(function (p, n) {
                     return p + (n.getValue(x) === n.getValue(y) ? 1 : 0);
                 }, 0) !== this._stampFields.length;
-            else
-                return !this.db.getRecordComparer(this.name)(x, y, this);
+            else {
+                var comparer = this.db.getRecordComparer(this.name);
+                if (comparer)
+                    return !comparer(x, y, this);
+                return x === y;
+            }
         };
         /// Gets the value of the PK for the given record. Does not throw if none found.
         TableSchemaModel.prototype._getPrimaryKey = function (record) {
@@ -591,20 +585,22 @@ define("models/TableSchemaModel", ["require", "exports", "constants", "utils", "
         /// Normalizes the given record with a primary key field. Returns the key value.
         TableSchemaModel.prototype._normalizePrimaryKey = function (record) {
             var pk = this._getPrimaryKey(record);
-            // Invoke the "onMissingPk" hook if PK not found.
-            if (!pk) {
-                var generatedPk = this.db.getPkGenerator(this.name)(record, this);
-                if (generatedPk) {
-                    // if the PK is generated and we have a single PK field definition, then inject it into the record.
-                    if (this._primaryKeyFields.length === 1)
-                        record[this._primaryKeyFields[0].propName] = generatedPk;
-                    // TODO: Handle multiple PK field defs.
-                    // We may need the "onMissingPK" hook to return an object defining each key value.
-                    // BUT this seems like a rare scenario..
-                    pk = generatedPk;
-                }
+            if (pk)
+                return pk;
+            // Invoke the "onGeneratePK" hook if PK not found.
+            var generator = this.db.getPkGenerator(this.name);
+            if (!generator)
+                return undefined;
+            var generatedPk = generator(record, this);
+            if (generatedPk) {
+                // if the PK is generated and we have a single PK field definition, then inject it into the record.
+                if (this._primaryKeyFields.length === 1)
+                    record[this._primaryKeyFields[0].propName] = generatedPk;
+                // TODO: Handle multiple PK field defs.
+                // We may need the "onGeneratePK" hook to return an object defining each key value.
+                // BUT this seems like a rare scenario..
             }
-            return pk;
+            return generatedPk;
         };
         return TableSchemaModel;
     }());
@@ -621,7 +617,7 @@ define("models/index", ["require", "exports", "models/RecordFieldModel", "models
         TableSchemaModel: TableSchemaModel_1.default
     };
 });
-define("DefaultModelFactory", ["require", "exports", "constants", "errors", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, constants_3, errors_2, RecordFieldModel_2, RecordModel_2, RecordSetModel_2, TableModel_2, TableSchemaModel_2) {
+define("DefaultModelFactory", ["require", "exports", "constants", "errors", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, constants_4, errors_2, RecordFieldModel_2, RecordModel_2, RecordSetModel_2, TableModel_2, TableSchemaModel_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var createRecordModelClass = function (Base) {
@@ -640,7 +636,7 @@ define("DefaultModelFactory", ["require", "exports", "constants", "errors", "mod
             this._recordClass = {};
             this._defineProperty = function (model, name, field, factory, cache) {
                 if (cache === void 0) { cache = true; }
-                if (constants_3.RESERVED_PROPERTIES.indexOf(name) >= 0)
+                if (constants_4.RESERVED_PROPERTIES.indexOf(name) >= 0)
                     throw new Error(errors_2.default.reservedProperty(field.table.name, name));
                 Object.defineProperty(model.prototype, name, {
                     get: function () {
@@ -697,7 +693,7 @@ define("DefaultModelFactory", ["require", "exports", "constants", "errors", "mod
             var recordId = schema.getRecordValue(record);
             if (recordId === undefined)
                 return null;
-            return refTable.getOrDefault(recordId);
+            return refTable.get(recordId);
         };
         DefaultModelFactory.prototype._newRecordSet = function (schema, record) {
             var refTable = record.table.session.tables[schema.table.name];
@@ -718,18 +714,19 @@ define("DefaultModelFactory", ["require", "exports", "constants", "errors", "mod
     }());
     exports.default = DefaultModelFactory;
 });
-define("index", ["require", "exports", "Database", "constants", "models/index", "DefaultModelFactory"], function (require, exports, Database_1, constants_4, models_1, DefaultModelFactory_1) {
+define("index", ["require", "exports", "Database", "constants", "models/index", "DefaultModelFactory", "utils"], function (require, exports, Database_1, constants_5, models_1, DefaultModelFactory_1, utils) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
     }
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.createDatabase = function (schema, options) { return new Database_1.default(schema, options); };
-    __export(constants_4);
+    __export(constants_5);
     __export(models_1);
     __export(DefaultModelFactory_1);
+    exports.utils = utils;
 });
-define("utils", ["require", "exports"], function (require, exports) {
+define("utils", ["require", "exports", "errors"], function (require, exports, errors_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.toArray = function (obj) {
@@ -750,14 +747,22 @@ define("utils", ["require", "exports"], function (require, exports) {
         else
             return [obj];
     };
+    exports.isObject = function (value) {
+        return value !== null && !Array.isArray(value) && typeof value === "object";
+    };
     exports.ensureParam = function (name, value) {
         if (value === undefined)
-            throw new Error("Missing a valid value for the argument \"" + name + "\"");
+            throw new Error(errors_3.default.argument(name, "value"));
         return value;
     };
     exports.ensureParamString = function (name, value) {
         if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
-            throw new Error("Missing a valid string for the argument \"" + name + "\"");
+            throw new Error(errors_3.default.argument(name, "string"));
+        return value;
+    };
+    exports.ensureParamObject = function (name, value) {
+        if (!value || !exports.isObject(value))
+            throw new Error(errors_3.default.argument(name, "object"));
         return value;
     };
     exports.ensureID = function (id) {
@@ -819,7 +824,7 @@ define("utils", ["require", "exports"], function (require, exports) {
         return true;
     };
 });
-define("DatabaseSession", ["require", "exports", "errors", "utils"], function (require, exports, errors_3, utils_5) {
+define("DatabaseSession", ["require", "exports", "errors", "utils"], function (require, exports, errors_4, utils_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DatabaseSession = /** @class */ (function () {
@@ -837,7 +842,7 @@ define("DatabaseSession", ["require", "exports", "errors", "utils"], function (r
         DatabaseSession.prototype.upsert = function (ctx) {
             var _this = this;
             if (this.options.readOnly)
-                throw new Error(errors_3.default.sessionReadonly());
+                throw new Error(errors_4.default.sessionReadonly());
             Object.keys(ctx.output).forEach(function (name) {
                 if (name !== ctx.schema.name)
                     _this.tables[name].upsertNormalized(ctx.output[name]);
@@ -850,7 +855,7 @@ define("DatabaseSession", ["require", "exports", "errors", "utils"], function (r
         DatabaseSession.prototype.commit = function () {
             var _this = this;
             if (this.options.readOnly)
-                throw new Error(errors_3.default.sessionReadonly());
+                throw new Error(errors_4.default.sessionReadonly());
             Object.keys(this.tables).forEach(function (table) {
                 var _a;
                 var oldState = _this.state[table];
@@ -864,7 +869,7 @@ define("DatabaseSession", ["require", "exports", "errors", "utils"], function (r
     }());
     exports.default = DatabaseSession;
 });
-define("Database", ["require", "exports", "DatabaseSession", "DefaultModelFactory", "errors", "utils"], function (require, exports, DatabaseSession_1, DefaultModelFactory_2, errors_4, utils_6) {
+define("Database", ["require", "exports", "DatabaseSession", "DefaultModelFactory", "utils"], function (require, exports, DatabaseSession_1, DefaultModelFactory_2, utils_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var defaultOptions = {
@@ -883,15 +888,15 @@ define("Database", ["require", "exports", "DatabaseSession", "DefaultModelFactor
         function Database(schema, options) {
             var _this = this;
             this.getNormalizer = function (schemaName) {
-                return getMappedFunction(_this.options.onNormalize, schemaName, function (obj) { return obj; });
+                return getMappedFunction(_this.options.onNormalize, schemaName);
             };
             this.getPkGenerator = function (schemaName) {
-                return getMappedFunction(_this.options.onGeneratePK, schemaName, function () { return undefined; });
+                return getMappedFunction(_this.options.onGeneratePK, schemaName);
             };
             this.getRecordComparer = function (schemaName) {
                 return getMappedFunction(_this.options.onRecordCompare, schemaName, utils_6.isEqual);
             };
-            utils_6.ensureParam("schema", schema);
+            utils_6.ensureParamObject("schema", schema);
             this.options = __assign({}, defaultOptions, options);
             this.factory = this.options.factory || new DefaultModelFactory_2.default();
             this.tables = Object.keys(schema).map(function (tableName) {
@@ -930,14 +935,306 @@ define("Database", ["require", "exports", "DatabaseSession", "DefaultModelFactor
             });
             return session.tables;
         };
-        Database.prototype.selectTable = function (tableState, schemaName) {
-            var _a;
-            var name = schemaName || tableState.name;
-            if (!name)
-                throw new Error(errors_4.default.stateTableUndefined());
-            return this.selectTables((_a = {}, _a[name] = tableState, _a))[name];
-        };
         return Database;
     }());
     exports.default = Database;
+});
+define("__tests__/Database.spec", ["require", "exports", "constants", "Database", "DatabaseSession", "errors", "models/TableModel", "utils"], function (require, exports, constants_6, Database_2, DatabaseSession_2, errors_5, TableModel_3, utils_7) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    describe("constructor", function () {
+        test("throws if no schema given", function () {
+            var db = Database_2.default;
+            expect(function () { return new db(); })
+                .toThrow(errors_5.default.argument("schema", "object"));
+        });
+        test("throws if invalid schema given", function () {
+            var db = Database_2.default;
+            expect(function () { return new db([]); })
+                .toThrow(errors_5.default.argument("schema", "object"));
+        });
+        test("creates table schemas", function () {
+            return expect(new Database_2.default({
+                table1: {},
+                table2: {}
+            }).tables).toHaveLength(2);
+        });
+        describe("with custom model factory", function () {
+            var mockSchema = {
+                connect: jest.fn()
+            };
+            var factory = {
+                newTableSchema: jest.fn().mockReturnValue(mockSchema),
+                newTableModel: jest.fn(),
+                newRecordModel: jest.fn(),
+                newRecordSetModel: jest.fn()
+            };
+            var db = new Database_2.default({ table1: {} }, { factory: factory });
+            test("calls factory.newTableSchema", function () {
+                return expect(factory.newTableSchema).toHaveBeenCalled();
+            });
+            test("calls connect on new table schema", function () {
+                return expect(mockSchema.connect).toHaveBeenCalled();
+            });
+        });
+    });
+    describe("getNormalizer", function () {
+        var normalizer = jest.fn(function (val) { return val; });
+        var tableName = "test";
+        test("returns undefined as default", function () {
+            return expect(new Database_2.default({})
+                .getNormalizer(tableName)).toBeUndefined();
+        });
+        test("returns general normalizer", function () {
+            return expect(new Database_2.default({}, { onNormalize: normalizer })
+                .getNormalizer(tableName)).toStrictEqual(normalizer);
+        });
+        test("returns normalizer specific to schema", function () {
+            var _a;
+            return expect(new Database_2.default({}, { onNormalize: (_a = {}, _a[tableName] = normalizer, _a) })
+                .getNormalizer(tableName)).toStrictEqual(normalizer);
+        });
+    });
+    describe("getPkGenerator", function () {
+        var generator = jest.fn(function (val) { return val; });
+        var tableName = "test";
+        test("returns undefined as default", function () {
+            return expect(new Database_2.default({})
+                .getPkGenerator(tableName)).toBeUndefined();
+        });
+        test("returns general normalizer", function () {
+            return expect(new Database_2.default({}, { onGeneratePK: generator })
+                .getPkGenerator(tableName)).toStrictEqual(generator);
+        });
+        test("returns normalizer specific to schema", function () {
+            var _a;
+            return expect(new Database_2.default({}, { onGeneratePK: (_a = {}, _a[tableName] = generator, _a) })
+                .getPkGenerator(tableName)).toStrictEqual(generator);
+        });
+    });
+    describe("getRecordComparer", function () {
+        var comparer = jest.fn(function (val) { return val; });
+        var tableName = "test";
+        test("returns isEqual as default", function () {
+            return expect(new Database_2.default({})
+                .getRecordComparer(tableName)).toStrictEqual(utils_7.isEqual);
+        });
+        test("returns general normalizer", function () {
+            return expect(new Database_2.default({}, { onRecordCompare: comparer })
+                .getRecordComparer(tableName)).toStrictEqual(comparer);
+        });
+        test("returns normalizer specific to schema", function () {
+            var _a;
+            return expect(new Database_2.default({}, { onRecordCompare: (_a = {}, _a[tableName] = comparer, _a) })
+                .getRecordComparer(tableName)).toStrictEqual(comparer);
+        });
+    });
+    describe("combineReducers", function () {
+        var db = new Database_2.default({});
+        var reducer1 = jest.fn();
+        var reducer2 = jest.fn();
+        var reducer = db.combineReducers(reducer1, reducer2);
+        test("returns a single reducer function", function () {
+            return expect(reducer).toBeInstanceOf(Function);
+        });
+        describe("when returned reducer is invoked", function () {
+            reducer({}, {});
+            test("calls combined reducers", function () {
+                expect(reducer1).toHaveBeenCalled();
+                expect(reducer2).toHaveBeenCalled();
+            });
+        });
+    });
+    describe("reduce", function () {
+        var db = new Database_2.default({
+            table1: { id: { type: constants_6.TYPE_PK } },
+            table2: {}
+        });
+        describe("when called without args", function () {
+            var initialState = db.reduce();
+            test("returns initial state", function () {
+                return expect(initialState).toEqual({
+                    table1: constants_6.INITIAL_STATE,
+                    table2: constants_6.INITIAL_STATE
+                });
+            });
+        });
+        describe("when called with args", function () {
+            var action = { type: "ACTION" };
+            var reducer = jest.fn(function (_a) {
+                var table1 = _a.table1;
+                table1.insert({ id: 1 });
+            });
+            test("invokes given reducers", function () {
+                db.reduce({}, action, reducer);
+                db.reduce({}, action, [reducer]);
+                expect(reducer).toBeCalledTimes(2);
+            });
+            test("returns modified state", function () {
+                var state = db.reduce({}, action, reducer);
+                expect(state).not.toEqual({
+                    table1: constants_6.INITIAL_STATE,
+                    table2: constants_6.INITIAL_STATE
+                });
+            });
+        });
+    });
+    describe("createSession", function () {
+        var db = new Database_2.default({});
+        var session = db.createSession({});
+        test("returns a immutable session instance", function () {
+            return expect(session).toBeInstanceOf(DatabaseSession_2.default);
+        });
+        test("readOnly is false as default", function () {
+            return expect(session.options.readOnly).toEqual(false);
+        });
+        test("options are propagated", function () {
+            var options = { readOnly: true, tableSchemas: [] };
+            expect(db.createSession({}, options).options).toEqual(options);
+        });
+    });
+    describe("selectTables", function () {
+        var db = new Database_2.default({
+            table1: { id: { type: constants_6.TYPE_PK } },
+            table2: {}
+        });
+        var state = db.reduce();
+        var tables = db.selectTables(state);
+        test("returns an map of table models", function () {
+            expect(tables.table1).toBeInstanceOf(TableModel_3.default);
+            expect(tables.table2).toBeInstanceOf(TableModel_3.default);
+        });
+        test("tables are in readonly mode", function () {
+            return expect(function () { return tables.table1.insert({ id: 1 }); })
+                .toThrow(errors_5.default.sessionReadonly());
+        });
+    });
+});
+define("models/__tests__/TableModel.spec", ["require", "exports", "errors", "models/TableModel"], function (require, exports, errors_6, TableModel_4) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    describe("constructor", function () {
+        test("throws if no session given", function () {
+            var model = TableModel_4.default;
+            expect(function () { return new model(); })
+                .toThrow(errors_6.default.argument("session", "object"));
+        });
+        test("throws if no schema given", function () {
+            var model = TableModel_4.default;
+            expect(function () { return new model({}); })
+                .toThrow(errors_6.default.argument("schema", "object"));
+        });
+        test("throws if invalid state given", function () {
+            var model = TableModel_4.default;
+            expect(function () { return new model({}, {}, null); })
+                .toThrow(errors_6.default.argument("state", "object"));
+            var name = "test";
+            expect(function () { return new model({}, { name: name }, {}); })
+                .toThrow(errors_6.default.tableInvalidState(name));
+        });
+    });
+    describe("length", function () {
+        var session = {};
+        var schema = {};
+        var state = {
+            byId: {},
+            ids: ["1", "2", "3"],
+            indexes: {}
+        };
+        var table = new TableModel_4.default(session, schema, state);
+        test("returns number of records in table", function () {
+            return expect(table.length).toEqual(3);
+        });
+    });
+    describe("all", function () {
+        var record = {};
+        var factory = {
+            newRecordModel: jest.fn().mockReturnValue(record)
+        };
+        var session = {};
+        var schema = { db: { factory: factory } };
+        var state = {
+            byId: {},
+            ids: ["1", "2", "3"],
+            indexes: {}
+        };
+        var table = new TableModel_4.default(session, schema, state);
+        test("returns an array of all records in table", function () {
+            return expect(table.all()).toEqual([
+                record, record, record
+            ]);
+        });
+    });
+    describe("values", function () {
+        var record = {};
+        var session = {};
+        var schema = {};
+        var state = {
+            byId: { 1: record, 2: record, 3: record },
+            ids: ["1", "2", "3"],
+            indexes: {}
+        };
+        var table = new TableModel_4.default(session, schema, state);
+        test("returns an array of all record values in table", function () {
+            return expect(table.values()).toEqual([
+                record, record, record
+            ]);
+        });
+    });
+    describe("get", function () {
+        var record = {};
+        var factory = {
+            newRecordModel: jest.fn().mockReturnValue(record)
+        };
+        var session = {};
+        var name = "table";
+        var schema = { name: name, db: { factory: factory } };
+        var state = {
+            byId: { 1: record, 2: record, 3: record },
+            ids: ["1", "2", "3"],
+            indexes: {}
+        };
+        var table = new TableModel_4.default(session, schema, state);
+        test("returns a single record id", function () {
+            return expect(table.get(1)).toEqual(record);
+        });
+        test("returns undefined if not in table", function () {
+            return expect(table.get(0)).toBeUndefined();
+        });
+        test("returns undefined if invalid id given", function () {
+            expect(table.get(null)).toBeUndefined();
+            expect(table.get(undefined)).toBeUndefined();
+            expect(table.get({})).toBeUndefined();
+            expect(table.get([])).toBeUndefined();
+            expect(table.get(NaN)).toBeUndefined();
+        });
+    });
+    describe("getByFK", function () {
+        var record = {};
+        var factory = {
+            newRecordModel: jest.fn().mockReturnValue(record)
+        };
+        var session = {};
+        var name = "table";
+        var schema = { name: name, db: { factory: factory } };
+        var state = {
+            byId: { 1: record, 2: record, 3: record },
+            ids: ["1", "2", "3"],
+            indexes: {}
+        };
+        var table = new TableModel_4.default(session, schema, state);
+        test("returns a single record id", function () {
+            return expect(table.getByFK(1)).toEqual(record);
+        });
+        test("returns undefined if not in table", function () {
+            return expect(table.get(0)).toBeUndefined();
+        });
+        test("returns undefined if invalid id given", function () {
+            expect(table.get(null)).toBeUndefined();
+            expect(table.get(undefined)).toBeUndefined();
+            expect(table.get({})).toBeUndefined();
+            expect(table.get([])).toBeUndefined();
+            expect(table.get(NaN)).toBeUndefined();
+        });
+    });
 });

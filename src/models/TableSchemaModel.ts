@@ -1,6 +1,7 @@
 import {
     TYPE_MODIFIED
 } from "../constants";
+import errors from "../errors";
 import {
     DatabaseSchema,
     FieldSchema,
@@ -45,7 +46,7 @@ export default class TableSchemaModel implements TableSchema {
     }
 
     normalize(data: any, context: NormalizeContext) {
-        if (typeof (data) !== "object" && !Array.isArray(data))
+        if (!utils.isObject(data) && !Array.isArray(data))
             throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
 
         const ctx = utils.ensureParam("context", context);
@@ -152,7 +153,7 @@ export default class TableSchemaModel implements TableSchema {
         const pk = this._getPrimaryKey(record);
 
         if (!pk)
-            throw new Error(`Failed to get primary key for record of type \"${this.name}\".`);
+            throw new Error(errors.pkNotFound(this.name));
 
         return pk;
     }
@@ -194,7 +195,7 @@ export default class TableSchemaModel implements TableSchema {
 
     /// Normalizes the given record with a primary key field. Returns the key value.
     private _normalizePrimaryKey(record: any) {
-        let pk = this._getPrimaryKey(record);
+        const pk = this._getPrimaryKey(record);
         if (pk) return pk;
 
         // Invoke the "onGeneratePK" hook if PK not found.
@@ -202,13 +203,14 @@ export default class TableSchemaModel implements TableSchema {
         if (!generator) return undefined;
 
         const generatedPk = generator(record, this);
-        if (generatedPk) {
+        if (generatedPk)
             // if the PK is generated and we have a single PK field definition, then inject it into the record.
-            if (this._primaryKeyFields.length === 1) record[this._primaryKeyFields[0].propName] = generatedPk;
-            // TODO: Handle multiple PK field defs.
-            // We may need the "onGeneratePK" hook to return an object defining each key value.
-            // BUT this seems like a rare scenario..
-        }
+            if (this._primaryKeyFields.length === 1)
+                record[this._primaryKeyFields[0].propName] = generatedPk;
+
+        // TODO: Handle multiple PK field defs.
+        // We may need the "onGeneratePK" hook to return an object defining each key value.
+        // BUT this seems like a rare scenario..
 
         return generatedPk;
     }

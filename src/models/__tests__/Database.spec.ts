@@ -1,17 +1,17 @@
 // tslint:disable:object-literal-sort-keys
-import { INITIAL_STATE, TYPE_PK } from "../constants";
+import { initialState, TYPE_PK } from "../../constants";
+import errors from "../../errors";
+import { isEqual } from "../../utils";
 import Database from "../Database";
 import DatabaseSession from "../DatabaseSession";
-import errors from "../errors";
-import TableModel from "../models/TableModel";
-import { isEqual } from "../utils";
+import TableModel from "../TableModel";
 
 describe("constructor", () => {
 
     test("throws if no schema given", () => {
         const db = Database as any;
         expect(() => new db())
-            .toThrow(errors.argument("schema", "value"));
+            .toThrow(errors.argument("schema", "object"));
     });
 
     test("throws if invalid schema given", () => {
@@ -128,12 +128,12 @@ describe("reduce", () => {
     });
 
     describe("when called without args", () => {
-        const initialState = db.reduce();
+        const state = db.reduce();
 
         test("returns initial state", () =>
-            expect(initialState).toEqual({
-                table1: INITIAL_STATE,
-                table2: INITIAL_STATE
+            expect(state).toEqual({
+                table1: initialState(),
+                table2: initialState()
             }));
     });
 
@@ -154,8 +154,8 @@ describe("reduce", () => {
             const state = db.reduce({}, action, reducer);
 
             expect(state).not.toEqual({
-                table1: INITIAL_STATE,
-                table2: INITIAL_STATE
+                table1: initialState,
+                table2: initialState
             });
         });
     });

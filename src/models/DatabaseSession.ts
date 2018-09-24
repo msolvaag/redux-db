@@ -1,4 +1,4 @@
-import errors from "./errors";
+import errors from "../errors";
 import {
     DatabaseSchema,
     DatabaseState,
@@ -6,8 +6,8 @@ import {
     Session,
     SessionOptions,
     TableMap
-} from "./types";
-import { toObject } from "./utils";
+} from "../types";
+import { toObject } from "../utils";
 
 export default class DatabaseSession implements Session {
     db: DatabaseSchema;

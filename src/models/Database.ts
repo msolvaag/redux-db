@@ -1,6 +1,4 @@
-import DatabaseSession from "./DatabaseSession";
-import DefaultModelFactory from "./DefaultModelFactory";
-import errors from "./errors";
+import DefaultModelFactory from "../DefaultModelFactory";
 import {
     DatabaseOptions,
     DatabaseSchema,
@@ -12,8 +10,9 @@ import {
     Table,
     TableMap,
     TableSchema
-} from "./types";
-import { ensureArray, ensureParamObject, isEqual, toObject } from "./utils";
+} from "../types";
+import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
+import DatabaseSession from "./DatabaseSession";
 
 const defaultOptions: DatabaseOptions = {
     cascadeAsDefault: false
