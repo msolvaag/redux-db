@@ -177,13 +177,13 @@ describe("createSession", () => {
     });
 });
 
-describe("selectTables", () => {
+describe("wrapTables", () => {
     const db = new Database({
         table1: { id: { type: TYPE_PK } },
         table2: {}
     });
     const state = db.reduce();
-    const tables = db.selectTables(state);
+    const tables = db.wrapTables(state);
 
     test("returns an map of table models", () => {
         expect(tables.table1).toBeInstanceOf(TableModel);

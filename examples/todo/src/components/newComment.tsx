@@ -17,13 +17,12 @@ class NewCommentComponent extends React.Component<Props> {
 
     addComment(e: React.MouseEvent<Element>) {
         e.preventDefault();
-        if (this._userSelect && this._valueInput) {
+        if (this._userSelect && this._valueInput)
             this.props.addComment({
                 taskId: this.props.taskId,
                 value: this._valueInput.value,
-                author: parseInt(this._userSelect.value)
+                author: parseInt(this._userSelect.value, 10)
             });
-        }
     }
 
     render() {

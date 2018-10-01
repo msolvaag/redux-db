@@ -1,6 +1,7 @@
-import { TYPE_ATTR, TYPE_PK } from "../constants";
-import { ComputeContext, FieldDefinition, FieldSchema, FieldType, TableSchema } from "../types";
-import { ensureParam } from "../utils";
+import { TYPE_ATTR, TYPE_MODIFIED, TYPE_PK } from "../constants";
+import errors from "../errors";
+import { ComputeContext, FieldDefinition, FieldSchema, FieldType, MapOf, TableSchema } from "../types";
+import { ensureParamObject } from "../utils";
 
 export default class FieldSchemaModel implements FieldSchema {
     readonly table: TableSchema;
@@ -17,19 +18,21 @@ export default class FieldSchemaModel implements FieldSchema {
 
     readonly isPrimaryKey: boolean;
     readonly isForeignKey: boolean;
+    readonly isStamp: boolean;
 
     private _refTable?: TableSchema;
     private _valueFactory?: <T, M>(record: T, context?: ComputeContext<T>) => M;
 
     constructor(table: TableSchema, name: string, schema: FieldDefinition, cascadeAsDefault: boolean) {
-        this.table = ensureParam("table", table);
+        this.table = ensureParamObject("table", table);
 
         this.type = schema.type || TYPE_ATTR;
-        this.name = name;
+        this.name = schema.fieldName || name;
         this.propName = schema.propName || name;
         this._valueFactory = schema.value ? schema.value.bind(this) : null;
-        this.isPrimaryKey = schema.type === TYPE_PK;
+        this.isPrimaryKey = schema.pk === true || schema.type === TYPE_PK;
         this.isForeignKey = schema.references !== null && schema.references !== undefined;
+        this.isStamp = schema.stamp === true || schema.type === TYPE_MODIFIED;
 
         if (this.isPrimaryKey || this.isForeignKey) {
             this.references = schema.references;
@@ -48,12 +51,11 @@ export default class FieldSchemaModel implements FieldSchema {
 
     get refTable() { return this._refTable; }
 
-    connect(schemas: TableSchema[]) {
+    connect(schemas: MapOf<TableSchema>) {
         if (this.references) {
-            this._refTable = schemas.filter(tbl => tbl.name === this.references)[0];
+            this._refTable = schemas[this.references];
             if (!this._refTable)
-                throw new Error(`The field schema "${this.table.name}.${this.name}" `
-                    + `has an invalid reference to unknown table "${this.references}".`);
+                throw new Error(errors.fkInvalidReference(this.table.name, this.name, this.references));
         }
     }
 

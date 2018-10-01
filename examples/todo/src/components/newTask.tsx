@@ -16,13 +16,12 @@ class NewTaskComponent extends React.Component<Props> {
 
     createTask(e: React.MouseEvent<Element>) {
         e.preventDefault();
-        if (this._userSelect && this._valueInput) {
+        if (this._userSelect && this._valueInput)
             this.props.createTask({
                 title: this._valueInput.value,
-                owner: parseInt(this._userSelect.value),
+                owner: parseInt(this._userSelect.value, 10),
                 status: "open"
             });
-        }
     }
 
     render() {

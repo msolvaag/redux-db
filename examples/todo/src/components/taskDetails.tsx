@@ -2,7 +2,7 @@ import * as React from "react";
 import { connect } from "react-redux";
 import { RouteComponentProps } from "react-router-dom";
 
-import { deleteTask, updateTask, deleteComment } from "../actions";
+import { deleteComment, deleteTask, updateTask } from "../actions";
 import { selectTask, TaskViewModel } from "../selectors";
 
 import { CommentList } from "./commentList";

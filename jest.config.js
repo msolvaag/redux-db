@@ -6,6 +6,5 @@ module.exports = {
   ],
   clearMocks: false,
   coverageDirectory: "coverage",
-  watchman: true,
-  timeout: 1000
+  watchman: true
 };

@@ -20,6 +20,12 @@ declare namespace TodoApp {
         author: number;
     }
 
+    interface Label {
+        id: number;
+        type: string;
+        name: string;
+    }
+
     interface UIState {
         loading: boolean;
         error: Error | null;

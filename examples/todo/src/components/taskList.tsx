@@ -5,8 +5,8 @@ import { Link } from "react-router-dom";
 import { deleteTask, updateTask } from "../actions";
 import { selectFilteredTasks, TaskViewModel } from "../selectors";
 
-import { TaskMenu } from "./taskListMenu";
 import { NewTask } from "./newTask";
+import { TaskMenu } from "./taskListMenu";
 
 export interface TaskListProps {
     tasks: TaskViewModel[];
@@ -48,10 +48,18 @@ class TaskListComponent extends React.Component<TaskListProps> {
                                 <td>{t.ownerName}</td>
                                 <td>{t.numComments}</td>
                                 <td className="text-right">
-                                    <button type="button" className="btn btn-secondary btn-sm" onClick={e => this.toggleTaskStatus(e, t)}>
-                                        <i className={t.status === 'open' ? 'fa fa-check' : 'fa fa-undo'}></i>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={e => this.toggleTaskStatus(e, t)}
+                                    >
+                                        <i className={t.status === "open" ? "fa fa-check" : "fa fa-undo"}></i>
                                     </button>&nbsp;
-                                    <button type="button" className="btn btn-secondary btn-sm" onClick={e => this.deleteTask(e, t)}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={e => this.deleteTask(e, t)}
+                                    >
                                         <i className="fa fa-trash-o"></i>
                                     </button>
                                 </td>

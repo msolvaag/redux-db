@@ -1,9 +1,9 @@
 import * as React from "react";
 import { connect } from "react-redux";
-import { Switch, Route, Link } from "react-router-dom";
+import { Link, Route, Switch } from "react-router-dom";
 import { appError } from "../actions";
-import { TaskList } from "./taskList";
 import { TaskDetails } from "./taskDetails";
+import { TaskList } from "./taskList";
 
 export interface AppProps {
     loading: boolean;
@@ -26,7 +26,7 @@ const AppError = (props: { error: Error, clearError: () => void }) => {
         <div className="card-footer">
             <Link to="/" className="btn btn-light" onClick={e => props.clearError()}>Reset</Link>
         </div>
-    </div>
+    </div>;
 };
 
 class AppComponent extends React.Component<AppProps> {

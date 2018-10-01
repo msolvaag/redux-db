@@ -5,6 +5,7 @@ import errors from "../errors";
 import {
     DatabaseSchema,
     FieldSchema,
+    MapOf,
     NormalizeContext,
     TableDefinition,
     TableRecord,
@@ -26,22 +27,27 @@ export default class TableSchemaModel implements TableSchema {
     constructor(db: DatabaseSchema, name: string, schema: TableDefinition) {
         this.db = utils.ensureParam("db", db);
         this.name = utils.ensureParamString("name", name);
+        utils.ensureParamObject("schema", schema);
 
-        this.fields = Object.keys(utils.ensureParam("schema", schema))
+        this.fields = Object.keys(schema)
             .map(fieldName =>
-                new FieldSchemaModel(this, fieldName, schema[fieldName], db.options.cascadeAsDefault === true));
+                new FieldSchemaModel(this,
+                    fieldName,
+                    schema[fieldName],
+                    db.options.cascadeAsDefault === true));
 
         this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
         this._foreignKeyFields = this.fields.filter(f => f.isForeignKey);
-        this._stampFields = this.fields.filter(f => f.type === TYPE_MODIFIED);
+        this._stampFields = this.fields.filter(f => f.isStamp);
     }
 
-    /// Gets the FK's that references this table.
     get relations() { return this._relations; }
 
-    connect(schemas: TableSchema[]) {
-        schemas.forEach(schema =>
-            this._relations = this._relations.concat(schema.fields.filter(f => f.references === this.name)));
+    connect(schemas: MapOf<TableSchema>) {
+        Object.keys(schemas).forEach(schema =>
+            this._relations = this._relations.concat(
+                schemas[schema].fields.filter(f => f.references === this.name)
+            ));
         this._foreignKeyFields.forEach(fk => fk.connect(schemas));
     }
 
@@ -81,7 +87,7 @@ export default class TableSchemaModel implements TableSchema {
             fks.forEach(fk => {
 
                 // if the FK is an object, then normalize it and replace object with it's PK.
-                if (typeof fk.value === "object" && fk.refTable) {
+                if (typeof fk.value === "object") {
                     const fkPks = fk.refTable.normalize(fk.value, ctx);
                     if (fkPks.length > 1)
                         throw new Error(`Invalid schema definition. The field "${this.name}.${fk.name}"`
@@ -121,7 +127,7 @@ export default class TableSchemaModel implements TableSchema {
     }
 
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[] {
-        if (!rel.relationName) return data;
+        if (!rel.isForeignKey) return data;
 
         const otherFks = rel.table.fields.filter(f => f.isForeignKey && f !== rel);
 
@@ -159,13 +165,19 @@ export default class TableSchemaModel implements TableSchema {
     }
 
     getForeignKeys(record: any) {
-        return this._foreignKeyFields.map(fk => ({
-            name: fk.name,
-            notNull: fk.notNull,
-            refTable: fk.refTable,
-            unique: fk.unique,
-            value: record[fk.name]
-        }));
+        return this._foreignKeyFields.map(fk => {
+            if (!fk.references || !fk.refTable)
+                throw new Error(errors.fkInvalid(this.name, fk.name));
+
+            return {
+                name: fk.name,
+                notNull: fk.notNull,
+                references: fk.references,
+                refTable: fk.refTable,
+                unique: fk.unique === true,
+                value: record[fk.name]
+            };
+        });
     }
 
     isModified(x: any, y: any): boolean {
@@ -208,9 +220,10 @@ export default class TableSchemaModel implements TableSchema {
             if (this._primaryKeyFields.length === 1)
                 record[this._primaryKeyFields[0].propName] = generatedPk;
 
-        // TODO: Handle multiple PK field defs.
+        // Handling multiple PK field defs:
         // We may need the "onGeneratePK" hook to return an object defining each key value.
         // BUT this seems like a rare scenario..
+        // So for now; don't populate record.
 
         return generatedPk;
     }

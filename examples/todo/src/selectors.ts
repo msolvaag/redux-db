@@ -1,5 +1,6 @@
-import { createSelector, createStructuredSelector } from 'reselect';
-import { dbInstance as db, Session, TaskTable, UserTable } from "./schema";
+import { createSelector, createStructuredSelector } from "reselect";
+import { dbInstance as db, DbState, Session, schema } from "./schema";
+import { TableState, DatabaseState } from '../../../src';
 
 export interface TaskViewModel extends TodoApp.Task {
     ownerName: string;
@@ -22,11 +23,12 @@ const taskSelector = createStructuredSelector({
 export const selectFilteredTasks = createSelector(
     taskSelector,
     (state: any) => state.ui.taskFilter,
-    (tables, filter) => db.selectTables<Session>(tables).Task.all().filter(t => t.value.status === filter || filter === null).map(t => ({
-        ...t.value,
-        ownerName: t.owner.value.name,
-        numComments: t.comments.length
-    }) as TaskViewModel)
+    (tables, filter) => db.selectTables(tables)
+        .Task.all().filter(t => t.value.status === filter || filter === null).map(t => ({
+            ...t.value,
+            ownerName: t.owner.value.name,
+            numComments: t.comments.length
+        }) as TaskViewModel)
 );
 
 export const selectTask = createSelector(
@@ -47,12 +49,11 @@ export const selectTask = createSelector(
     }
 );
 
-export const selectUsers = createSelector(
-    (state: any) => state.db.User,
-    (table) => {
-        const User = db.selectTable<UserTable>(table);
 
-        return User.all().map(u => u.value);
+export const selectUsers = createSelector(
+    (state: any) => state.db,
+    (dbState) => {
+        const tables = db.wrapTables(dbState);
     }
 );
 

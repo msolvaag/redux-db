@@ -1,8 +1,7 @@
 import * as React from "react";
-import { connect } from "react-redux";
 
 import { deleteComment } from "../actions";
-import { selectTask, CommentViewModel } from "../selectors";
+import { CommentViewModel } from "../selectors";
 
 export interface CommentListProps {
     comments: CommentViewModel[];
@@ -25,7 +24,11 @@ export class CommentList extends React.Component<CommentListProps> {
                             <td>{c.authorName}</td>
                             <td>{c.value}</td>
                             <td className="text-right">
-                                <button type="button" className="btn btn-secondary btn-sm" onClick={e => this.deleteComment(e, c)}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={e => this.deleteComment(e, c)}
+                                >
                                     <i className="fa fa-trash-o"></i>
                                 </button>
                             </td>

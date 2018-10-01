@@ -7,10 +7,7 @@ import {
     Reducer,
     Schema,
     SessionOptions,
-    Table,
-    TableMap,
-    TableSchema
-} from "../types";
+    TableSchema} from "../types";
 import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
 import DatabaseSession from "./DatabaseSession";
 
@@ -27,23 +24,24 @@ const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, ke
     return defaultFn;
 };
 
-export default class Database implements DatabaseSchema {
+export default class Database<T extends Schema> implements DatabaseSchema {
+    schema: T;
     tables: TableSchema[];
     options: DatabaseOptions;
     factory: ModelFactory;
 
     private _tableLookup: MapOf<TableSchema>;
 
-    constructor(schema: Schema, options?: DatabaseOptions) {
+    constructor(schema: T, options?: DatabaseOptions) {
         ensureParamObject("schema", schema);
 
+        this.schema = schema;
         this.options = { ...defaultOptions, ...options };
         this.factory = this.options.factory || new DefaultModelFactory();
         this.tables = Object.keys(schema).map(tableName =>
             this.factory.newTableSchema(this, tableName, schema[tableName]));
-        this.tables.forEach(table => table.connect(this.tables));
-
         this._tableLookup = toObject(this.tables, t => t.name);
+        this.tables.forEach(table => table.connect(this._tableLookup));
     }
 
     getNormalizer = (schemaName: string) =>
@@ -67,7 +65,7 @@ export default class Database implements DatabaseSchema {
         return new DatabaseSession(state, this, { readOnly: false, ...options });
     }
 
-    selectTables<T extends TableMap = any>(state: any) {
+    wrapTables(state: any) {
         const tableSchemas = Object.keys(state)
             .filter(tableName => this._tableLookup[tableName])
             .map(tableName => this._tableLookup[tableName]);

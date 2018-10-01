@@ -2,8 +2,9 @@
 
 export default {
     argument: (name: string, type: string) => `Missing a valid ${type} for the argument "${name}"`,
-    fkInvalidReference: (key: string) => `The foreign key: "${key}" does not define a valid referenced table.`,
-    fkReferenceNotInSession: (key: string, references: string) => `The foreign key: "${key}" references an unregistered table: "${references}" in the current session.`,
+    fkInvalid: (table: string, key: string) => `The foreign key ${table}.${key} is invalid`,
+    fkInvalidReference: (table: string, key: string, reference: string) => `The field schema "${table}.${key}" has an invalid reference to unknown table "${reference}".`,
+    fkReferenceNotInSession: (key: string, references?: string) => `The foreign key: "${key}" references an unregistered table: "${references}" in the current session.`,
     fkUndefined: (table: string, key: string) => `No foreign key named: ${key} in the schema: "${table}".`,
     fkViolation: (table: string, key: string) => `The insert/update operation violates the unique foreign key "${table}.${key}".`,
     invalidId: () => 'The given value is not a valid "id". An "id" must be a non-empty string or a number.',

@@ -2,22 +2,26 @@ import { initialState } from "../constants";
 import errors from "../errors";
 import {
     MapOf,
-    RecordValue,
+    PartialValue,
+    PartialValues,
     Session,
     Table,
     TableIndex,
     TableRecord,
     TableRecordSet,
     TableSchema,
-    TableState
+    TableState,
+    Values,
+    ValueType
 } from "../types";
 import * as utils from "../utils";
 import NormalizeContext from "./NormalizeContext";
+import tableState from "./TableState";
 
-export default class TableModel<T extends RecordValue, R extends TableRecord<T>> implements Table<T, R> {
+export default class TableModel<R extends TableRecord> implements Table<R> {
     readonly session: Session;
     readonly schema: TableSchema;
-    state: TableState<T>;
+    state: TableState<ValueType<R>>;
     dirty = false;
 
     constructor(session: Session, schema: TableSchema, state = initialState()) {
@@ -68,19 +72,19 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
             return [];
     }
 
-    insert(data: T | T[]) {
+    insert(data: Values<R>) {
         return this._normalizedAction(data, this.insertNormalized, true);
     }
 
-    update(data: Partial<T> | Partial<T>[]) {
+    update(data: PartialValues<R>) {
         return this._normalizedAction(data, this.updateNormalized, false);
     }
 
-    upsert(data: Partial<T> | Partial<T>[]) {
+    upsert(data: PartialValues<R>) {
         return this._normalizedAction(data, this.upsertNormalized, true);
     }
 
-    delete(data: string | number | Partial<T> | (string | number | Partial<T>)[]) {
+    delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]) {
         utils.ensureParam("data", data);
 
         const idsToDelete = utils.ensureArray(data).map(subject =>
@@ -92,28 +96,18 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
 
         this._deleteCascade(idsToDelete);
 
-        const byId = { ...this.state.byId };
-        const ids = this.state.ids.slice();
-        const indexes = { ...this.state.indexes };
+        const {
+            deleted,
+            state
+        } = tableState.splice(this.state, idsToDelete);
 
-        const numDeleted = idsToDelete.reduce((n, id) => {
-            const record = byId[id];
-            delete byId[id];
-            const idx = ids.indexOf(id);
-            if (idx >= 0)
-                ids.splice(idx, 1);
-
-            if (record) {
-                this._cleanIndexes(id, record, indexes);
-                return n + 1;
-            }
-            return n;
-        }, 0);
+        deleted.forEach(({ id, record }) =>
+            this._cleanIndexes(id, record, state.indexes));
 
         this.dirty = true;
-        this.state = { ...this.state, byId, ids, indexes };
+        this.state = state;
 
-        return numDeleted;
+        return deleted.length;
     }
 
     deleteAll() {
@@ -123,11 +117,11 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
         }
     }
 
-    upsertNormalized(norm: TableState<T>) {
-        utils.ensureParam("table", norm);
+    upsertNormalized(norm: TableState<ValueType<R>>) {
+        utils.ensureParamObject("table", norm);
 
-        const toUpdate = initialState<T>();
-        const toInsert = initialState<T>();
+        const toUpdate = initialState<ValueType<R>>();
+        const toInsert = initialState<ValueType<R>>();
 
         norm.ids.forEach(id => {
             if (this.exists(id)) {
@@ -145,23 +139,17 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
         this._updateIndexes(norm);
     }
 
-    insertNormalized(table: TableState<T>, updateIndexes = true) {
+    insertNormalized(table: TableState<ValueType<R>>, updateIndexes = true) {
         utils.ensureParamObject("table", table);
 
-        const ids = utils.mergeIds(this.state.ids, table.ids, true);
-
+        this.state = tableState.merge(this.state, table);
         this.dirty = true;
-        this.state = {
-            ...this.state,
-            byId: { ...this.state.byId, ...table.byId },
-            ids
-        };
 
         if (updateIndexes)
             this._updateIndexes(table);
     }
 
-    updateNormalized(table: TableState<T>, updateIndexes = true) {
+    updateNormalized(table: TableState<ValueType<R>>, updateIndexes = true) {
         utils.ensureParamObject("table", table);
 
         const byId = table.ids.reduce((map, id) => {
@@ -169,7 +157,7 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
                 throw new Error(errors.recordUpdateViolation(this.schema.name, id));
 
             const oldRecord = this.state.byId[id] as {};
-            const newRecord = { ...oldRecord, ...table.byId[id] as {} } as T;
+            const newRecord = { ...oldRecord, ...table.byId[id] as {} } as ValueType<R>;
 
             const isModified = this.schema.isModified(oldRecord, newRecord);
 
@@ -182,10 +170,7 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
 
         if (byId) {
             this.dirty = true;
-            this.state = {
-                ...this.state,
-                byId: { ...this.state.byId, ...byId }
-            };
+            this.state = tableState.merge(this.state, { byId });
 
             if (updateIndexes)
                 this._updateIndexes(table);
@@ -193,7 +178,7 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
     }
 
     private _normalizedAction(
-        data: Partial<T> | Partial<T>[],
+        data: PartialValues<R>,
         action: (norm: TableState) => void,
         normalizePKs: boolean
     ) {
@@ -209,43 +194,13 @@ export default class TableModel<T extends RecordValue, R extends TableRecord<T>>
         return table.ids;
     }
 
-    private _updateIndexes(table: TableState) {
-        Object.keys(table.indexes).forEach(key => {
-            const idx = this.state.indexes[key]
-                || (this.state.indexes[key] = { unique: table.indexes[key].unique, values: {} });
-
-            Object.keys(table.indexes[key].values).forEach(fk => {
-                const idxBucket = idx.values[fk] || (idx.values[fk] = []);
-
-                const modifiedBucket = utils.mergeIds(idxBucket, table.indexes[key].values[fk], false);
-
-                if (idx.unique && modifiedBucket.length > 1)
-                    throw new Error(errors.fkViolation(this.schema.name, key));
-
-                idx.values[fk] = modifiedBucket;
-            });
-        });
+    private _cleanIndexes(id: string, record: any, indexes: MapOf<TableIndex>) {
+        const fks = this.schema.getForeignKeys(record);
+        tableState.cleanIndexes(fks, id, indexes);
     }
 
-    private _cleanIndexes(id: string, record: any, indexes: TableIndex) {
-        const fks = this.schema.getForeignKeys(record);
-
-        fks.forEach(fk => {
-            let fkIdx = -1;
-            if (fk.value && indexes[fk.name] && indexes[fk.name].values[fk.value])
-                fkIdx = indexes[fk.name].values[fk.value].indexOf(id);
-
-            if (fkIdx >= 0) {
-                const idxBucket = indexes[fk.name].values[fk.value].slice();
-                idxBucket.splice(fkIdx, 1);
-
-                indexes[fk.name].values[fk.value] = idxBucket;
-            } else if (indexes[fk.name]) {
-                delete indexes[fk.name].values[id];
-                if (Object.keys(indexes[fk.name].values).length === 0)
-                    delete indexes[fk.name];
-            }
-        });
+    private _updateIndexes(table: TableState) {
+        tableState.updateIndexes(this.schema.name, this.state, table);
     }
 
     private _deleteCascade(ids: string[]) {

@@ -1,5 +1,9 @@
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
 export type RecordValue = Record<string, any>;
+export type ValueType<R> = R extends { value: infer T } ? T : never;
+export type Values<R> = ValueType<R> | ValueType<R>[];
+export type PartialValue<R> = Partial<ValueType<R>>;
+export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
 
 export type Reducer = (session: any, action: any, arg?: any) => void;
 export type PkGenerator = (record: any, schema: TableSchema) => string | null | undefined;
@@ -10,8 +14,9 @@ export interface MapOf<T> { [key: string]: T; }
 
 export interface ForeignKey {
     name: string;
-    value: any;
-    refTable?: TableSchema;
+    value: string;
+    references: string;
+    refTable: TableSchema;
     unique: boolean;
     notNull: boolean;
 }
@@ -25,7 +30,7 @@ export interface TableSchema {
 
     /// Connects this schema's fields with other tables.
     /// Used internally in the setup of the schema object model.
-    connect(schemas: TableSchema[]): void;
+    connect(schemas: MapOf<TableSchema>): void;
     /// Gets the value of the PK for the given record.
     getPrimaryKey(record: any): string;
     /// Gets the values of the FK's for the given record.
@@ -44,8 +49,10 @@ export interface TableSchema {
 export interface FieldSchema {
     /// Gets the table this field belongs to.
     table: TableSchema;
-    /// Gets the field type ( PK, ATTR, MODIFIED ).
-    type: FieldType;
+
+    /// Gets the table schema this field references.
+    refTable?: TableSchema;
+
     /// Gets the field name.
     name: string;
     /// Gets the field property name.
@@ -53,31 +60,32 @@ export interface FieldSchema {
 
     /// Gets the name of the table this field references.
     references?: string;
-    /// Gets the name of the relation to a other table.
+
+    /// Defines the relationship name, which'll be the property name on the foreign table.
     relationName?: string;
-    /// Gets the instance of the table schema this field references.
-    refTable?: TableSchema;
+
+    /// If set, causes the record to be deleted if the foreign table row is deleted.
+    cascade?: boolean;
+
+    /// If set, declares that this relation is a one 2 one relationship.
+    unique?: boolean;
 
     isPrimaryKey: boolean;
     isForeignKey: boolean;
-    cascade: boolean;
-    unique: boolean;
+    isStamp: boolean;
     notNull: boolean;
 
     /// Connects this schema with the referenced table.
     /// Used internally in the setup of the schema object model.
-    connect(schemas: TableSchema[]): void;
+    connect(schemas: MapOf<TableSchema>): void;
     /// Gets the value of the field for the given data.
     getValue(data: any, record?: any): any;
     /// Gets the value of the field for a given table record.
     getRecordValue(record: any): any;
 }
 
-/// Represents an immutable wrapper for a table in the db.
-export interface Table<
-    T extends RecordValue = RecordValue,
-    R extends TableRecord<T> = TableRecord<T>
-    > {
+/// Represents an immutable wrapper for a db table.
+export interface Table<R extends TableRecord = TableRecord> {
     session: Session;
     schema: TableSchema;
     state: TableState;
@@ -85,53 +93,57 @@ export interface Table<
 
     /// Gets a single record by it's PK.
     get(id: string | number): R | undefined;
-    /// Gets the value of a record by it's PK.
-    getValue(id: string | number): T | undefined;
+    /// Gets the value of a record by it's PK(.
+    getValue(id: string | number): ValueType<R> | undefined;
     /// Gets the index used for a given foreign key.
     getIndex(schemaName: string, fkId: string): string[];
 
     /// Gets all records in table.
     all(): R[];
     /// Gets all values in table.
-    values(): T[];
+    values(): ValueType<R>[];
     /// Checks whether a record exists in table.
     exists(id: string | number): boolean;
 
     /// Inserts single or multiple records.
     /// Returns the inserted records.
-    insert(data: T | T[]): string[];
+    insert(data: Values<R>): string[];
     /// Updates single or multiple records.
     /// Returns the updated records.
-    update(data: Partial<T> | Partial<T>[]): string[];
+    update(data: PartialValues<R>): string[];
     /// Upserts single or multiple records.
     /// Returns the upserted records.
-    upsert(data: Partial<T> | Partial<T>[]): string[];
+    upsert(data: PartialValues<R>): string[];
     /// Deletes single or multiple records by id or object.
     /// Returns true if record is successfully deleted.
-    delete(data: string | number | Partial<T> | (string | number | Partial<T>)[]): boolean;
+    delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]): number;
     /// Deletes all records in table.
     deleteAll(): void;
 
     /// Upserts the table state from another normalized state.
-    upsertNormalized(table: TableState<T>): void;
+    upsertNormalized(table: TableState<ValueType<R>>): void;
 }
 
+/// Represents a wrapped record belonging to a table.
 export interface TableRecord<T extends RecordValue = RecordValue> {
     id: string;
-    table: Table<T>;
+    table: Table;
     value: T;
 
-    update(data: Partial<T>): TableRecord<T>;
+    update(data: Partial<T>): this;
     delete(): void;
 }
 
+/// Represents a wrapper set of records belonging to a table.
 export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
+    /// Gets all ids in set.
     ids: string[];
+    /// Gets the number of records in set.
     length: number;
 
-    /// Gets all records in set
+    /// Gets all records in set.
     all(): R[];
-    /// Gets all record values in set
+    /// Gets all record values in set.
     getValue(): T[];
 
     /// Adds single or multiple records to set.
@@ -165,11 +177,19 @@ export interface TableDefinition {
 
 /// Defines a field (column) schema
 export interface FieldDefinition {
-
-    /// Defines the field type.
+    /// The field type (Deprecated)
     type?: FieldType;
 
-    /// Defines a custom property name for the field. Defaults to the field name.
+    /// Declares field to be a primary key.
+    pk?: boolean;
+
+    /// Declares field to be used as modified marker
+    stamp?: boolean;
+
+    /// The name this field references´ in the model. Defaults to schema key.
+    fieldName?: string;
+
+    /// The property name this field will have on the record model. Defaults to schema key.
     propName?: string;
 
     /// Defines the foreign table this field references.
@@ -187,7 +207,7 @@ export interface FieldDefinition {
     /// If set, declares that this field is nullable or not.
     notNull?: boolean;
 
-    /// Defines a custom value factory for each record.
+    /// Defines a custom value factory for the field.
     value?: (record: any, context?: ComputeContext<any>) => any;
 }
 
@@ -201,7 +221,7 @@ export interface ComputeContext<T> {
 export interface NormalizeContext {
     schema: TableSchema;
     db: DatabaseSchema;
-    output: NormalizedState;
+    output: MapOf<TableState>;
     emits: { [key: string]: any[] };
     normalizePKs: boolean;
 
@@ -238,29 +258,22 @@ export interface SessionOptions {
 }
 
 /// Represents the state structure for a database.
-export interface DatabaseState {
-    [key: string]: TableState;
-}
+export type DatabaseState<T = any> = MapOf<TableState<T>>;
+
+/// Represents a map of tables. Keyed by name.
+export type TableMap = MapOf<Table>;
 
 /// Represents the state structure for a table.
 export interface TableState<T = any> {
-    name?: string;
-    byId: { [key: string]: T };
+    byId: MapOf<T>;
     ids: string[];
-    indexes: TableIndex;
+    indexes: MapOf<TableIndex>;
 }
 
-/// Represents an index structure for a single table.
+/// Represents an index structure for a referenced key.
 export interface TableIndex {
-    [key: string]: {
-        unique: boolean,
-        values: { [key: string]: string[] }
-    };
-}
-
-/// Represents a map of tables. Keyed by name.
-export interface TableMap {
-    [key: string]: Table;
+    unique: boolean;
+    values: MapOf<string[]>;
 }
 
 /// Represents a session
@@ -271,17 +284,6 @@ export interface Session {
 
     upsert(ctx: NormalizeContext): void;
     commit(): DatabaseState;
-}
-
-/// Represents a normalized state
-export interface NormalizedState {
-    [key: string]: { // schema name
-        ids: string[],
-        byId: {
-            [key: string]: any
-        },
-        indexes: TableIndex;
-    };
 }
 
 export interface RecordClass {

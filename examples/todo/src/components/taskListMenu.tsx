@@ -11,7 +11,7 @@ interface TaskMenuProps {
     numOpen: number;
 }
 
-class TaskMenuComponent extends React.Component<TaskMenuProps>{
+class TaskMenuComponent extends React.Component<TaskMenuProps> {
 
     setTaskFilter(e: React.MouseEvent<Element>, filter: string) {
         e.preventDefault();
@@ -23,10 +23,22 @@ class TaskMenuComponent extends React.Component<TaskMenuProps>{
 
         return <ul className="nav nav-pills mb-4">
             <li className="nav-item">
-                <a href="#" className={"nav-link " + itemClass("open")} onClick={e => this.setTaskFilter(e, "open")}>Open <small className="badge badge-secondary">{this.props.numOpen}</small></a>
+                <a
+                    href="#"
+                    className={"nav-link " + itemClass("open")}
+                    onClick={e => this.setTaskFilter(e, "open")}
+                >
+                    Open <small className="badge badge-secondary">{this.props.numOpen}</small>
+                </a>
             </li>
             <li className="nav-item">
-                <a href="#" className={"nav-link " + itemClass("closed")} onClick={e => this.setTaskFilter(e, "closed")}>Closed <small className="badge badge-secondary">{this.props.numClosed}</small></a>
+                <a
+                    href="#"
+                    className={"nav-link " + itemClass("closed")}
+                    onClick={e => this.setTaskFilter(e, "closed")}
+                >
+                    Closed <small className="badge badge-secondary">{this.props.numClosed}</small>
+                </a>
             </li>
         </ul>;
     }

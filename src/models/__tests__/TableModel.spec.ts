@@ -1,27 +1,44 @@
 // tslint:disable:object-literal-sort-keys
 // tslint:disable:no-empty
-
-import { TYPE_PK } from "../../constants";
+import { uniq } from "lodash";
+import { initialState, TYPE_PK } from "../../constants";
 import errors from "../../errors";
+import { TableState } from "../../types";
 import Database from "../Database";
-import RecordModel from "../RecordModel";
 import TableModel from "../TableModel";
 
 const invalidIds = [null, undefined, {}, [], NaN, Date, () => { }];
+const mergeState = (...states: TableState[]) =>
+    states.reduce(({ byId, ids, indexes }, s) => ({
+        byId: {
+            ...byId,
+            ...s.byId
+        },
+        ids: uniq([...ids, ...s.ids]),
+        indexes: {
+            ...indexes,
+            ...s.indexes
+        }
+    }), initialState());
+const createTable = (state: TableState = initialState()) => {
+    const table = "table1";
 
-const createTable = () => {
-    const tableName = "table";
     const schema: any = {
-        [tableName]: { id: { type: TYPE_PK } }
+        [table]: {
+            id: { type: TYPE_PK }
+        }
     };
-    const tableState = {
-        byId: { 1: { data: "original" } },
+    const tableState = mergeState({
+        byId: {
+            1: { data: "original" }
+        },
         ids: ["1"],
         indexes: {}
-    };
+    }, state);
+
     const db = new Database(schema);
     const session = db.createSession({
-        [tableName]: tableState
+        [table]: tableState,
     });
     const [tableSchema] = db.tables;
 
@@ -208,6 +225,11 @@ describe("insert", () => {
     describe("with valid data", () => {
         const id = "2";
         const value = { id, data: {} };
+        const insertedState = {
+            byId: { [id]: value },
+            ids: [id],
+            indexes: {}
+        };
         let inserted: any;
 
         beforeAll(() => {
@@ -221,13 +243,8 @@ describe("insert", () => {
         test("calls schema.normalize", () =>
             expect(table.schema.normalize).toHaveBeenCalledTimes(1));
 
-        test("calls insertNormalized with normalized data", () => {
-            expect(table.insertNormalized).toHaveBeenCalledWith({
-                byId: { [id]: value },
-                ids: [id],
-                indexes: {}
-            });
-        });
+        test("calls insertNormalized with normalized data", () =>
+            expect(table.insertNormalized).toHaveBeenCalledWith(insertedState));
 
         test("calls session upsert", () =>
             expect(table.session.upsert).toHaveBeenCalledTimes(1));
@@ -236,6 +253,9 @@ describe("insert", () => {
             expect(inserted[0]).toEqual(id);
             expect(inserted.length).toEqual(1);
         });
+
+        test("table state is mutated", () =>
+            expect(table.state).toEqual(mergeState(table.state, insertedState)));
     });
 
     describe("with existing data", () => {
@@ -260,6 +280,11 @@ describe("update", () => {
     describe("with valid data", () => {
         const id = "1";
         const value = { id, data: "updated" };
+        const updatedState = {
+            byId: { [id]: value },
+            ids: [id],
+            indexes: {}
+        };
         let updated: any;
 
         beforeAll(() => {
@@ -274,11 +299,7 @@ describe("update", () => {
             expect(table.schema.normalize).toHaveBeenCalledTimes(1));
 
         test("calls updateNormalized with normalized data", () => {
-            expect(table.updateNormalized).toHaveBeenCalledWith({
-                byId: { [id]: value },
-                ids: [id],
-                indexes: {}
-            });
+            expect(table.updateNormalized).toHaveBeenCalledWith(updatedState);
         });
 
         test("calls session upsert", () =>
@@ -288,6 +309,9 @@ describe("update", () => {
             expect(updated[0]).toEqual(id);
             expect(updated.length).toEqual(1);
         });
+
+        test("table state is mutated", () =>
+            expect(table.state).toEqual(mergeState(table.state, updatedState)));
     });
 });
 
@@ -307,6 +331,16 @@ describe("upsert", () => {
         const id2 = "2";
         const toUpdate = { id: id1, data: "updated" };
         const toInsert = { id: id2, data: "new" };
+        const updatedState = {
+            byId: { [id1]: toUpdate },
+            ids: [id1],
+            indexes: {}
+        };
+        const insertedState = {
+            byId: { [id2]: toInsert },
+            ids: [id2],
+            indexes: {}
+        };
         let upserted: any;
 
         beforeAll(() => {
@@ -322,19 +356,11 @@ describe("upsert", () => {
             expect(table.schema.normalize).toHaveBeenCalledTimes(1));
 
         test("calls updateNormalized with normalized data", () => {
-            expect(table.updateNormalized).toHaveBeenCalledWith({
-                byId: { [id1]: toUpdate },
-                ids: [id1],
-                indexes: {}
-            }, false);
+            expect(table.updateNormalized).toHaveBeenCalledWith(updatedState, false);
         });
 
         test("calls insertNormalized with normalized data", () => {
-            expect(table.insertNormalized).toHaveBeenCalledWith({
-                byId: { [id2]: toInsert },
-                ids: [id2],
-                indexes: {}
-            }, false);
+            expect(table.insertNormalized).toHaveBeenCalledWith(insertedState, false);
         });
 
         test("calls session upsert", () =>
@@ -346,25 +372,50 @@ describe("upsert", () => {
 
             expect(upserted.length).toEqual(2);
         });
+
+        test("table state is mutated", () =>
+            expect(table.state).toEqual(mergeState(updatedState, insertedState)));
     });
 });
 
 describe("delete", () => {
-    const table = createTable();
+    const state = {
+        byId: { 3: { data: "last" } },
+        ids: ["3"],
+        indexes: {}
+    };
+    const table = createTable(state);
 
     test("throws if no data given", () =>
         expect(() => table.delete()).toThrow(errors.argument("data", "value")));
     test("throws if invalid data given", () =>
-        [{}, () => { }].forEach(data =>
+        [{}, () => { }, false, "", NaN].forEach(data =>
             expect(() => table.delete(data)).toThrow()));
     test("returns zero for unknown id", () =>
         expect(table.delete(0)).toEqual(0));
+    test("returns zero for empty data", () =>
+        [[]].forEach(data =>
+            expect(table.delete(data)).toEqual(0)));
 
     describe("with valid data", () => {
-
         const result = table.delete(1);
 
         test("returns number of deleted", () =>
             expect(result).toEqual(1));
+        test("table state is mutated", () =>
+            expect(table.state).toEqual(state));
     });
+});
+
+describe("deleteAll", () => {
+    const state = {
+        byId: { 3: { data: "last" } },
+        ids: ["3"],
+        indexes: {}
+    };
+    const table = createTable(state);
+    table.deleteAll();
+
+    test("table state is cleared", () =>
+        expect(table.state).toEqual(initialState()));
 });

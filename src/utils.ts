@@ -14,7 +14,7 @@ export const toArray = (obj: any) => {
 };
 
 export const ensureArray = (obj: any) => {
-    if (!obj)
+    if (obj === undefined || obj == null)
         return [];
 
     if (Array.isArray(obj))
@@ -59,7 +59,10 @@ export const ensureID = (id: any) => {
 
 // A valid id must be a non-empty string or a number.
 export const isValidID = (id: any) => {
-    return id !== null && id !== undefined && ((typeof id === "string" && id.length > 0) || typeof id === "number");
+    return id !== null
+        && id !== undefined
+        && !isNaN(id)
+        && ((typeof id === "string" && id.length > 0) || typeof id === "number");
 };
 
 // Ensures that the given id is a string

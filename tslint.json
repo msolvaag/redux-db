@@ -28,7 +28,8 @@
         ],
         "max-classes-per-file": false,
         "no-shadowed-variable": false,
-        "ban-types": false
+        "ban-types": false,
+        "object-literal-sort-keys": false
     },
     "rulesDirectory": []
 }

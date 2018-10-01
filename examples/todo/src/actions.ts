@@ -24,5 +24,4 @@ export const deleteComment = (id: number) => ({ type: DELETE_COMMENT, payload: i
 
 export const setTaskFilter = (status: string) => ({ type: UI_SET_TASK_FILTER, payload: status });
 
-
 export const DONE = (action: string) => `${action}_DONE`;
