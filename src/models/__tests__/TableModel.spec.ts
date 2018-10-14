@@ -7,9 +7,10 @@ import { TableState } from "../../types";
 import Database from "../Database";
 import TableModel from "../TableModel";
 
+const TABLE1 = "table1";
 const invalidIds = [null, undefined, {}, [], NaN, Date, () => { }];
 const mergeState = (...states: TableState[]) =>
-    states.reduce(({ byId, ids, indexes }, s) => ({
+    states.reduce(({ byId, ids, indexes, name }, s) => ({
         byId: {
             ...byId,
             ...s.byId
@@ -18,13 +19,13 @@ const mergeState = (...states: TableState[]) =>
         indexes: {
             ...indexes,
             ...s.indexes
-        }
-    }), initialState());
-const createTable = (state: TableState = initialState()) => {
-    const table = "table1";
+        },
+        name
+    }), initialState(TABLE1));
 
+const createTable = (state: TableState = initialState(TABLE1)) => {
     const schema: any = {
-        [table]: {
+        [TABLE1]: {
             id: { type: TYPE_PK }
         }
     };
@@ -33,14 +34,15 @@ const createTable = (state: TableState = initialState()) => {
             1: { data: "original" }
         },
         ids: ["1"],
-        indexes: {}
+        indexes: {},
+        name: TABLE1
     }, state);
 
     const db = new Database(schema);
     const session = db.createSession({
-        [table]: tableState,
+        [TABLE1]: tableState,
     });
-    const [tableSchema] = db.tables;
+    const tableSchema = db.getTableSchema(TABLE1);
 
     return new TableModel(session, tableSchema, tableState) as any;
 };
@@ -61,7 +63,7 @@ describe("constructor", () => {
 
     test("throws if invalid state given", () => {
         const model = TableModel as any;
-        expect(() => new model({}, {}, null))
+        expect(() => new model({}, {}, 1))
             .toThrow(errors.argument("state", "object"));
 
         const name = "test";
@@ -228,7 +230,8 @@ describe("insert", () => {
         const insertedState = {
             byId: { [id]: value },
             ids: [id],
-            indexes: {}
+            indexes: {},
+            name: TABLE1
         };
         let inserted: any;
 
@@ -283,7 +286,8 @@ describe("update", () => {
         const updatedState = {
             byId: { [id]: value },
             ids: [id],
-            indexes: {}
+            indexes: {},
+            name: TABLE1
         };
         let updated: any;
 
@@ -334,12 +338,14 @@ describe("upsert", () => {
         const updatedState = {
             byId: { [id1]: toUpdate },
             ids: [id1],
-            indexes: {}
+            indexes: {},
+            name: TABLE1
         };
         const insertedState = {
             byId: { [id2]: toInsert },
             ids: [id2],
-            indexes: {}
+            indexes: {},
+            name: TABLE1
         };
         let upserted: any;
 
@@ -382,7 +388,8 @@ describe("delete", () => {
     const state = {
         byId: { 3: { data: "last" } },
         ids: ["3"],
-        indexes: {}
+        indexes: {},
+        name: TABLE1
     };
     const table = createTable(state);
 
@@ -411,11 +418,12 @@ describe("deleteAll", () => {
     const state = {
         byId: { 3: { data: "last" } },
         ids: ["3"],
-        indexes: {}
+        indexes: {},
+        name: TABLE1
     };
     const table = createTable(state);
     table.deleteAll();
 
     test("table state is cleared", () =>
-        expect(table.state).toEqual(initialState()));
+        expect(table.state).toEqual(initialState(TABLE1)));
 });

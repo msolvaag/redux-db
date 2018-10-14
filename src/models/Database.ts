@@ -2,12 +2,14 @@ import DefaultModelFactory from "../DefaultModelFactory";
 import {
     DatabaseOptions,
     DatabaseSchema,
+    DatabaseState,
     MapOf,
     ModelFactory,
     Reducer,
     Schema,
     SessionOptions,
-    TableSchema} from "../types";
+    TableSchema
+} from "../types";
 import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
 import DatabaseSession from "./DatabaseSession";
 
@@ -30,7 +32,7 @@ export default class Database<T extends Schema> implements DatabaseSchema {
     options: DatabaseOptions;
     factory: ModelFactory;
 
-    private _tableLookup: MapOf<TableSchema>;
+    tableMap: MapOf<TableSchema>;
 
     constructor(schema: T, options?: DatabaseOptions) {
         ensureParamObject("schema", schema);
@@ -40,8 +42,8 @@ export default class Database<T extends Schema> implements DatabaseSchema {
         this.factory = this.options.factory || new DefaultModelFactory();
         this.tables = Object.keys(schema).map(tableName =>
             this.factory.newTableSchema(this, tableName, schema[tableName]));
-        this._tableLookup = toObject(this.tables, t => t.name);
-        this.tables.forEach(table => table.connect(this._tableLookup));
+        this.tableMap = toObject(this.tables, t => t.name);
+        this.tables.forEach(table => table.connect(this.tableMap));
     }
 
     getNormalizer = (schemaName: string) =>
@@ -55,20 +57,25 @@ export default class Database<T extends Schema> implements DatabaseSchema {
         return (state: any = {}, action: any) => this.reduce(state, action, reducers);
     }
 
-    reduce(state?: any, action?: any, reducers?: Reducer | Reducer[], arg?: any) {
+    reduce(state: DatabaseState = {}, action?: any, reducers?: Reducer | Reducer[], ...args: any[]) {
         const session = this.createSession(state);
-        ensureArray(reducers).forEach(reducer => reducer(session.tables, action, arg));
+        ensureArray(reducers).forEach(reducer =>
+            reducer.apply(this, [session.tables, action, ...args]));
         return session.commit();
     }
 
-    createSession(state: any, options?: SessionOptions) {
+    createSession(state: DatabaseState = {}, options?: SessionOptions) {
         return new DatabaseSession(state, this, { readOnly: false, ...options });
+    }
+
+    getTableSchema(name: string) {
+        return this.tableMap[name];
     }
 
     wrapTables(state: any) {
         const tableSchemas = Object.keys(state)
-            .filter(tableName => this._tableLookup[tableName])
-            .map(tableName => this._tableLookup[tableName]);
+            .filter(tableName => this.tableMap[tableName])
+            .map(tableName => this.tableMap[tableName]);
 
         const session = this.createSession(state, {
             readOnly: true,
@@ -76,5 +83,9 @@ export default class Database<T extends Schema> implements DatabaseSchema {
         });
 
         return session.tables;
+    }
+
+    selectTables(state: any) {
+        return this.wrapTables(state);
     }
 }

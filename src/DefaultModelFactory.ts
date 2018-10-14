@@ -79,9 +79,6 @@ export default class DefaultModelFactory implements ModelFactory {
         if (!schema.isForeignKey)
             return new RecordFieldModel(schema, record);
 
-        if (!schema.references)
-            throw new Error(errors.fkInvalidReference(schema.name));
-
         const refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
             throw new Error(errors.fkReferenceNotInSession(schema.name, schema.references));

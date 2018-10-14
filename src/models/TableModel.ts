@@ -24,13 +24,14 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     state: TableState<ValueType<R>>;
     dirty = false;
 
-    constructor(session: Session, schema: TableSchema, state = initialState()) {
+    constructor(session: Session, schema: TableSchema, state?: TableState) {
         this.session = utils.ensureParamObject("session", session);
         this.schema = utils.ensureParamObject("schema", schema);
-        this.state = utils.ensureParamObject("state", state);
+        this.state = utils.ensureParamObject("state", state || initialState(this.schema.name));
 
-        const { ids, byId, indexes } = this.state;
+        const { ids, byId, indexes, name } = this.state;
         if (!ids || !byId || !indexes) throw new Error(errors.tableInvalidState(schema.name));
+        if (!name) this.state.name = name;
     }
 
     get length() {
@@ -113,15 +114,15 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     deleteAll() {
         if (this.length) {
             this._deleteCascade(this.state.ids);
-            this.state = initialState();
+            this.state = initialState(this.schema.name);
         }
     }
 
     upsertNormalized(norm: TableState<ValueType<R>>) {
         utils.ensureParamObject("table", norm);
 
-        const toUpdate = initialState<ValueType<R>>();
-        const toInsert = initialState<ValueType<R>>();
+        const toUpdate = initialState<ValueType<R>>(this.schema.name);
+        const toInsert = initialState<ValueType<R>>(this.schema.name);
 
         norm.ids.forEach(id => {
             if (this.exists(id)) {

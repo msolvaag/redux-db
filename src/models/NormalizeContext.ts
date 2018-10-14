@@ -1,14 +1,15 @@
 import {
     DatabaseSchema,
+    MapOf,
     NormalizeContext,
-    NormalizedState,
-    TableSchema
+    TableSchema,
+    TableState
 } from "../types";
 
 export default class DbNormalizeContext implements NormalizeContext {
     schema: TableSchema;
     db: DatabaseSchema;
-    output: NormalizedState = {};
+    output: MapOf<TableState> = {};
     emits: { [key: string]: any[] } = {};
     normalizePKs: boolean;
 

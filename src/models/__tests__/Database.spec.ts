@@ -1,6 +1,7 @@
 // tslint:disable:object-literal-sort-keys
 import { initialState, TYPE_PK } from "../../constants";
 import errors from "../../errors";
+import { TableSchema } from "../../types";
 import { isEqual } from "../../utils";
 import Database from "../Database";
 import DatabaseSession from "../DatabaseSession";
@@ -38,6 +39,9 @@ describe("constructor", () => {
         };
 
         const db = new Database({ table1: {} }, { factory });
+
+        test("applies the custom factory", () =>
+            expect(db.factory).toStrictEqual(factory));
 
         test("calls factory.newTableSchema", () =>
             expect(factory.newTableSchema).toHaveBeenCalled());
@@ -132,8 +136,8 @@ describe("reduce", () => {
 
         test("returns initial state", () =>
             expect(state).toEqual({
-                table1: initialState(),
-                table2: initialState()
+                table1: initialState("table1"),
+                table2: initialState("table2")
             }));
     });
 
@@ -169,15 +173,18 @@ describe("createSession", () => {
         expect(session).toBeInstanceOf(DatabaseSession));
 
     test("readOnly is false as default", () =>
-        expect(session.options.readOnly).toEqual(false));
+        expect(session.readOnly).toEqual(false));
 
     test("options are propagated", () => {
         const options = { readOnly: true, tableSchemas: [] };
-        expect(db.createSession({}, options).options).toEqual(options);
+        const session = db.createSession({}, options);
+
+        expect(session.readOnly).toEqual(options.readOnly);
+        expect(session.tables).toEqual({});
     });
 });
 
-describe("wrapTables", () => {
+describe("wrapTables [selectTables]", () => {
     const db = new Database({
         table1: { id: { type: TYPE_PK } },
         table2: {}

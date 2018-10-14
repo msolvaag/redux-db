@@ -48,8 +48,15 @@ export const ensureParamObject = (name: string, value: any) => {
 export const ensureParamFunction = (name: string, value: any) => {
     if (!value || typeof value !== "function")
         throw new Error(errors.argument(name, "function"));
-    return value;
+    return value as Function;
 };
+
+export function optionalParamString(name: string, val: any, fallback: string): string;
+export function optionalParamString(name: string, val: any): string | undefined;
+export function optionalParamString(name: string, val: any, fallback?: string) {
+    return val !== undefined
+        ? ensureParamString(name, val) : fallback;
+}
 
 export const ensureID = (id: any) => {
     if (!isValidID(id))

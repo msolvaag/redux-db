@@ -115,7 +115,7 @@ export interface Table<R extends TableRecord = TableRecord> {
     /// Returns the upserted records.
     upsert(data: PartialValues<R>): string[];
     /// Deletes single or multiple records by id or object.
-    /// Returns true if record is successfully deleted.
+    /// Returns number of successfully deleted records.
     delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]): number;
     /// Deletes all records in table.
     deleteAll(): void;
@@ -135,7 +135,7 @@ export interface TableRecord<T extends RecordValue = RecordValue> {
 }
 
 /// Represents a wrapper set of records belonging to a table.
-export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
+export interface TableRecordSet<R extends TableRecord = TableRecord> {
     /// Gets all ids in set.
     ids: string[];
     /// Gets the number of records in set.
@@ -144,16 +144,17 @@ export interface TableRecordSet<R extends TableRecord<T> = any, T = any> {
     /// Gets all records in set.
     all(): R[];
     /// Gets all record values in set.
-    getValue(): T[];
+    values(): ValueType<R>[];
 
     /// Adds single or multiple records to set.
-    /// Returns added records.
-    add(data: T | T[]): void;
+    /// Returns primary keys of added records.
+    add(data: Values<R>): string[];
     /// Removes a record from this set.
-    remove(data: Partial<T>): void;
+    /// Returns number of removed records.
+    remove(data: PartialValue<R>): number;
     /// Updates single or multiple records in set.
-    /// Returns updated records.
-    update(data: Partial<T> | Partial<T>[]): TableRecordSet<R, T>;
+    /// Returns primary keys of updated records.
+    update(data: PartialValues<R>): string[];
     /// Deletes all records in this set.
     delete(): void;
 }
@@ -253,18 +254,19 @@ export interface DatabaseOptions {
 
 /// Represents the available options for creating a new session.
 export interface SessionOptions {
-    readOnly: boolean;
+    readOnly?: boolean;
     tableSchemas?: TableSchema[];
 }
 
 /// Represents the state structure for a database.
-export type DatabaseState<T = any> = MapOf<TableState<T>>;
+export type DatabaseState = MapOf<TableState>;
 
 /// Represents a map of tables. Keyed by name.
 export type TableMap = MapOf<Table>;
 
 /// Represents the state structure for a table.
 export interface TableState<T = any> {
+    name?: string;
     byId: MapOf<T>;
     ids: string[];
     indexes: MapOf<TableIndex>;

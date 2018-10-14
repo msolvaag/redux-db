@@ -1,7 +1,7 @@
 import { TYPE_ATTR, TYPE_MODIFIED, TYPE_PK } from "../constants";
 import errors from "../errors";
 import { ComputeContext, FieldDefinition, FieldSchema, FieldType, MapOf, TableSchema } from "../types";
-import { ensureParamObject } from "../utils";
+import { ensureParamFunction, ensureParamObject, ensureParamString, optionalParamString } from "../utils";
 
 export default class FieldSchemaModel implements FieldSchema {
     readonly table: TableSchema;
@@ -23,20 +23,26 @@ export default class FieldSchemaModel implements FieldSchema {
     private _refTable?: TableSchema;
     private _valueFactory?: <T, M>(record: T, context?: ComputeContext<T>) => M;
 
-    constructor(table: TableSchema, name: string, schema: FieldDefinition, cascadeAsDefault: boolean) {
+    constructor(table: TableSchema, name: string, schema: FieldDefinition, cascadeAsDefault: boolean = false) {
         this.table = ensureParamObject("table", table);
+        ensureParamString("name", name);
+        ensureParamObject("schema", schema);
 
         this.type = schema.type || TYPE_ATTR;
-        this.name = schema.fieldName || name;
-        this.propName = schema.propName || name;
-        this._valueFactory = schema.value ? schema.value.bind(this) : null;
+        this.name = optionalParamString("schema.fieldName", schema.fieldName, name);
+        this.propName = optionalParamString("schema.propName", schema.propName, name);
+        this.references = optionalParamString("schema.references", schema.references);
+
         this.isPrimaryKey = schema.pk === true || schema.type === TYPE_PK;
-        this.isForeignKey = schema.references !== null && schema.references !== undefined;
+        this.isForeignKey = !!this.references;
         this.isStamp = schema.stamp === true || schema.type === TYPE_MODIFIED;
+        this._valueFactory = schema.value !== undefined
+            ? ensureParamFunction("schema.value", schema.value).bind(this)
+            : undefined;
 
         if (this.isPrimaryKey || this.isForeignKey) {
-            this.references = schema.references;
-            this.relationName = schema.relationName;
+            if (this.isForeignKey)
+                this.relationName = optionalParamString("schema.relationName", schema.relationName);
             this.cascade = schema.cascade === undefined ? cascadeAsDefault : schema.cascade === true;
             this.unique = schema.unique === true;
 

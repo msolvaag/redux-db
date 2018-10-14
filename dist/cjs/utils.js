@@ -12,7 +12,7 @@ exports.toArray = function (obj) {
         return [];
 };
 exports.ensureArray = function (obj) {
-    if (!obj)
+    if (obj === undefined || obj == null)
         return [];
     if (Array.isArray(obj))
         return obj;
@@ -37,14 +37,22 @@ exports.ensureParamObject = function (name, value) {
         throw new Error(errors_1.default.argument(name, "object"));
     return value;
 };
+exports.ensureParamFunction = function (name, value) {
+    if (!value || typeof value !== "function")
+        throw new Error(errors_1.default.argument(name, "function"));
+    return value;
+};
 exports.ensureID = function (id) {
     if (!exports.isValidID(id))
-        throw new Error("The given value is not a valid \"id\". An \"id\" must be a non-empty string or a number.");
+        throw new Error(errors_1.default.invalidId());
     return exports.asID(id);
 };
 // A valid id must be a non-empty string or a number.
 exports.isValidID = function (id) {
-    return id !== null && id !== undefined && ((typeof id === "string" && id.length > 0) || typeof id === "number");
+    return id !== null
+        && id !== undefined
+        && !isNaN(id)
+        && ((typeof id === "string" && id.length > 0) || typeof id === "number");
 };
 // Ensures that the given id is a string
 exports.asID = function (id) {
@@ -60,7 +68,7 @@ exports.mergeIds = function (source, second, unique) {
         hash[source[i]] = true;
     for (i = 0; i < second.length; i++) {
         if (unique && hash[second[i]])
-            throw new Error("Id merge operation violates unique constraint for id: \"" + second[i] + "\"");
+            throw new Error(errors_1.default.uniqueConstraintViolation(second[i]));
         hash[second[i]] = true;
     }
     return Object.keys(hash);

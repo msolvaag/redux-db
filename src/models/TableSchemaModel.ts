@@ -1,6 +1,4 @@
-import {
-    TYPE_MODIFIED
-} from "../constants";
+import { initialState } from "../constants";
 import errors from "../errors";
 import {
     DatabaseSchema,
@@ -58,7 +56,7 @@ export default class TableSchemaModel implements TableSchema {
         const ctx = utils.ensureParam("context", context);
 
         if (!ctx.output[this.name])
-            ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+            ctx.output[this.name] = initialState(this.name);
 
         return utils.ensureArray(data).map(obj => {
             if (!utils.isObject(obj))

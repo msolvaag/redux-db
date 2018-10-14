@@ -7,28 +7,31 @@ import {
     SessionOptions,
     TableMap
 } from "../types";
-import { toObject } from "../utils";
+import { ensureParamObject, toObject } from "../utils";
 
 export default class DatabaseSession implements Session {
-    db: DatabaseSchema;
-    tables: TableMap;
+    readonly db: DatabaseSchema;
+    readonly tables: TableMap;
     state: DatabaseState;
-    options: SessionOptions;
+    readOnly: boolean;
 
-    constructor(state: DatabaseState = {}, db: DatabaseSchema, options: SessionOptions) {
-        this.state = state;
-        this.db = db;
-        this.options = options;
+    constructor(state: DatabaseState, db: DatabaseSchema, options: SessionOptions = {}) {
+        this.state = ensureParamObject("state", state);
+        this.db = ensureParamObject("db", db);
 
-        const tableSchemas = options.tableSchemas || db.tables;
-
+        const { readOnly = false, tableSchemas = db.tables } = options;
+        this.readOnly = readOnly;
         this.tables = toObject(
             tableSchemas.map(tableSchema =>
                 this.db.factory.newTableModel(this, tableSchema, state[tableSchema.name])), t => t.schema.name);
     }
 
+    getTable(name: string) {
+        return this.tables[name];
+    }
+
     upsert(ctx: NormalizeContext) {
-        if (this.options.readOnly) throw new Error(errors.sessionReadonly());
+        if (this.readOnly) throw new Error(errors.sessionReadonly());
 
         Object.keys(ctx.output).forEach(name => {
             if (name !== ctx.schema.name)
@@ -41,7 +44,7 @@ export default class DatabaseSession implements Session {
     }
 
     commit() {
-        if (this.options.readOnly) throw new Error(errors.sessionReadonly());
+        if (this.readOnly) throw new Error(errors.sessionReadonly());
 
         Object.keys(this.tables).forEach(table => {
             const oldState = this.state[table];
@@ -50,6 +53,6 @@ export default class DatabaseSession implements Session {
             if (oldState !== newState)
                 this.state = { ...this.state, [table]: newState };
         });
-        return this.state as any;
+        return this.state;
     }
 }

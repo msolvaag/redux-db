@@ -3,10 +3,9 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-var Database_1 = require("./Database");
+var Database_1 = require("./models/Database");
 exports.createDatabase = function (schema, options) { return new Database_1.default(schema, options); };
 __export(require("./constants"));
-__export(require("./models"));
 __export(require("./DefaultModelFactory"));
 var utils = require("./utils");
 exports.utils = utils;
