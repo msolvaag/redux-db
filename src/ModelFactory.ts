@@ -1,24 +1,15 @@
 import { RESERVED_PROPERTIES } from "./constants";
 import errors from "./errors";
-import RecordFieldModel from "./models/RecordFieldModel";
-import RecordModel from "./models/RecordModel";
-import RecordSetModel from "./models/RecordSetModel";
-import TableModel from "./models/TableModel";
-import TableSchemaModel from "./models/TableSchemaModel";
 import {
-    DatabaseSchema,
     ExtendedRecord,
     FieldSchema,
     ModelFactory,
     RecordClass,
-    RecordValue,
-    Session,
+    RecordFactory,
     Table,
-    TableDefinition,
     TableRecord,
     TableRecordSet,
-    TableSchema,
-    TableState
+    TableSchema
 } from "./types";
 
 const createRecordModelClass = (Base: RecordClass) => {
@@ -31,15 +22,14 @@ const createRecordModelClass = (Base: RecordClass) => {
     };
 };
 
-export default class DefaultModelFactory implements ModelFactory {
+export class RecordModelFactory {
     private _recordClass: { [key: string]: RecordClass } = {};
+    private _recordBaseType: RecordClass;
+    private _factory: ModelFactory;
 
-    newTableSchema(db: DatabaseSchema, name: string, schema: TableDefinition) {
-        return new TableSchemaModel(db, name, schema);
-    }
-
-    newTableModel(session: Session, schema: TableSchema, state: TableState) {
-        return new TableModel(session, schema, state);
+    constructor(recordBaseType: RecordClass, factory: ModelFactory) {
+        this._recordBaseType = recordBaseType;
+        this._factory = factory;
     }
 
     newRecordModel(id: string, table: Table) {
@@ -47,19 +37,11 @@ export default class DefaultModelFactory implements ModelFactory {
         return new model(id, table) as TableRecord;
     }
 
-    newRecordSetModel(table: Table, schema: FieldSchema, owner: TableRecord) {
-        return new RecordSetModel(table, schema, owner);
-    }
-
-    protected getRecordBaseClass(schema: TableSchema) {
-        return RecordModel;
-    }
-
     protected createRecordModel(schema: TableSchema) {
         if (this._recordClass[schema.name])
             return this._recordClass[schema.name];
         else {
-            const model = createRecordModelClass(this.getRecordBaseClass(schema));
+            const model = createRecordModelClass(this._recordBaseType);
 
             schema.fields.forEach(f =>
                 (f.isForeignKey || !f.isPrimaryKey)
@@ -77,7 +59,7 @@ export default class DefaultModelFactory implements ModelFactory {
 
     private _newRecordField(schema: FieldSchema, record: TableRecord) {
         if (!schema.isForeignKey)
-            return new RecordFieldModel(schema, record);
+            return this._factory.newRecordFieldModel(schema, record);
 
         const refTable = schema.references && record.table.session.tables[schema.references];
         if (!refTable)
@@ -93,7 +75,7 @@ export default class DefaultModelFactory implements ModelFactory {
         if (!refTable)
             throw new Error(errors.tableNotInSession(schema.table.name));
 
-        return this.newRecordSetModel(refTable, schema, record);
+        return this._factory.newRecordSetModel(refTable, schema, record);
     }
 
     private _newRecordRelation(schema: FieldSchema, record: TableRecord): TableRecord | null {
@@ -127,3 +109,14 @@ export default class DefaultModelFactory implements ModelFactory {
         });
     }
 }
+
+const createModelFactory = (factory: ModelFactory, RecordModel: RecordClass) => {
+    const recordFactory = new RecordModelFactory(RecordModel, factory);
+
+    return {
+        ...factory,
+        newRecordModel: (id, table) => recordFactory.newRecordModel(id, table)
+    } as ModelFactory & RecordFactory;
+};
+
+export default createModelFactory;

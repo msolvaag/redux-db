@@ -2,13 +2,15 @@
   "name": "redux-db",
   "version": "0.9.17",
   "description": "A state normalizer and orm for redux",
-  "main": "dist/cjs/index.js",
-  "module": "dist/es/index.js",
-  "typings": "./src/types.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/es/index.js",
+  "jsnext:main": "./dist/es/index.js",
+  "typings": "./dist/types.ts",
   "scripts": {
     "test": "jest",
-    "build": "tsc && tsc -p tsconfig.cjs.json && tsc -p tsconfig.dist.json && gulp compress",
+    "build": "tsc && yarn build-cjs && yarn build-amd && gulp compress && gulp typings",
     "build-cjs": "tsc -p tsconfig.cjs.json",
+    "build-amd": "tsc -p tsconfig.dist.json",
     "build-gz": "gzip './dist/redux-db.min.js' -q -k -f",
     "docs": "rimraf \"docs/_build/\" && python -msphinx -b html \"docs\" \"docs/_build/html\""
   },
@@ -31,17 +33,17 @@
   "homepage": "https://github.com/msolvaag/redux-db#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/jest": "^23.3.2",
+    "@types/jest": "^23.3.9",
     "@types/lodash": "^4.14.116",
     "gulp": "^3.9.1",
     "gulp-rename": "^1.4.0",
     "gulp-uglify": "^3.0.1",
-    "pump": "^3.0.0",
     "jest": "^23.6.0",
     "lodash": "^4.17.11",
-    "ts-jest": "^23.10.1",
+    "pump": "^3.0.0",
+    "ts-jest": "^23.10.4",
     "tslib": "^1.9.3",
     "tslint": "^5.11.0",
-    "typescript": "^3.0.3"
+    "typescript": "^3.1.6"
   }
 }

@@ -13,3 +13,12 @@ gulp.task('compress', function (cb) {
 		cb
 	);
 });
+
+gulp.task('typings', function (cb) {
+	pump([
+		gulp.src('src/types.ts'),
+		gulp.dest("dist")
+	],
+		cb
+	);
+});

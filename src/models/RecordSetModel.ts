@@ -12,7 +12,7 @@ export default class RecordSetModel<R extends TableRecord> implements TableRecor
     constructor(table: Table<R>, schema: FieldSchema, owner: { id: string; }) {
         this.table = ensureParamObject("table", table);
         this.schema = ensureParamObject("schema", schema);
-        this.owner = ensureParamObject("owner", owner);
+        this.owner = ensureParamObject("owner", owner, "id");
     }
 
     get ids() {

@@ -31,8 +31,17 @@ export var ensureParamString = function (name, value) {
     return value;
 };
 export var ensureParamObject = function (name, value) {
+    var props = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        props[_i - 2] = arguments[_i];
+    }
     if (!value || !isObject(value))
         throw new Error(errors.argument(name, "object"));
+    if (props) {
+        var missing = props.filter(function (p) { return value[p] === undefined; });
+        if (missing.length)
+            throw new Error(errors.argumentShape(name, missing));
+    }
     return value;
 };
 export var ensureParamFunction = function (name, value) {
@@ -40,6 +49,10 @@ export var ensureParamFunction = function (name, value) {
         throw new Error(errors.argument(name, "function"));
     return value;
 };
+export function optionalParamString(name, val, fallback) {
+    return val !== undefined
+        ? ensureParamString(name, val) : fallback;
+}
 export var ensureID = function (id) {
     if (!isValidID(id))
         throw new Error(errors.invalidId());

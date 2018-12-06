@@ -22,25 +22,32 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("types", ["require", "exports"], function (require, exports) {
+define("dist/types", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("constants", ["require", "exports"], function (require, exports) {
+define("src/types", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+});
+define("src/constants", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TYPE_PK = "PK";
     exports.TYPE_ATTR = "ATTR";
     exports.TYPE_MODIFIED = "MODIFIED";
     exports.RESERVED_PROPERTIES = ["id", "table", "value", "_fields"];
-    exports.initialState = function () { return ({ ids: [], byId: {}, indexes: {} }); };
+    exports.initialState = function (name) {
+        return ({ ids: [], byId: {}, indexes: {}, name: name });
+    };
 });
 // tslint:disable:max-line-length
-define("errors", ["require", "exports"], function (require, exports) {
+define("src/errors", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = {
         argument: function (name, type) { return "Missing a valid " + type + " for the argument \"" + name + "\""; },
+        argumentShape: function (name, props) { return "Argument \"" + name + "\" has an invalid shape. Missing required props: \"" + props.join(", ") + "\""; },
         fkInvalid: function (table, key) { return "The foreign key " + table + "." + key + " is invalid"; },
         fkInvalidReference: function (table, key, reference) { return "The field schema \"" + table + "." + key + "\" has an invalid reference to unknown table \"" + reference + "\"."; },
         fkReferenceNotInSession: function (key, references) { return "The foreign key: \"" + key + "\" references an unregistered table: \"" + references + "\" in the current session."; },
@@ -58,24 +65,27 @@ define("errors", ["require", "exports"], function (require, exports) {
         uniqueConstraintViolation: function (id) { return "Operation violates unique constraint for id: \"" + id + "\""; },
     };
 });
-define("models/DatabaseSession", ["require", "exports", "errors", "utils"], function (require, exports, errors_1, utils_1) {
+define("src/models/DatabaseSession", ["require", "exports", "src/errors", "src/utils"], function (require, exports, errors_1, utils_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DatabaseSession = /** @class */ (function () {
         function DatabaseSession(state, db, options) {
-            if (state === void 0) { state = {}; }
+            if (options === void 0) { options = {}; }
             var _this = this;
-            this.state = state;
-            this.db = db;
-            this.options = options;
-            var tableSchemas = options.tableSchemas || db.tables;
+            this.state = utils_1.ensureParamObject("state", state);
+            this.db = utils_1.ensureParamObject("db", db);
+            var _a = options.readOnly, readOnly = _a === void 0 ? false : _a, _b = options.tableSchemas, tableSchemas = _b === void 0 ? db.tables : _b;
+            this.readOnly = readOnly;
             this.tables = utils_1.toObject(tableSchemas.map(function (tableSchema) {
                 return _this.db.factory.newTableModel(_this, tableSchema, state[tableSchema.name]);
             }), function (t) { return t.schema.name; });
         }
+        DatabaseSession.prototype.getTable = function (name) {
+            return this.tables[name];
+        };
         DatabaseSession.prototype.upsert = function (ctx) {
             var _this = this;
-            if (this.options.readOnly)
+            if (this.readOnly)
                 throw new Error(errors_1.default.sessionReadonly());
             Object.keys(ctx.output).forEach(function (name) {
                 if (name !== ctx.schema.name)
@@ -88,7 +98,7 @@ define("models/DatabaseSession", ["require", "exports", "errors", "utils"], func
         };
         DatabaseSession.prototype.commit = function () {
             var _this = this;
-            if (this.options.readOnly)
+            if (this.readOnly)
                 throw new Error(errors_1.default.sessionReadonly());
             Object.keys(this.tables).forEach(function (table) {
                 var _a;
@@ -103,7 +113,7 @@ define("models/DatabaseSession", ["require", "exports", "errors", "utils"], func
     }());
     exports.default = DatabaseSession;
 });
-define("models/Database", ["require", "exports", "DefaultModelFactory", "utils", "models/DatabaseSession"], function (require, exports, DefaultModelFactory_1, utils_2, DatabaseSession_1) {
+define("src/models/Database", ["require", "exports", "src/DefaultModelFactory", "src/utils", "src/models/DatabaseSession"], function (require, exports, DefaultModelFactory_1, utils_2, DatabaseSession_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var defaultOptions = {
@@ -137,8 +147,8 @@ define("models/Database", ["require", "exports", "DefaultModelFactory", "utils",
             this.tables = Object.keys(schema).map(function (tableName) {
                 return _this.factory.newTableSchema(_this, tableName, schema[tableName]);
             });
-            this._tableLookup = utils_2.toObject(this.tables, function (t) { return t.name; });
-            this.tables.forEach(function (table) { return table.connect(_this._tableLookup); });
+            this.tableMap = utils_2.toObject(this.tables, function (t) { return t.name; });
+            this.tables.forEach(function (table) { return table.connect(_this.tableMap); });
         }
         Database.prototype.combineReducers = function () {
             var _this = this;
@@ -151,19 +161,31 @@ define("models/Database", ["require", "exports", "DefaultModelFactory", "utils",
                 return _this.reduce(state, action, reducers);
             };
         };
-        Database.prototype.reduce = function (state, action, reducers, arg) {
+        Database.prototype.reduce = function (state, action, reducers) {
+            var _this = this;
+            if (state === void 0) { state = {}; }
+            var args = [];
+            for (var _i = 3; _i < arguments.length; _i++) {
+                args[_i - 3] = arguments[_i];
+            }
             var session = this.createSession(state);
-            utils_2.ensureArray(reducers).forEach(function (reducer) { return reducer(session.tables, action, arg); });
+            utils_2.ensureArray(reducers).forEach(function (reducer) {
+                return reducer.apply(_this, [session.tables, action].concat(args));
+            });
             return session.commit();
         };
         Database.prototype.createSession = function (state, options) {
+            if (state === void 0) { state = {}; }
             return new DatabaseSession_1.default(state, this, __assign({ readOnly: false }, options));
+        };
+        Database.prototype.getTableSchema = function (name) {
+            return this.tableMap[name];
         };
         Database.prototype.wrapTables = function (state) {
             var _this = this;
             var tableSchemas = Object.keys(state)
-                .filter(function (tableName) { return _this._tableLookup[tableName]; })
-                .map(function (tableName) { return _this._tableLookup[tableName]; });
+                .filter(function (tableName) { return _this.tableMap[tableName]; })
+                .map(function (tableName) { return _this.tableMap[tableName]; });
             var session = this.createSession(state, {
                 readOnly: true,
                 tableSchemas: tableSchemas
@@ -177,13 +199,13 @@ define("models/Database", ["require", "exports", "DefaultModelFactory", "utils",
     }());
     exports.default = Database;
 });
-define("models/RecordModel", ["require", "exports", "utils"], function (require, exports, utils_3) {
+define("src/models/RecordModel", ["require", "exports", "src/utils"], function (require, exports, utils_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var RecordModel = /** @class */ (function () {
         function RecordModel(id, table) {
-            this.id = utils_3.ensureParam("id", id);
-            this.table = utils_3.ensureParam("table", table);
+            this.id = utils_3.ensureParamString("id", id);
+            this.table = utils_3.ensureParamObject("table", table);
         }
         Object.defineProperty(RecordModel.prototype, "value", {
             get: function () {
@@ -207,14 +229,14 @@ define("models/RecordModel", ["require", "exports", "utils"], function (require,
     }());
     exports.default = RecordModel;
 });
-define("models/RecordSetModel", ["require", "exports", "errors", "utils"], function (require, exports, errors_2, utils_4) {
+define("src/models/RecordSetModel", ["require", "exports", "src/errors", "src/utils"], function (require, exports, errors_2, utils_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var RecordSetModel = /** @class */ (function () {
         function RecordSetModel(table, schema, owner) {
             this.table = utils_4.ensureParamObject("table", table);
             this.schema = utils_4.ensureParamObject("schema", schema);
-            this.owner = utils_4.ensureParamObject("owner", owner);
+            this.owner = utils_4.ensureParamObject("owner", owner, "id");
         }
         Object.defineProperty(RecordSetModel.prototype, "ids", {
             get: function () {
@@ -268,14 +290,14 @@ define("models/RecordSetModel", ["require", "exports", "errors", "utils"], funct
     }());
     exports.default = RecordSetModel;
 });
-define("models/NormalizeContext", ["require", "exports"], function (require, exports) {
+define("src/models/NormalizeContext", ["require", "exports", "src/utils"], function (require, exports, utils_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DbNormalizeContext = /** @class */ (function () {
         function DbNormalizeContext(schema, normalizePKs) {
             this.output = {};
             this.emits = {};
-            this.schema = schema;
+            this.schema = utils_5.ensureParamObject("schema", schema, "db");
             this.db = schema.db;
             this.normalizePKs = normalizePKs;
         }
@@ -287,12 +309,12 @@ define("models/NormalizeContext", ["require", "exports"], function (require, exp
     }());
     exports.default = DbNormalizeContext;
 });
-define("models/TableState", ["require", "exports", "errors", "utils"], function (require, exports, errors_3, utils_5) {
+define("src/models/TableState", ["require", "exports", "src/errors", "src/utils"], function (require, exports, errors_3, utils_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.merge = function (original, modified) {
         var ids = modified.ids
-            ? utils_5.mergeIds(original.ids, modified.ids, true)
+            ? utils_6.mergeIds(original.ids, modified.ids, true)
             : original.ids;
         var byId = modified.byId
             ? __assign({}, original.byId, modified.byId) :
@@ -325,7 +347,7 @@ define("models/TableState", ["require", "exports", "errors", "utils"], function 
                 || (original.indexes[key] = { unique: modified.indexes[key].unique, values: {} });
             Object.keys(modified.indexes[key].values).forEach(function (fk) {
                 var idxBucket = idx.values[fk] || (idx.values[fk] = []);
-                var modifiedBucket = utils_5.mergeIds(idxBucket, modified.indexes[key].values[fk], false);
+                var modifiedBucket = utils_6.mergeIds(idxBucket, modified.indexes[key].values[fk], false);
                 if (idx.unique && modifiedBucket.length > 1)
                     throw new Error(errors_3.default.fkViolation(name, key));
                 idx.values[fk] = modifiedBucket;
@@ -356,19 +378,20 @@ define("models/TableState", ["require", "exports", "errors", "utils"], function 
         updateIndexes: exports.updateIndexes
     };
 });
-define("models/TableModel", ["require", "exports", "constants", "errors", "utils", "models/NormalizeContext", "models/TableState"], function (require, exports, constants_1, errors_4, utils, NormalizeContext_1, TableState_1) {
+define("src/models/TableModel", ["require", "exports", "src/constants", "src/errors", "src/utils", "src/models/NormalizeContext", "src/models/TableState"], function (require, exports, constants_1, errors_4, utils, NormalizeContext_1, TableState_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var TableModel = /** @class */ (function () {
         function TableModel(session, schema, state) {
-            if (state === void 0) { state = constants_1.initialState(); }
             this.dirty = false;
             this.session = utils.ensureParamObject("session", session);
             this.schema = utils.ensureParamObject("schema", schema);
-            this.state = utils.ensureParamObject("state", state);
-            var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes;
+            this.state = utils.ensureParamObject("state", state || constants_1.initialState(this.schema.name));
+            var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes, name = _a.name;
             if (!ids || !byId || !indexes)
                 throw new Error(errors_4.default.tableInvalidState(schema.name));
+            if (!name)
+                this.state.name = name;
         }
         Object.defineProperty(TableModel.prototype, "length", {
             get: function () {
@@ -441,14 +464,14 @@ define("models/TableModel", ["require", "exports", "constants", "errors", "utils
         TableModel.prototype.deleteAll = function () {
             if (this.length) {
                 this._deleteCascade(this.state.ids);
-                this.state = constants_1.initialState();
+                this.state = constants_1.initialState(this.schema.name);
             }
         };
         TableModel.prototype.upsertNormalized = function (norm) {
             var _this = this;
             utils.ensureParamObject("table", norm);
-            var toUpdate = constants_1.initialState();
-            var toInsert = constants_1.initialState();
+            var toUpdate = constants_1.initialState(this.schema.name);
+            var toInsert = constants_1.initialState(this.schema.name);
             norm.ids.forEach(function (id) {
                 if (_this.exists(id)) {
                     toUpdate.ids.push(id);
@@ -534,22 +557,28 @@ define("models/TableModel", ["require", "exports", "constants", "errors", "utils
     }());
     exports.default = TableModel;
 });
-define("models/FieldSchemaModel", ["require", "exports", "constants", "errors", "utils"], function (require, exports, constants_2, errors_5, utils_6) {
+define("src/models/FieldSchemaModel", ["require", "exports", "src/constants", "src/errors", "src/utils"], function (require, exports, constants_2, errors_5, utils_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var FieldSchemaModel = /** @class */ (function () {
         function FieldSchemaModel(table, name, schema, cascadeAsDefault) {
-            this.table = utils_6.ensureParamObject("table", table);
+            if (cascadeAsDefault === void 0) { cascadeAsDefault = false; }
+            this.table = utils_7.ensureParamObject("table", table);
+            utils_7.ensureParamString("name", name);
+            utils_7.ensureParamObject("schema", schema);
             this.type = schema.type || constants_2.TYPE_ATTR;
-            this.name = schema.fieldName || name;
-            this.propName = schema.propName || name;
-            this._valueFactory = schema.value ? schema.value.bind(this) : null;
+            this.name = utils_7.optionalParamString("schema.fieldName", schema.fieldName, name);
+            this.propName = utils_7.optionalParamString("schema.propName", schema.propName, name);
+            this.references = utils_7.optionalParamString("schema.references", schema.references);
             this.isPrimaryKey = schema.pk === true || schema.type === constants_2.TYPE_PK;
-            this.isForeignKey = schema.references !== null && schema.references !== undefined;
+            this.isForeignKey = !!this.references;
             this.isStamp = schema.stamp === true || schema.type === constants_2.TYPE_MODIFIED;
+            this._valueFactory = schema.value !== undefined
+                ? utils_7.ensureParamFunction("schema.value", schema.value).bind(this)
+                : undefined;
             if (this.isPrimaryKey || this.isForeignKey) {
-                this.references = schema.references;
-                this.relationName = schema.relationName;
+                if (this.isForeignKey)
+                    this.relationName = utils_7.optionalParamString("schema.relationName", schema.relationName);
                 this.cascade = schema.cascade === undefined ? cascadeAsDefault : schema.cascade === true;
                 this.unique = schema.unique === true;
                 // not null is default true, for PK's and FK's
@@ -586,7 +615,7 @@ define("models/FieldSchemaModel", ["require", "exports", "constants", "errors", 
     }());
     exports.default = FieldSchemaModel;
 });
-define("models/TableSchemaModel", ["require", "exports", "errors", "utils", "models/FieldSchemaModel"], function (require, exports, errors_6, utils, FieldSchemaModel_1) {
+define("src/models/TableSchemaModel", ["require", "exports", "src/constants", "src/errors", "src/utils", "src/models/FieldSchemaModel"], function (require, exports, constants_3, errors_6, utils, FieldSchemaModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var TableSchemaModel = /** @class */ (function () {
@@ -622,7 +651,7 @@ define("models/TableSchemaModel", ["require", "exports", "errors", "utils", "mod
                 throw new Error("Failed to normalize data. Given argument is not a plain object nor an array.");
             var ctx = utils.ensureParam("context", context);
             if (!ctx.output[this.name])
-                ctx.output[this.name] = { ids: [], byId: {}, indexes: {} };
+                ctx.output[this.name] = constants_3.initialState(this.name);
             return utils.ensureArray(data).map(function (obj) {
                 if (!utils.isObject(obj))
                     throw new Error("Failed to normalize data. Given record is not a plain object.");
@@ -764,7 +793,7 @@ define("models/TableSchemaModel", ["require", "exports", "errors", "utils", "mod
     }());
     exports.default = TableSchemaModel;
 });
-define("models/index", ["require", "exports", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, RecordFieldModel_1, RecordModel_1, RecordSetModel_1, TableModel_1, TableSchemaModel_1) {
+define("src/models/index", ["require", "exports", "src/models/RecordFieldModel", "src/models/RecordModel", "src/models/RecordSetModel", "src/models/TableModel", "src/models/TableSchemaModel"], function (require, exports, RecordFieldModel_1, RecordModel_1, RecordSetModel_1, TableModel_1, TableSchemaModel_1) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
@@ -776,18 +805,24 @@ define("models/index", ["require", "exports", "models/RecordFieldModel", "models
     __export(TableModel_1);
     __export(TableSchemaModel_1);
 });
-define("index", ["require", "exports", "models/Database", "constants", "DefaultModelFactory", "utils"], function (require, exports, Database_1, constants_3, DefaultModelFactory_2, utils) {
+define("src/index", ["require", "exports", "src/models/Database", "src/constants", "src/DefaultModelFactory", "src/utils"], function (require, exports, Database_1, constants_4, DefaultModelFactory_2, utils) {
     "use strict";
     function __export(m) {
         for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
     }
     Object.defineProperty(exports, "__esModule", { value: true });
+    /**
+     * Creates a database instance with given schema.
+     *
+     * @param {Schema} schema
+     * @param {DatabaseOptions} [options]
+     */
     exports.createDatabase = function (schema, options) { return new Database_1.default(schema, options); };
-    __export(constants_3);
+    __export(constants_4);
     __export(DefaultModelFactory_2);
     exports.utils = utils;
 });
-define("utils", ["require", "exports", "errors"], function (require, exports, errors_7) {
+define("src/utils", ["require", "exports", "src/errors"], function (require, exports, errors_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.toArray = function (obj) {
@@ -822,8 +857,17 @@ define("utils", ["require", "exports", "errors"], function (require, exports, er
         return value;
     };
     exports.ensureParamObject = function (name, value) {
+        var props = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            props[_i - 2] = arguments[_i];
+        }
         if (!value || !exports.isObject(value))
             throw new Error(errors_7.default.argument(name, "object"));
+        if (props) {
+            var missing = props.filter(function (p) { return value[p] === undefined; });
+            if (missing.length)
+                throw new Error(errors_7.default.argumentShape(name, missing));
+        }
         return value;
     };
     exports.ensureParamFunction = function (name, value) {
@@ -831,6 +875,11 @@ define("utils", ["require", "exports", "errors"], function (require, exports, er
             throw new Error(errors_7.default.argument(name, "function"));
         return value;
     };
+    function optionalParamString(name, val, fallback) {
+        return val !== undefined
+            ? exports.ensureParamString(name, val) : fallback;
+    }
+    exports.optionalParamString = optionalParamString;
     exports.ensureID = function (id) {
         if (!exports.isValidID(id))
             throw new Error(errors_7.default.invalidId());
@@ -893,14 +942,14 @@ define("utils", ["require", "exports", "errors"], function (require, exports, er
         return true;
     };
 });
-define("models/RecordFieldModel", ["require", "exports", "utils"], function (require, exports, utils_7) {
+define("src/models/RecordFieldModel", ["require", "exports", "src/utils"], function (require, exports, utils_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var RecordFieldModel = /** @class */ (function () {
         function RecordFieldModel(schema, record) {
-            this.schema = utils_7.ensureParam("schema", schema);
-            this.record = utils_7.ensureParam("record", record);
-            this.name = utils_7.ensureParamString("schema.name", schema.name);
+            this.schema = utils_8.ensureParamObject("schema", schema);
+            this.name = utils_8.ensureParamString("schema.name", schema.name);
+            this.record = utils_8.ensureParamObject("record", record);
         }
         Object.defineProperty(RecordFieldModel.prototype, "value", {
             get: function () {
@@ -913,7 +962,7 @@ define("models/RecordFieldModel", ["require", "exports", "utils"], function (req
     }());
     exports.default = RecordFieldModel;
 });
-define("DefaultModelFactory", ["require", "exports", "constants", "errors", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, constants_4, errors_8, RecordFieldModel_2, RecordModel_2, RecordSetModel_2, TableModel_2, TableSchemaModel_2) {
+define("src/DefaultModelFactory", ["require", "exports", "src/constants", "src/errors", "src/models/RecordFieldModel", "src/models/RecordModel", "src/models/RecordSetModel", "src/models/TableModel", "src/models/TableSchemaModel"], function (require, exports, constants_5, errors_8, RecordFieldModel_2, RecordModel_2, RecordSetModel_2, TableModel_2, TableSchemaModel_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var createRecordModelClass = function (Base) {
@@ -932,7 +981,7 @@ define("DefaultModelFactory", ["require", "exports", "constants", "errors", "mod
             this._recordClass = {};
             this._defineProperty = function (model, name, field, factory, cache) {
                 if (cache === void 0) { cache = true; }
-                if (constants_4.RESERVED_PROPERTIES.indexOf(name) >= 0)
+                if (constants_5.RESERVED_PROPERTIES.indexOf(name) >= 0)
                     throw new Error(errors_8.default.reservedProperty(field.table.name, name));
                 Object.defineProperty(model.prototype, name, {
                     get: function () {

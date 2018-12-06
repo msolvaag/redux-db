@@ -15,9 +15,9 @@ export default class DatabaseSession implements Session {
     state: DatabaseState;
     readOnly: boolean;
 
-    constructor(state: DatabaseState, db: DatabaseSchema, options: SessionOptions = {}) {
-        this.state = ensureParamObject("state", state);
+    constructor(db: DatabaseSchema, state: DatabaseState, options: SessionOptions = {}) {
         this.db = ensureParamObject("db", db);
+        this.state = ensureParamObject("state", state);
 
         const { readOnly = false, tableSchemas = db.tables } = options;
         this.readOnly = readOnly;

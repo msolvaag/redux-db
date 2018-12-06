@@ -1,13 +1,13 @@
 import { RecordValue, Table, TableRecord } from "../types";
-import { ensureParam } from "../utils";
+import { ensureParamObject, ensureParamString } from "../utils";
 
 export default class RecordModel<T extends RecordValue> implements TableRecord<T> {
     table: Table<RecordModel<T>>;
     id: string;
 
     constructor(id: string, table: Table) {
-        this.id = ensureParam("id", id);
-        this.table = ensureParam("table", table as Table<RecordModel<T>>);
+        this.id = ensureParamString("id", id);
+        this.table = ensureParamObject("table", table as Table<RecordModel<T>>);
     }
 
     get value() {

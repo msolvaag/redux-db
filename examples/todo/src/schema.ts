@@ -1,4 +1,4 @@
-import * as ReduxDB from "../../../src"; // "redux-db"
+import * as ReduxDB from "redux-db";
 
 export const TABLE_TASK = "Task";
 export const TABLE_USER = "User";

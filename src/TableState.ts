@@ -1,6 +1,6 @@
-import errors from "../errors";
-import { ForeignKey, MapOf, TableIndex, TableState } from "../types";
-import { mergeIds } from "../utils";
+import errors from "./errors";
+import { ForeignKey, MapOf, TableIndex, TableState } from "./types";
+import { mergeIds } from "./utils";
 
 export const merge = (original: TableState, modified: Partial<TableState>) => {
     const ids = modified.ids

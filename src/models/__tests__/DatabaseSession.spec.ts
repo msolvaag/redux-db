@@ -1,3 +1,4 @@
+import { createFactory } from "../..";
 import { initialState } from "../../constants";
 import errors from "../../errors";
 import Database from "../Database";
@@ -16,23 +17,25 @@ const schema = {
     }
 };
 
-describe("constructor", () => {
-    test("throws if no state given", () => {
-        const model = DatabaseSession as any;
-        expect(() => new model())
-            .toThrow(errors.argument("state", "object"));
-    });
+const factory = createFactory();
 
+describe("constructor", () => {
     test("throws if no database instance given", () => {
         const model = DatabaseSession as any;
-        expect(() => new model({}))
+        expect(() => new model())
             .toThrow(errors.argument("db", "object"));
     });
 
+    test("throws if no state given", () => {
+        const model = DatabaseSession as any;
+        expect(() => new model({}))
+            .toThrow(errors.argument("state", "object"));
+    });
+
     test("options.tableSchemas are applied", () => {
-        const db = new Database(schema);
+        const db = new Database(schema, factory);
         const tableSchemas = [db.getTableSchema(TABLE1)];
-        const session = new DatabaseSession({}, db, { tableSchemas });
+        const session = new DatabaseSession(db, {}, { tableSchemas });
 
         const table = session.getTable(TABLE1);
 
@@ -40,28 +43,28 @@ describe("constructor", () => {
     });
 
     test("options.readOnly is applied", () => {
-        const db = new Database(schema);
+        const db = new Database(schema, factory);
         const readOnly = true;
-        const session = new DatabaseSession({}, db, { readOnly });
+        const session = new DatabaseSession(db, {}, { readOnly });
 
         expect(session.readOnly).toEqual(readOnly);
     });
 });
 
 describe("upsert", () => {
-    const db = new Database(schema);
+    const db = new Database(schema, factory);
     const tableSchema = db.getTableSchema(TABLE1);
     const context = new DbNormalizeContext(tableSchema, false);
 
     test("throws if session is read only", () => {
-        const session = new DatabaseSession({}, db, { readOnly: true });
+        const session = new DatabaseSession(db, {}, { readOnly: true });
 
         expect(() => session.upsert(context))
             .toThrow(errors.sessionReadonly());
     });
 
     describe("context has tables in output", () => {
-        const session = new DatabaseSession({}, db);
+        const session = new DatabaseSession(db, {});
         const table1 = session.getTable(TABLE1);
         const table2 = session.getTable(TABLE2);
 
@@ -86,7 +89,7 @@ describe("upsert", () => {
     });
 
     describe("context has registered emits", () => {
-        const session = new DatabaseSession({}, db);
+        const session = new DatabaseSession(db, {});
         const table1 = session.getTable(TABLE1);
         const table2 = session.getTable(TABLE2);
 
@@ -111,10 +114,10 @@ describe("upsert", () => {
     });
 
     describe("commit", () => {
-        const db = new Database(schema);
+        const db = new Database(schema, factory);
 
         test("throws if session is read only", () => {
-            const session = new DatabaseSession({}, db, { readOnly: true });
+            const session = new DatabaseSession(db, {}, { readOnly: true });
 
             expect(() => session.commit())
                 .toThrow(errors.sessionReadonly());
@@ -122,7 +125,7 @@ describe("upsert", () => {
 
         describe("session not modified", () => {
             const state = db.reduce();
-            const session = new DatabaseSession(state, db);
+            const session = new DatabaseSession(db, state);
 
             test("returns original state", () =>
                 expect(session.commit()).toStrictEqual(state));
@@ -130,7 +133,7 @@ describe("upsert", () => {
 
         describe("session modified", () => {
             const state = db.reduce();
-            const session = new DatabaseSession(state, db);
+            const session = new DatabaseSession(db, state);
 
             const { [TABLE1]: table } = session.tables;
             const item = { id: 1 };

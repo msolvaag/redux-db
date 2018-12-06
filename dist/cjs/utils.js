@@ -33,8 +33,17 @@ exports.ensureParamString = function (name, value) {
     return value;
 };
 exports.ensureParamObject = function (name, value) {
+    var props = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        props[_i - 2] = arguments[_i];
+    }
     if (!value || !exports.isObject(value))
         throw new Error(errors_1.default.argument(name, "object"));
+    if (props) {
+        var missing = props.filter(function (p) { return value[p] === undefined; });
+        if (missing.length)
+            throw new Error(errors_1.default.argumentShape(name, missing));
+    }
     return value;
 };
 exports.ensureParamFunction = function (name, value) {
@@ -42,6 +51,11 @@ exports.ensureParamFunction = function (name, value) {
         throw new Error(errors_1.default.argument(name, "function"));
     return value;
 };
+function optionalParamString(name, val, fallback) {
+    return val !== undefined
+        ? exports.ensureParamString(name, val) : fallback;
+}
+exports.optionalParamString = optionalParamString;
 exports.ensureID = function (id) {
     if (!exports.isValidID(id))
         throw new Error(errors_1.default.invalidId());

@@ -1,4 +1,5 @@
 // tslint:disable:object-literal-key-quotes
+import { createDatabase } from "../..";
 import { TYPE_MODIFIED, TYPE_PK } from "../../constants";
 import errors from "../../errors";
 import Database from "../Database";
@@ -42,7 +43,7 @@ describe("constructor", () => {
     });
 
     describe("invalid field definition", () => {
-        const db = new Database(schema);
+        const db = createDatabase(schema);
         const table = db.getTableSchema(TABLE1);
 
         test.each([
@@ -60,7 +61,7 @@ describe("constructor", () => {
     });
 
     describe("assignment", () => {
-        const db = new Database(schema);
+        const db = createDatabase(schema);
         const table = db.getTableSchema(TABLE1);
 
         const name = "FIELD";
@@ -167,7 +168,7 @@ describe("constructor", () => {
 });
 
 describe("connect", () => {
-    const db = new Database(schema);
+    const db = createDatabase(schema);
     const table = db.getTableSchema(TABLE1);
     const refTable = db.getTableSchema(TABLE2);
 
@@ -192,7 +193,7 @@ describe("connect", () => {
 });
 
 describe("getValue", () => {
-    const db = new Database(schema);
+    const db = createDatabase(schema);
     const table = db.getTableSchema(TABLE1);
     const fieldName = "field";
     const fieldValue = "value";
@@ -214,7 +215,7 @@ describe("getValue", () => {
 });
 
 describe("getRecordValue", () => {
-    const db = new Database(schema);
+    const db = createDatabase(schema);
     const table = db.getTableSchema(TABLE1);
     const fieldName = "field";
     const fieldValue = "value";

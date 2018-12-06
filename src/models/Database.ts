@@ -1,17 +1,17 @@
-import DefaultModelFactory from "../DefaultModelFactory";
+import { ALL } from "../constants";
 import {
     DatabaseOptions,
     DatabaseSchema,
     DatabaseState,
     MapOf,
     ModelFactory,
+    RecordFactory,
     Reducer,
     Schema,
     SessionOptions,
     TableSchema
 } from "../types";
 import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
-import DatabaseSession from "./DatabaseSession";
 
 const defaultOptions: DatabaseOptions = {
     cascadeAsDefault: false
@@ -23,6 +23,8 @@ const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, ke
         return map;
     else if (map[key])
         return map[key];
+    else if (map[ALL])
+        return map[ALL];
     return defaultFn;
 };
 
@@ -30,28 +32,28 @@ export default class Database<T extends Schema> implements DatabaseSchema {
     schema: T;
     tables: TableSchema[];
     options: DatabaseOptions;
-    factory: ModelFactory;
-
+    factory: ModelFactory & RecordFactory;
     tableMap: MapOf<TableSchema>;
 
-    constructor(schema: T, options?: DatabaseOptions) {
-        ensureParamObject("schema", schema);
-
-        this.schema = schema;
+    constructor(schema: T, factory: ModelFactory & RecordFactory, options?: DatabaseOptions) {
+        this.schema = ensureParamObject("schema", schema);
+        this.factory = ensureParamObject("factory", factory);
         this.options = { ...defaultOptions, ...options };
-        this.factory = this.options.factory || new DefaultModelFactory();
+
         this.tables = Object.keys(schema).map(tableName =>
             this.factory.newTableSchema(this, tableName, schema[tableName]));
         this.tableMap = toObject(this.tables, t => t.name);
         this.tables.forEach(table => table.connect(this.tableMap));
     }
 
-    getNormalizer = (schemaName: string) =>
+    getRecordNormalizer = (schemaName: string) =>
         getMappedFunction(this.options.onNormalize, schemaName)
     getPkGenerator = (schemaName: string) =>
         getMappedFunction(this.options.onGeneratePK, schemaName)
     getRecordComparer = (schemaName: string) =>
         getMappedFunction(this.options.onRecordCompare, schemaName, isEqual)
+    getRecordMerger = (schemaName: string) =>
+        getMappedFunction(this.options.onRecordMerge, schemaName)
 
     combineReducers(...reducers: Reducer[]) {
         return (state: any = {}, action: any) => this.reduce(state, action, reducers);
@@ -65,7 +67,7 @@ export default class Database<T extends Schema> implements DatabaseSchema {
     }
 
     createSession(state: DatabaseState = {}, options?: SessionOptions) {
-        return new DatabaseSession(state, this, { readOnly: false, ...options });
+        return this.factory.newSession(this, state, { readOnly: false, ...options });
     }
 
     getTableSchema(name: string) {

@@ -24,6 +24,7 @@
     "test",
     "docs",
     "extras",
-    "examples"
+    "examples",
+    "dist"
   ]
 }

@@ -27,6 +27,17 @@ export const isObject = (value: any) => {
     return value !== null && !Array.isArray(value) && typeof value === "object";
 };
 
+export const isPlainObject = (value: any) => {
+    if (isObject(value)) {
+        if (typeof Object.getPrototypeOf === "function") {
+            const proto = Object.getPrototypeOf(value);
+            return proto === Object.prototype || proto === null;
+        }
+        return Object.prototype.toString.call(value) === "[object Object]";
+    }
+    return false;
+};
+
 export const ensureParam = <T= any>(name: string, value: T) => {
     if (value === undefined)
         throw new Error(errors.argument(name, "value"));
@@ -39,9 +50,14 @@ export const ensureParamString = (name: string, value: any) => {
     return value;
 };
 
-export const ensureParamObject = (name: string, value: any) => {
+export const ensureParamObject = (name: string, value: any, ...props: string[]) => {
     if (!value || !isObject(value))
         throw new Error(errors.argument(name, "object"));
+    if (props) {
+        const missing = props.filter(p => value[p] === undefined);
+        if (missing.length)
+            throw new Error(errors.argumentShape(name, missing));
+    }
     return value;
 };
 

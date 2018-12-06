@@ -1,5 +1,6 @@
 import { initialState } from "../constants";
 import errors from "../errors";
+import tableState from "../TableState";
 import {
     MapOf,
     PartialValue,
@@ -16,7 +17,6 @@ import {
 } from "../types";
 import * as utils from "../utils";
 import NormalizeContext from "./NormalizeContext";
-import tableState from "./TableState";
 
 export default class TableModel<R extends TableRecord> implements Table<R> {
     readonly session: Session;
@@ -73,16 +73,16 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
             return [];
     }
 
-    insert(data: Values<R>) {
-        return this._normalizedAction(data, this.insertNormalized, true);
+    insert(data: Values<R>, argument?: any) {
+        return this._normalizedAction(data, this.insertNormalized, true, argument);
     }
 
-    update(data: PartialValues<R>) {
-        return this._normalizedAction(data, this.updateNormalized, false);
+    update(data: PartialValues<R>, argument?: any) {
+        return this._normalizedAction(data, this.updateNormalized, false, argument);
     }
 
-    upsert(data: PartialValues<R>) {
-        return this._normalizedAction(data, this.upsertNormalized, true);
+    upsert(data: PartialValues<R>, argument?: any) {
+        return this._normalizedAction(data, this.upsertNormalized, true, argument);
     }
 
     delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]) {
@@ -158,7 +158,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
                 throw new Error(errors.recordUpdateViolation(this.schema.name, id));
 
             const oldRecord = this.state.byId[id] as {};
-            const newRecord = { ...oldRecord, ...table.byId[id] as {} } as ValueType<R>;
+            const newRecord = this.schema.mergeRecord(oldRecord, table.byId[id]) as ValueType<R>;
 
             const isModified = this.schema.isModified(oldRecord, newRecord);
 
@@ -181,12 +181,13 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     private _normalizedAction(
         data: PartialValues<R>,
         action: (norm: TableState) => void,
-        normalizePKs: boolean
+        normalizePKs: boolean,
+        argument?: any
     ) {
         utils.ensureParam("data", data);
         utils.ensureParamFunction("action", action);
 
-        const ctx = new NormalizeContext(this.schema, normalizePKs);
+        const ctx = new NormalizeContext(this.schema, normalizePKs, argument);
         this.schema.normalize(data, ctx);
 
         const table = ctx.output[this.schema.name];

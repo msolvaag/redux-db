@@ -2,9 +2,14 @@
 node_modules
 examples
 src
+test
+extras
 docs
 _config.yml
 logo.*
+jest.*
+tslint.json
+*.lock
 gulpfile.js
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md

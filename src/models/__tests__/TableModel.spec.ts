@@ -1,10 +1,10 @@
 // tslint:disable:object-literal-sort-keys
 // tslint:disable:no-empty
 import { uniq } from "lodash";
+import { createDatabase } from "../..";
 import { initialState, TYPE_PK } from "../../constants";
 import errors from "../../errors";
 import { TableState } from "../../types";
-import Database from "../Database";
 import TableModel from "../TableModel";
 
 const TABLE1 = "table1";
@@ -38,7 +38,7 @@ const createTable = (state: TableState = initialState(TABLE1)) => {
         name: TABLE1
     }, state);
 
-    const db = new Database(schema);
+    const db = createDatabase(schema);
     const session = db.createSession({
         [TABLE1]: tableState,
     });
@@ -396,7 +396,7 @@ describe("delete", () => {
     test("throws if no data given", () =>
         expect(() => table.delete()).toThrow(errors.argument("data", "value")));
     test("throws if invalid data given", () =>
-        [{}, () => { }, false, "", NaN].forEach(data =>
+        [() => { }, false, "", NaN].forEach(data =>
             expect(() => table.delete(data)).toThrow()));
     test("returns zero for unknown id", () =>
         expect(table.delete(0)).toEqual(0));

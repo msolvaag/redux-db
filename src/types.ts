@@ -5,10 +5,13 @@ export type Values<R> = ValueType<R> | ValueType<R>[];
 export type PartialValue<R> = Partial<ValueType<R>>;
 export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
 
+export interface RecordEntity { id: string; }
+
 export type Reducer = (session: any, action: any, arg?: any) => void;
 export type PkGenerator = (record: any, schema: TableSchema) => string | null | undefined;
-export type Normalizer = (record: any, context: NormalizeContext) => any;
+export type RecordNormalizer = (record: any, context: NormalizeContext) => any;
 export type RecordComparer = (a: any, b: any, schema: TableSchema) => boolean;
+export type RecordMerger = (a: any, b: any, schema: TableSchema) => any;
 
 export interface MapOf<T> { [key: string]: T; }
 
@@ -27,6 +30,7 @@ export interface TableSchema {
     name: string;
     fields: FieldSchema[];
     relations: FieldSchema[];
+    primaryKeys: FieldSchema[];
 
     /// Connects this schema's fields with other tables.
     /// Used internally in the setup of the schema object model.
@@ -36,13 +40,15 @@ export interface TableSchema {
     /// Gets the values of the FK's for the given record.
     getForeignKeys(record: any): ForeignKey[];
     /// Determines whether two records are equal, not modified.
-    isModified(x: any, y: any): boolean;
+    isModified(recordA: any, recordB: any): boolean;
     /// Infers the owner PK into the given nested relations
     inferRelations(data: any, rel: FieldSchema, ownerId: string): any[];
     injectKeys(data: any, record: TableRecord): void;
     /// Normalizes the given data and outputs to context.
     /// Returns the PKs for the normalized records.
     normalize(data: any, context: NormalizeContext): string[];
+    /// Merges two records producing an updated version.
+    mergeRecord(oldRecord: any, newRecord: any): any;
 }
 
 // Holds the schema definition for a table field (column)
@@ -107,13 +113,13 @@ export interface Table<R extends TableRecord = TableRecord> {
 
     /// Inserts single or multiple records.
     /// Returns the inserted records.
-    insert(data: Values<R>): string[];
+    insert(data: Values<R>, argument?: any): string[];
     /// Updates single or multiple records.
     /// Returns the updated records.
-    update(data: PartialValues<R>): string[];
+    update(data: PartialValues<R>, argument?: any): string[];
     /// Upserts single or multiple records.
     /// Returns the upserted records.
-    upsert(data: PartialValues<R>): string[];
+    upsert(data: PartialValues<R>, argument?: any): string[];
     /// Deletes single or multiple records by id or object.
     /// Returns number of successfully deleted records.
     delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]): number;
@@ -132,6 +138,11 @@ export interface TableRecord<T extends RecordValue = RecordValue> {
 
     update(data: Partial<T>): this;
     delete(): void;
+}
+
+export interface TableRecordField {
+    name: string;
+    value: any;
 }
 
 /// Represents a wrapper set of records belonging to a table.
@@ -159,26 +170,58 @@ export interface TableRecordSet<R extends TableRecord = TableRecord> {
     delete(): void;
 }
 
-export interface ModelFactory {
-    newTableModel(session: Session, schema: TableSchema, state: TableState): Table;
-    newTableSchema(db: DatabaseSchema, name: string, schema: TableDefinition): TableSchema;
-    newRecordModel(id: string, table: Table): TableRecord;
-    newRecordSetModel(table: Table, schema: FieldSchema, owner: { id: string }): TableRecordSet;
+export interface SchemaNormalizer {
+    normalize: (data: any, context: NormalizeContext) => string[];
 }
 
-/// Defines a database schema
+export interface ModelTypes {
+    TableSchemaModel: new (db: DatabaseSchema, name: string, schema: TableDefinition) => TableSchema;
+    FieldSchemaModel: new (table: TableSchema, name: string, schema: FieldDefinition) => FieldSchema;
+    TableModel: new (session: Session, schema: TableSchema, state: TableState) => Table;
+    RecordModel: new (id: string, table: Table) => TableRecord;
+    RecordFieldModel: new (schema: FieldSchema, record: TableRecord) => TableRecordField;
+    RecordSetModel: new (table: Table, schema: FieldSchema, owner: RecordEntity) => TableRecordSet;
+    SchemaNormalizer: new (schema: TableSchema) => SchemaNormalizer;
+    Session: new (db: DatabaseSchema, state: DatabaseState, options?: SessionOptions) => Session;
+}
+
+export interface ModelFactory {
+    newSchemaNormalizer: (schema: TableSchema) => SchemaNormalizer;
+    newSession: (db: DatabaseSchema, state: DatabaseState, options?: SessionOptions) => Session;
+    newTableSchema: (db: DatabaseSchema, name: string, schema: TableDefinition) => TableSchema;
+    newFieldSchema: (table: TableSchema, name: string, schema: FieldDefinition) => FieldSchema;
+    newTableModel: (session: Session, schema: TableSchema, state: TableState) => Table;
+    newRecordSetModel: (table: Table, schema: FieldSchema, owner: RecordEntity) => TableRecordSet;
+    newRecordFieldModel: (schema: FieldSchema, record: TableRecord) => TableRecordField;
+}
+
+export interface RecordFactory {
+    newRecordModel: (id: string, table: Table) => TableRecord;
+}
+
+/**
+ * Defines a database schema
+ */
 export interface Schema {
     [key: string]: TableDefinition;
 }
 
-/// Defines a table schema
+/**
+ * Defines a table schema
+ */
 export interface TableDefinition {
     [key: string]: FieldDefinition;
 }
 
 /// Defines a field (column) schema
 export interface FieldDefinition {
-    /// The field type (Deprecated)
+    /**
+     * The field type (Deprecated)
+     *
+     * @type {FieldType}
+     * @memberof FieldDefinition
+     * @deprecated
+     */
     type?: FieldType;
 
     /// Declares field to be a primary key.
@@ -187,7 +230,12 @@ export interface FieldDefinition {
     /// Declares field to be used as modified marker
     stamp?: boolean;
 
-    /// The name this field references´ in the model. Defaults to schema key.
+    /**
+     * The name this field references´ in the model. Defaults to schema key.
+     *
+     * @type {string}
+     * @memberof FieldDefinition
+     */
     fieldName?: string;
 
     /// The property name this field will have on the record model. Defaults to schema key.
@@ -234,22 +282,29 @@ export interface NormalizeContext {
 export interface DatabaseSchema {
     tables: TableSchema[];
     options: DatabaseOptions;
-    factory: ModelFactory;
+    factory: ModelFactory & RecordFactory;
 
-    getNormalizer: (schemaName: string) => Normalizer | undefined;
+    getRecordNormalizer: (schemaName: string) => RecordNormalizer | undefined;
     getPkGenerator: (schemaName: string) => PkGenerator | undefined;
     getRecordComparer: (schemaName: string) => RecordComparer | undefined;
+    getRecordMerger: (schemaName: string) => RecordMerger | undefined;
 }
 
 /// Represents the available options for creating a new database.
 export interface DatabaseOptions {
-    onNormalize?: MapOf<Normalizer> | Normalizer;
+    /* Register a callback to do custom normalization of data before insert/update ops. */
+    onNormalize?: MapOf<RecordNormalizer> | RecordNormalizer;
     onGeneratePK?: MapOf<PkGenerator> | PkGenerator;
     onRecordCompare?: MapOf<RecordComparer> | RecordComparer;
+    onRecordMerge?: MapOf<RecordMerger> | RecordMerger;
 
     cascadeAsDefault?: boolean;
     strict?: boolean;
-    factory?: ModelFactory;
+}
+
+export interface DatabaseCreateOptions extends DatabaseOptions {
+    factory?: Partial<ModelFactory>;
+    recordModelClass?: RecordClass;
 }
 
 /// Represents the available options for creating a new session.
@@ -283,6 +338,7 @@ export interface Session {
     db: DatabaseSchema;
     state: DatabaseState;
     tables: TableMap;
+    readOnly: boolean;
 
     upsert(ctx: NormalizeContext): void;
     commit(): DatabaseState;
