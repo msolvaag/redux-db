@@ -12,7 +12,7 @@ import {
     TableSchema
 } from "./types";
 
-const createRecordModelClass = (Base: RecordClass) => {
+export const createRecordModelClass = (Base: RecordClass) => {
     return class ExtendedRecordModel extends Base implements ExtendedRecord {
         _fields: { [key: string]: any } = {};
 

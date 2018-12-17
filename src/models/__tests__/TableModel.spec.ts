@@ -155,11 +155,8 @@ describe("get", () => {
     const table: any = new TableModel(session, schema, state);
     test("returns a single record id", () =>
         expect(table.get(1)).toEqual(record));
-    test("returns undefined if not in table", () =>
-        expect(table.get(0)).toBeUndefined());
-    test("returns undefined if invalid id given", () =>
-        invalidIds.forEach(id =>
-            expect(table.get(id)).toBeUndefined()));
+    test("throws if not in table", () =>
+        expect(() => table.get(0)).toThrow(errors.recordNotFound(name, 0)));
 });
 
 describe("getValue", () => {
@@ -396,7 +393,7 @@ describe("delete", () => {
     test("throws if no data given", () =>
         expect(() => table.delete()).toThrow(errors.argument("data", "value")));
     test("throws if invalid data given", () =>
-        [() => { }, false, "", NaN].forEach(data =>
+        [() => { }, false, ""].forEach(data =>
             expect(() => table.delete(data)).toThrow()));
     test("returns zero for unknown id", () =>
         expect(table.delete(0)).toEqual(0));

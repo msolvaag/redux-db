@@ -139,7 +139,7 @@ describe("normalize", () => {
     });
 
     test("throws if no primary key found", () => {
-        const context = new DbNormalizeContext(model, true);
+        const context = new DbNormalizeContext(model, { normalizePKs: true });
 
         expect(() => model.normalize({}, context))
             .toThrow(errors.normalizePk(TABLE1));
@@ -149,7 +149,7 @@ describe("normalize", () => {
         test("normalizes given data", () => {
             const pk = "123";
             const data = { pkField: pk };
-            const context = new DbNormalizeContext(model, true);
+            const context = new DbNormalizeContext(model, { normalizePKs: true });
             model.normalize(data, context);
 
             expect(context.output).toEqual({

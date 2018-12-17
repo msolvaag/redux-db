@@ -1,8 +1,9 @@
 import { initialState } from "../constants";
 import errors from "../errors";
-import tableState from "../TableState";
+import tableState from "../state";
 import {
     MapOf,
+    NormalizeOptions,
     PartialValue,
     PartialValues,
     Session,
@@ -51,8 +52,9 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         return this.state.byId[utils.asID(id)] !== undefined;
     }
 
-    get(id: number | string): R | undefined {
-        if (!this.exists(id)) return undefined;
+    get(id: number | string): R {
+        if (!this.exists(id))
+            throw new Error(errors.recordNotFound(this.schema.name, id));
         return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
@@ -74,15 +76,18 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     }
 
     insert(data: Values<R>, argument?: any) {
-        return this._normalizedAction(data, this.insertNormalized, true, argument);
+        return this._normalizedAction(
+            data, this.insertNormalized, { normalizePKs: true, argument });
     }
 
     update(data: PartialValues<R>, argument?: any) {
-        return this._normalizedAction(data, this.updateNormalized, false, argument);
+        return this._normalizedAction(
+            data, this.updateNormalized, { argument });
     }
 
     upsert(data: PartialValues<R>, argument?: any) {
-        return this._normalizedAction(data, this.upsertNormalized, true, argument);
+        return this._normalizedAction(
+            data, this.upsertNormalized, { normalizePKs: true, argument });
     }
 
     delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]) {
@@ -90,7 +95,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
 
         const idsToDelete = utils.ensureArray(data).map(subject =>
             utils.isObject(subject)
-                ? this.schema.getPrimaryKey(subject)
+                ? this.schema.ensurePrimaryKey(subject)
                 : utils.ensureID(subject));
 
         if (!idsToDelete.length) return 0;
@@ -178,17 +183,26 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         }
     }
 
+    normalize(data: PartialValues<R>, options?: NormalizeOptions): NormalizeContext {
+        utils.ensureParam("data", data);
+        const ctx = new NormalizeContext(this.schema, {
+            table: this,
+            normalizePKs: true,
+            ...options
+        });
+        this.schema.normalize(data, ctx);
+        return ctx;
+    }
+
     private _normalizedAction(
         data: PartialValues<R>,
         action: (norm: TableState) => void,
-        normalizePKs: boolean,
-        argument?: any
+        options: NormalizeOptions
     ) {
         utils.ensureParam("data", data);
         utils.ensureParamFunction("action", action);
 
-        const ctx = new NormalizeContext(this.schema, normalizePKs, argument);
-        this.schema.normalize(data, ctx);
+        const ctx = this.normalize(data, options);
 
         const table = ctx.output[this.schema.name];
         if (table) action.call(this, table);

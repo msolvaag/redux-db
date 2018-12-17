@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var errors_1 = require("./errors");
+var tslib_1 = require("tslib");
+var errors_1 = tslib_1.__importDefault(require("./errors"));
 exports.toArray = function (obj) {
     if (!obj)
         return [];
@@ -21,6 +22,16 @@ exports.ensureArray = function (obj) {
 };
 exports.isObject = function (value) {
     return value !== null && !Array.isArray(value) && typeof value === "object";
+};
+exports.isPlainObject = function (value) {
+    if (exports.isObject(value)) {
+        if (typeof Object.getPrototypeOf === "function") {
+            var proto = Object.getPrototypeOf(value);
+            return proto === Object.prototype || proto === null;
+        }
+        return Object.prototype.toString.call(value) === "[object Object]";
+    }
+    return false;
 };
 exports.ensureParam = function (name, value) {
     if (value === undefined)
@@ -65,12 +76,11 @@ exports.ensureID = function (id) {
 exports.isValidID = function (id) {
     return id !== null
         && id !== undefined
-        && !isNaN(id)
         && ((typeof id === "string" && id.length > 0) || typeof id === "number");
 };
 // Ensures that the given id is a string
 exports.asID = function (id) {
-    return typeof id === "string" ? id : id.toString();
+    return (typeof id === "string" ? id : id.toString());
 };
 exports.toObject = function (a, key) {
     return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});

@@ -1,4 +1,3 @@
-import { MapOf } from ".";
 import errors from "./errors";
 
 export const toArray = (obj: any) => {
@@ -84,13 +83,12 @@ export const ensureID = (id: any) => {
 export const isValidID = (id: any) => {
     return id !== null
         && id !== undefined
-        && !isNaN(id)
         && ((typeof id === "string" && id.length > 0) || typeof id === "number");
 };
 
 // Ensures that the given id is a string
 export const asID = (id: any) => {
-    return typeof id === "string" ? id : id.toString();
+    return (typeof id === "string" ? id : id.toString()) as string;
 };
 
 export const toObject = <T>(a: T[], key: (a: T) => string) => {

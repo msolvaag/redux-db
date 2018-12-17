@@ -1,12 +1,5 @@
 import errors from "../errors";
-import {
-    DatabaseSchema,
-    DatabaseState,
-    NormalizeContext,
-    Session,
-    SessionOptions,
-    TableMap
-} from "../types";
+import { DatabaseSchema, DatabaseState, NormalizeContext, Session, SessionOptions, TableMap } from "../types";
 import { ensureParamObject, toObject } from "../utils";
 
 export default class DatabaseSession implements Session {

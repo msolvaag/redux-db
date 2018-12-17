@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": "./src",
+    "noEmitOnError": false,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "jsx": "react",
+    "strict": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "declaration": true
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "test",
+    "tests",
+    "packages",
+    "docs",
+    "examples",
+    "dist"
+  ]
+}

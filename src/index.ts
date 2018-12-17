@@ -10,12 +10,7 @@ import {
     TableSchemaModel
 } from "./models";
 import SchemaNormalizer from "./Normalizer";
-import {
-    DatabaseCreateOptions,
-    ModelFactory,
-    RecordClass,
-    Schema
-} from "./types";
+import { DatabaseCreateOptions, ModelFactory, RecordClass, Schema, TableMap } from "./types";
 
 const defaultFactory: ModelFactory = {
     newTableSchema: (db, name, schema) => new TableSchemaModel(db, name, schema),
@@ -33,17 +28,16 @@ export const createFactory = (factory?: Partial<ModelFactory>, recordModelClass?
         ...factory
     }, recordModelClass || RecordModel);
 
-export const createDatabase = (schema: Schema, options: DatabaseCreateOptions = {}) => {
+export const createDatabase = <T extends TableMap>(schema: Schema, options: DatabaseCreateOptions = {}) => {
     const { factory = {}, recordModelClass = RecordModel, ...dbOptions } = options;
     const modelFactory = createFactory(factory, recordModelClass);
 
-    return new Database(schema, modelFactory, dbOptions);
+    return new Database<T>(schema, modelFactory, dbOptions);
 };
 
 export * from "./constants";
 export * from "./models";
 export * from "./ModelFactory";
 export * from "./types";
-
 import * as utils from "./utils";
 export { utils };

@@ -22,4 +22,5 @@ export default {
     tableInvalidState: (table: string) => `The table "${table}" has an invalid state.`,
     tableNotInSession: (table: string) => `The table: "${table}" does not exist in the current session.`,
     uniqueConstraintViolation: (id: string) => `Operation violates unique constraint for id: "${id}"`,
+    unknownTableState: () => "Failed to identifiy table state."
 };

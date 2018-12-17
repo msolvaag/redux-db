@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`one to many state is normalized 1`] = `
+Object {
+  "BlogPost": Object {
+    "byId": Object {
+      "1": Object {
+        "author": "user1",
+        "body": "......",
+        "id": 1,
+      },
+      "2": Object {
+        "author": "user2",
+        "body": "......",
+        "id": 2,
+      },
+    },
+    "ids": Array [
+      "1",
+      "2",
+    ],
+    "indexes": Object {
+      "author": Object {
+        "unique": false,
+        "values": Object {
+          "user1": Array [
+            "1",
+          ],
+          "user2": Array [
+            "2",
+          ],
+        },
+      },
+    },
+    "name": "BlogPost",
+  },
+  "Comment": Object {
+    "byId": Object {
+      "1": Object {
+        "author": "user2",
+        "comment": ".....",
+        "id": 1,
+        "post": "1",
+      },
+      "2": Object {
+        "author": "user3",
+        "comment": ".....",
+        "id": 2,
+        "post": "1",
+      },
+      "3": Object {
+        "author": "user3",
+        "comment": ".....",
+        "id": 3,
+        "post": "2",
+      },
+      "4": Object {
+        "author": "user1",
+        "comment": ".....",
+        "id": 4,
+        "post": "2",
+      },
+      "5": Object {
+        "author": "user3",
+        "comment": ".....",
+        "id": 5,
+        "post": "2",
+      },
+    },
+    "ids": Array [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+    ],
+    "indexes": Object {
+      "author": Object {
+        "unique": false,
+        "values": Object {
+          "user1": Array [
+            "4",
+          ],
+          "user2": Array [
+            "1",
+          ],
+          "user3": Array [
+            "2",
+            "3",
+            "5",
+          ],
+        },
+      },
+      "post": Object {
+        "unique": false,
+        "values": Object {
+          "1": Array [
+            "1",
+            "2",
+          ],
+          "2": Array [
+            "3",
+            "4",
+            "5",
+          ],
+        },
+      },
+    },
+    "name": "Comment",
+  },
+  "User": Object {
+    "byId": Object {
+      "user1": Object {
+        "name": "User 1",
+        "username": "user1",
+      },
+      "user2": Object {
+        "name": "User 2",
+        "username": "user2",
+      },
+      "user3": Object {
+        "name": "User 3",
+        "username": "user3",
+      },
+    },
+    "ids": Array [
+      "user1",
+      "user2",
+      "user3",
+    ],
+    "indexes": Object {},
+    "name": "User",
+  },
+}
+`;

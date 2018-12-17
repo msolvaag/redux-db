@@ -20,6 +20,16 @@ export var ensureArray = function (obj) {
 export var isObject = function (value) {
     return value !== null && !Array.isArray(value) && typeof value === "object";
 };
+export var isPlainObject = function (value) {
+    if (isObject(value)) {
+        if (typeof Object.getPrototypeOf === "function") {
+            var proto = Object.getPrototypeOf(value);
+            return proto === Object.prototype || proto === null;
+        }
+        return Object.prototype.toString.call(value) === "[object Object]";
+    }
+    return false;
+};
 export var ensureParam = function (name, value) {
     if (value === undefined)
         throw new Error(errors.argument(name, "value"));
@@ -62,12 +72,11 @@ export var ensureID = function (id) {
 export var isValidID = function (id) {
     return id !== null
         && id !== undefined
-        && !isNaN(id)
         && ((typeof id === "string" && id.length > 0) || typeof id === "number");
 };
 // Ensures that the given id is a string
 export var asID = function (id) {
-    return typeof id === "string" ? id : id.toString();
+    return (typeof id === "string" ? id : id.toString());
 };
 export var toObject = function (a, key) {
     return a.reduce(function (o, v) { o[key(v)] = v; return o; }, {});

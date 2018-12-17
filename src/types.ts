@@ -1,6 +1,5 @@
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
-export type RecordValue = Record<string, any>;
-export type ValueType<R> = R extends { value: infer T } ? T : never;
+export type ValueType<R> = R extends { value: infer ValueType } ? ValueType : never;
 export type Values<R> = ValueType<R> | ValueType<R>[];
 export type PartialValue<R> = Partial<ValueType<R>>;
 export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
@@ -36,7 +35,10 @@ export interface TableSchema {
     /// Used internally in the setup of the schema object model.
     connect(schemas: MapOf<TableSchema>): void;
     /// Gets the value of the PK for the given record.
-    getPrimaryKey(record: any): string;
+
+    ensurePrimaryKey(record: any): string;
+
+    getPrimaryKey(record: any): string | undefined;
     /// Gets the values of the FK's for the given record.
     getForeignKeys(record: any): ForeignKey[];
     /// Determines whether two records are equal, not modified.
@@ -73,7 +75,7 @@ export interface FieldSchema {
     /// If set, causes the record to be deleted if the foreign table row is deleted.
     cascade?: boolean;
 
-    /// If set, declares that this relation is a one 2 one relationship.
+    /// If set, exports that this relation is a one 2 one relationship.
     unique?: boolean;
 
     isPrimaryKey: boolean;
@@ -98,45 +100,148 @@ export interface Table<R extends TableRecord = TableRecord> {
     dirty: boolean;
 
     /// Gets a single record by it's PK.
-    get(id: string | number): R | undefined;
+    get(id: string | number): R;
     /// Gets the value of a record by it's PK(.
     getValue(id: string | number): ValueType<R> | undefined;
     /// Gets the index used for a given foreign key.
     getIndex(schemaName: string, fkId: string): string[];
 
-    /// Gets all records in table.
+    /**
+     * Gets all records in table as wrapped models.
+     *
+     * @returns {R[]}
+     * @memberof Table
+     */
     all(): R[];
-    /// Gets all values in table.
+
+    /**
+     * Gets all values in table.
+     *
+     * @returns {ValueType<R>[]}
+     * @memberof Table
+     */
     values(): ValueType<R>[];
-    /// Checks whether a record exists in table.
+
+    /**
+     * Checks whether a record exists in table.
+     *
+     * @param {(string | number)} id
+     * @returns {boolean}
+     * @memberof Table
+     */
     exists(id: string | number): boolean;
 
-    /// Inserts single or multiple records.
-    /// Returns the inserted records.
+    /**
+     * Inserts single or multiple records.
+     *
+     * @param {Values<R>} data
+     * @param {*} [argument] Optional argument passed to normalization.
+     * @returns {string[]} Primary keys of inserted records.
+     * @memberof Table
+     */
     insert(data: Values<R>, argument?: any): string[];
-    /// Updates single or multiple records.
-    /// Returns the updated records.
+
+    /**
+     * Updates single or multiple records.
+     *
+     * @param {PartialValues<R>} data
+     * @param {*} [argument] Optional argument passed to normalization.
+     * @returns {string[]} Primary keys of updated records.
+     * @memberof Table
+     */
     update(data: PartialValues<R>, argument?: any): string[];
-    /// Upserts single or multiple records.
-    /// Returns the upserted records.
+
+    /**
+     * Upserts single or multiple records.
+     *
+     * @param {PartialValues<R>} data
+     * @param {*} [argument] Optional argument passed to normalization.
+     * @returns {string[]} Primary keys of upserted records.
+     * @memberof Table
+     */
     upsert(data: PartialValues<R>, argument?: any): string[];
-    /// Deletes single or multiple records by id or object.
-    /// Returns number of successfully deleted records.
+
+    /**
+     * Deletes single or multiple records by id or object.
+     *
+     * @param {(string | number | PartialValue<R> | (string | number | PartialValue<R>)[])} data
+     * @returns {number} Number of successfully deleted records.
+     * @memberof Table
+     */
     delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]): number;
-    /// Deletes all records in table.
+
+    /**
+     * Deletes all records in table.
+     *
+     * @memberof Table
+     */
     deleteAll(): void;
 
-    /// Upserts the table state from another normalized state.
+    /**
+     * Upserts the table state from another normalized state.
+     *
+     * @param {TableState<ValueType<R>>} table
+     * @memberof Table
+     */
     upsertNormalized(table: TableState<ValueType<R>>): void;
+
+    /**
+     * Normalizes given data.
+     *
+     * @param {PartialValues<R>} data
+     * @param {NormalizeOptions} [options]
+     * @returns {NormalizeContext}
+     * @memberof Table
+     */
+    normalize(data: PartialValues<R>, options?: NormalizeOptions): NormalizeContext;
 }
 
-/// Represents a wrapped record belonging to a table.
-export interface TableRecord<T extends RecordValue = RecordValue> {
+/**
+ * Represents a wrapped record belonging to a table.
+ *
+ * @export
+ * @interface TableRecord
+ * @template T
+ */
+export interface TableRecord<T = any> {
+    /**
+     * Gets the record primary key.
+     *
+     * @type {string}
+     * @memberof TableRecord
+     */
     id: string;
+
+    /**
+     * Gets the table model which this records belongs.
+     *
+     * @type {Table}
+     * @memberof TableRecord
+     */
     table: Table;
+
+    /**
+     * Gets or sets the record data value.
+     *
+     * @type {T}
+     * @memberof TableRecord
+     */
     value: T;
 
+    /**
+     * Update record with new data.
+     *
+     * @param {Partial<T>} data - Object with partial or full data.
+     * @returns {this} Self
+     * @memberof TableRecord
+     */
     update(data: Partial<T>): this;
+
+    /**
+     * Deletes the record from table.
+     *
+     * @memberof TableRecord
+     */
     delete(): void;
 }
 
@@ -172,17 +277,6 @@ export interface TableRecordSet<R extends TableRecord = TableRecord> {
 
 export interface SchemaNormalizer {
     normalize: (data: any, context: NormalizeContext) => string[];
-}
-
-export interface ModelTypes {
-    TableSchemaModel: new (db: DatabaseSchema, name: string, schema: TableDefinition) => TableSchema;
-    FieldSchemaModel: new (table: TableSchema, name: string, schema: FieldDefinition) => FieldSchema;
-    TableModel: new (session: Session, schema: TableSchema, state: TableState) => Table;
-    RecordModel: new (id: string, table: Table) => TableRecord;
-    RecordFieldModel: new (schema: FieldSchema, record: TableRecord) => TableRecordField;
-    RecordSetModel: new (table: Table, schema: FieldSchema, owner: RecordEntity) => TableRecordSet;
-    SchemaNormalizer: new (schema: TableSchema) => SchemaNormalizer;
-    Session: new (db: DatabaseSchema, state: DatabaseState, options?: SessionOptions) => Session;
 }
 
 export interface ModelFactory {
@@ -224,10 +318,10 @@ export interface FieldDefinition {
      */
     type?: FieldType;
 
-    /// Declares field to be a primary key.
+    /// exports field to be a primary key.
     pk?: boolean;
 
-    /// Declares field to be used as modified marker
+    /// exports field to be used as modified marker
     stamp?: boolean;
 
     /**
@@ -250,28 +344,35 @@ export interface FieldDefinition {
     /// If set, causes the record to be deleted if the foreign table row is deleted.
     cascade?: boolean;
 
-    /// If set, declares that this relation is a one 2 one relationship.
+    /// If set, exports that this relation is a one 2 one relationship.
     unique?: boolean;
 
-    /// If set, declares that this field is nullable or not.
+    /// If set, exports that this field is nullable or not.
     notNull?: boolean;
 
     /// Defines a custom value factory for the field.
-    value?: (record: any, context?: ComputeContext<any>) => any;
+    value?: (record: any, context: ComputeContext<any>) => any;
 }
 
 /// Represents a context used in a custom value factory.
 export interface ComputeContext<T> {
     schema: FieldSchema;
-    record?: TableRecord<T>;
+    record: TableRecord<T>;
 }
 
 /// Holds context state when normalizing data
 export interface NormalizeContext {
+    /// Gets a reference to the table where the normalization started.
+    table?: Table;
+    /// Gets a reference to the schema from data is normalized.
     schema: TableSchema;
+    /// Gets a reference to the current db instance.
     db: DatabaseSchema;
+    /// Gets the current normalized output.
     output: MapOf<TableState>;
+    /// Gets a map of emitted data by schema name.
     emits: { [key: string]: any[] };
+    /// Gets a flag to whether normalize primary keys or not.
     normalizePKs: boolean;
 
     /// Emits data for further normalization
@@ -313,6 +414,15 @@ export interface SessionOptions {
     tableSchemas?: TableSchema[];
 }
 
+export interface NormalizeOptions {
+    normalizePKs?: boolean;
+    argument?: any;
+}
+
+export interface NormalizeContextOptions extends NormalizeOptions {
+    table?: Table;
+}
+
 /// Represents the state structure for a database.
 export type DatabaseState = MapOf<TableState>;
 
@@ -334,10 +444,10 @@ export interface TableIndex {
 }
 
 /// Represents a session
-export interface Session {
+export interface Session<T extends TableMap = TableMap> {
     db: DatabaseSchema;
     state: DatabaseState;
-    tables: TableMap;
+    tables: T;
     readOnly: boolean;
 
     upsert(ctx: NormalizeContext): void;

@@ -54,7 +54,7 @@ describe("constructor", () => {
 describe("upsert", () => {
     const db = new Database(schema, factory);
     const tableSchema = db.getTableSchema(TABLE1);
-    const context = new DbNormalizeContext(tableSchema, false);
+    const context = new DbNormalizeContext(tableSchema, { normalizePKs: false });
 
     test("throws if session is read only", () => {
         const session = new DatabaseSession(db, {}, { readOnly: true });

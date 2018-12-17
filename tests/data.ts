@@ -1,5 +1,4 @@
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.blogPosts = [
+export const blogPosts = [
     {
         id: 1,
         author: { username: "user1", name: "User 1" },
@@ -41,7 +40,7 @@ exports.blogPosts = [
     }
 ];
 
-exports.uniqueData = [
+export const uniqueData = [
     {
         id: 1,
         postID: 1

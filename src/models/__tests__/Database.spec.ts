@@ -1,8 +1,7 @@
 // tslint:disable:object-literal-sort-keys
 import { createFactory } from "../..";
-import { initialState, TYPE_PK } from "../../constants";
+import { ALL, initialState, TYPE_PK } from "../../constants";
 import errors from "../../errors";
-import { TableSchema } from "../../types";
 import { isEqual } from "../../utils";
 import Database from "../Database";
 import DatabaseSession from "../DatabaseSession";
@@ -113,6 +112,29 @@ describe("getRecordComparer", () => {
             .getRecordComparer(tableName)).toStrictEqual(comparer));
 });
 
+describe("getRecordMerger", () => {
+    const merger = jest.fn((valA: any, valB: any) => ({ ...valA, ...valB }));
+    const tableName = "test";
+    const factory = createFactory();
+
+    test("returns undefined as default", () =>
+        expect(new Database({}, factory)
+            .getRecordMerger(tableName)).toBeUndefined());
+
+    test("returns general merger", () =>
+        expect(new Database({}, factory, { onRecordMerge: merger })
+            .getRecordMerger(tableName)).toStrictEqual(merger));
+
+    test("returns merger specific to schema", () =>
+        expect(new Database({}, factory, { onRecordMerge: { [tableName]: merger } })
+            .getRecordMerger(tableName)).toStrictEqual(merger));
+
+    test("returns default merger when no matching schema", () =>
+        expect(new Database({}, factory, { onRecordMerge: { [ALL]: merger } })
+            .getRecordMerger(tableName)).toStrictEqual(merger));
+
+});
+
 describe("combineReducers", () => {
     const factory = createFactory();
     const db = new Database({}, factory);
@@ -198,21 +220,47 @@ describe("createSession", () => {
     });
 });
 
-describe("wrapTables [selectTables]", () => {
+describe("selectTables", () => {
     const factory = createFactory();
     const db = new Database({
         table1: { id: { type: TYPE_PK } },
-        table2: {}
+        table2: { id: { type: TYPE_PK } }
     }, factory);
     const state = db.reduce();
-    const tables = db.wrapTables(state);
+    const tables = db.selectTables(state);
 
     test("returns an map of table models", () => {
         expect(tables.table1).toBeInstanceOf(TableModel);
         expect(tables.table2).toBeInstanceOf(TableModel);
     });
 
-    test("tables are in readonly mode", () =>
+    test("tables are in readonly mode", () => {
         expect(() => tables.table1.insert({ id: 1 }))
+            .toThrow(errors.sessionReadonly());
+        expect(() => tables.table2.insert({ id: 1 }))
+            .toThrow(errors.sessionReadonly());
+    });
+});
+
+describe("selectTable", () => {
+    const factory = createFactory();
+    const TABLE1 = "table1";
+    const db = new Database({
+        [TABLE1]: { id: { type: TYPE_PK } },
+        table2: {}
+    }, factory);
+    const state = db.reduce();
+    const table = db.selectTable(state[TABLE1]);
+
+    test("returns table model", () => {
+        expect(table).toBeInstanceOf(TableModel);
+    });
+
+    test("throws if invalid table state", () =>
+        expect(() => db.selectTable({}))
+            .toThrow(errors.unknownTableState()));
+
+    test("table is in readonly mode", () =>
+        expect(() => table.insert({ id: 1 }))
             .toThrow(errors.sessionReadonly()));
 });

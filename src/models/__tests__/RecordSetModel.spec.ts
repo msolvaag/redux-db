@@ -1,19 +1,7 @@
 import errors from "../../errors";
-import Database from "../Database";
 import RecordSetModel from "../RecordSetModel";
 
 const Model = RecordSetModel as any;
-const TABLE1 = "TABLE1";
-const TABLE2 = "TABLE2";
-
-const schema = {
-    [TABLE1]: {
-        id: { pk: true }
-    },
-    [TABLE2]: {
-        ref: { pk: true, references: TABLE1, relationName: "refs" }
-    }
-};
 
 describe("constructor", () => {
 
@@ -65,12 +53,9 @@ describe("length", () => {
 
 describe("all()", () => {
     const ids = ["2", "3"];
-    const factory = {
-        newRecordModel: jest.fn((id) => ({ id }))
-    };
     const model = new Model({
         getIndex: () => ids,
-        schema: { db: { factory } }
+        get: jest.fn((id) => ({ id }))
     }, {}, { id: "1" });
 
     test("returns all records in set", () =>

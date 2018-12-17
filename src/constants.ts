@@ -6,6 +6,6 @@ export const TYPE_MODIFIED = "MODIFIED";
 
 export const ALL = "*";
 
-export const RESERVED_PROPERTIES = ["id", "table", "value", "_fields"];
+export const RESERVED_PROPERTIES = ["id", "table", "value", "_fields", "delete", "update"];
 export const initialState = <T = any>(name?: string) =>
     ({ ids: [], byId: {}, indexes: {}, name }) as TableState<T>;

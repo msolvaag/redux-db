@@ -101,7 +101,10 @@ export default class TableSchemaModel implements TableSchema {
             return p && k ? (p + "_" + k) : k;
         }, null as string | null | undefined | number);
 
-        return utils.isValidID(combinedPk) && utils.asID(combinedPk);
+        if (utils.isValidID(combinedPk))
+            return utils.asID(combinedPk);
+        else
+            return undefined;
     }
 
     getForeignKeys(record: any) {

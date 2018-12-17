@@ -22,10 +22,10 @@ describe("constructor", () => {
 
     test("normalizePKs is set", () => {
         const db = createDatabase({ [TABLE1]: {} });
-        const table = db.getTableSchema(TABLE1);
+        const schema = db.getTableSchema(TABLE1);
         const normalizePKs = true;
 
-        const context = new NormalizeContext(table, normalizePKs);
+        const context = new NormalizeContext(schema, { normalizePKs });
         expect(context.normalizePKs).toEqual(normalizePKs);
     });
 });
@@ -35,7 +35,7 @@ describe("emit", () => {
     const table = db.getTableSchema(TABLE1);
     const normalizePKs = true;
 
-    const context = new NormalizeContext(table, normalizePKs);
+    const context = new NormalizeContext(table, { normalizePKs });
     const record1 = { data: "test1" };
     const record2 = { data: "test2" };
 

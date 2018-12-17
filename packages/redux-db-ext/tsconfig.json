@@ -1,0 +1,37 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "noEmitOnError": true,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "removeComments": false,
+    "target": "es5",
+    "outDir": "./dist/es",
+    "sourceMap": false,
+    "noImplicitAny": true,
+    "module": "es2015",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "strict": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "paths": {
+      "redux-db": [
+        "../../dist/es"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "wwwroot",
+    "test",
+    "docs",
+    "examples",
+    "dist"
+  ]
+}

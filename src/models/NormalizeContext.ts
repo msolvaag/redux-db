@@ -2,6 +2,7 @@ import {
     DatabaseSchema,
     MapOf,
     NormalizeContext,
+    NormalizeContextOptions,
     Table,
     TableSchema,
     TableState
@@ -9,6 +10,7 @@ import {
 import { ensureParamObject } from "../utils";
 
 export default class DbNormalizeContext implements NormalizeContext {
+    table?: Table;
     schema: TableSchema;
     db: DatabaseSchema;
     output: MapOf<TableState> = {};
@@ -16,11 +18,13 @@ export default class DbNormalizeContext implements NormalizeContext {
     normalizePKs: boolean;
     argument?: any;
 
-    constructor(schema: TableSchema, normalizePKs: boolean, arg?: any) {
+    constructor(schema: TableSchema, options: NormalizeContextOptions) {
         this.schema = ensureParamObject("schema", schema, "db");
         this.db = ensureParamObject("schema.db", this.schema.db);
-        this.normalizePKs = normalizePKs;
-        this.argument = arg;
+
+        this.table = options.table;
+        this.normalizePKs = options.normalizePKs === true;
+        this.argument = options.argument;
     }
 
     emit(tableName: string, record: any) {

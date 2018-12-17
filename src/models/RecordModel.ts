@@ -1,7 +1,7 @@
-import { RecordValue, Table, TableRecord } from "../types";
+import { Table, TableRecord } from "../types";
 import { ensureParamObject, ensureParamString } from "../utils";
 
-export default class RecordModel<T extends RecordValue> implements TableRecord<T> {
+export default class RecordModel<T> implements TableRecord<T> {
     table: Table<RecordModel<T>>;
     id: string;
 

@@ -1,4 +1,5 @@
 import { ALL } from "../constants";
+import errors from "../errors";
 import {
     DatabaseOptions,
     DatabaseSchema,
@@ -8,7 +9,9 @@ import {
     RecordFactory,
     Reducer,
     Schema,
+    Session,
     SessionOptions,
+    TableMap,
     TableSchema
 } from "../types";
 import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
@@ -28,21 +31,21 @@ const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, ke
     return defaultFn;
 };
 
-export default class Database<T extends Schema> implements DatabaseSchema {
-    schema: T;
+export default class Database<T extends TableMap> implements DatabaseSchema {
+    schema: Schema;
     tables: TableSchema[];
     options: DatabaseOptions;
     factory: ModelFactory & RecordFactory;
     tableMap: MapOf<TableSchema>;
 
-    constructor(schema: T, factory: ModelFactory & RecordFactory, options?: DatabaseOptions) {
+    constructor(schema: Schema, factory: ModelFactory & RecordFactory, options?: DatabaseOptions) {
         this.schema = ensureParamObject("schema", schema);
         this.factory = ensureParamObject("factory", factory);
         this.options = { ...defaultOptions, ...options };
 
         this.tables = Object.keys(schema).map(tableName =>
             this.factory.newTableSchema(this, tableName, schema[tableName]));
-        this.tableMap = toObject(this.tables, t => t.name);
+        this.tableMap = toObject(this.tables, table => table.name);
         this.tables.forEach(table => table.connect(this.tableMap));
     }
 
@@ -67,14 +70,14 @@ export default class Database<T extends Schema> implements DatabaseSchema {
     }
 
     createSession(state: DatabaseState = {}, options?: SessionOptions) {
-        return this.factory.newSession(this, state, { readOnly: false, ...options });
+        return this.factory.newSession(this, state, { readOnly: false, ...options }) as Session<T>;
     }
 
     getTableSchema(name: string) {
         return this.tableMap[name];
     }
 
-    wrapTables(state: any) {
+    selectTables(state: any) {
         const tableSchemas = Object.keys(state)
             .filter(tableName => this.tableMap[tableName])
             .map(tableName => this.tableMap[tableName]);
@@ -87,7 +90,13 @@ export default class Database<T extends Schema> implements DatabaseSchema {
         return session.tables;
     }
 
-    selectTables(state: any) {
-        return this.wrapTables(state);
+    selectTable(tableState: any, schemaName?: string) {
+        const { name = schemaName } = tableState;
+        if (!name)
+            throw new Error(errors.unknownTableState());
+
+        return this.selectTables({
+            [name]: tableState,
+        })[name];
     }
 }

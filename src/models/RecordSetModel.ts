@@ -24,8 +24,7 @@ export default class RecordSetModel<R extends TableRecord> implements TableRecor
     }
 
     all() {
-        return this.ids.map(id =>
-            this.table.schema.db.factory.newRecordModel(id, this.table) as R);
+        return this.ids.map(id => this.table.get(id));
     }
 
     values() {
@@ -42,7 +41,7 @@ export default class RecordSetModel<R extends TableRecord> implements TableRecor
 
     remove(data: PartialValues<R>) {
         const ids = this._normalize(data).map(obj =>
-            this.table.schema.getPrimaryKey(obj));
+            this.table.schema.ensurePrimaryKey(obj));
         return this.table.delete(ids);
     }
 

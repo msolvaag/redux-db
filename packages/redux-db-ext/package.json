@@ -6,6 +6,6 @@
   "author": "msolvaag",
   "license": "MIT",
   "dependencies": {
-    "redux-db": "../"
+    "redux-db": "^1.0.0"
   }
 }

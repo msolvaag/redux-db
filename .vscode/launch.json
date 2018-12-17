@@ -2,20 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "vscode-jest-tests",
             "type": "node",
             "request": "launch",
-            "name": "Jest Tests",
-            "program": "${workspaceRoot}/yarn",
-            "args": [
-                "test"
-            ],
-            "internalConsoleOptions": "openOnSessionStart"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceRoot}/test/index.js"
-        }
+            "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+            "args": ["--runInBand", "--coverage=false"],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+            }
     ]
 }
