@@ -18,6 +18,7 @@ export default class SchemaNormalizer {
         utils.ensureParamObject("context", context);
         utils.ensureParamObject("context.output", context.output);
 
+        context.currentSchema = this.schema;
         if (!context.output[this.schema.name])
             context.output[this.schema.name] = initialState(this.schema.name);
 

@@ -18,6 +18,10 @@ export default class RecordModel<T> implements TableRecord<T> {
         this.update(data);
     }
 
+    get metadata() {
+        return this.table.getMetadata(this.id);
+    }
+
     delete() {
         this.table.delete(this.id);
     }
@@ -26,5 +30,9 @@ export default class RecordModel<T> implements TableRecord<T> {
         this.table.schema.injectKeys(data, this);
         this.table.update(data);
         return this;
+    }
+
+    setMetadata(data: {}) {
+        this.table.setMetadata(this.id, { ...this.metadata, ...data });
     }
 }

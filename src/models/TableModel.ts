@@ -30,9 +30,10 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         this.schema = utils.ensureParamObject("schema", schema);
         this.state = utils.ensureParamObject("state", state || initialState(this.schema.name));
 
-        const { ids, byId, indexes, name } = this.state;
+        const { ids, byId, indexes, meta, name } = this.state;
         if (!ids || !byId || !indexes) throw new Error(errors.tableInvalidState(schema.name));
         if (!name) this.state.name = name;
+        if (!meta) this.state.meta = {};
     }
 
     get length() {
@@ -58,11 +59,31 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
+    getOrDefault(id: number | string): R | undefined {
+        if (!this.exists(id))
+            return undefined;
+        return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
+    }
+
     getValue(id: number | string) {
         if (utils.isValidID(id))
             return this.state.byId[id];
         else
             return undefined;
+    }
+
+    getValues() {
+        return this.values();
+    }
+
+    getMetadata(id: number | string) {
+        return this.state.meta[id] || {};
+    }
+
+    setMetadata(ids: number | string | (string | number)[], metadata: {}) {
+        const meta = utils.ensureArray(ids).reduce((map, id) => ({ ...map, [id]: metadata }), {});
+
+        this.state = tableState.merge(this.state, { meta });
     }
 
     getIndex(name: string, fk: string) {
@@ -162,7 +183,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
             if (!this.exists(id))
                 throw new Error(errors.recordUpdateViolation(this.schema.name, id));
 
-            const oldRecord = this.state.byId[id] as {};
+            const oldRecord = this.state.byId[id];
             const newRecord = this.schema.mergeRecord(oldRecord, table.byId[id]) as ValueType<R>;
 
             const isModified = this.schema.isModified(oldRecord, newRecord);

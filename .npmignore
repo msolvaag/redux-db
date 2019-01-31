@@ -5,6 +5,8 @@ src
 test
 extras
 docs
+tests
+packages
 _config.yml
 logo.*
 jest.*

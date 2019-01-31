@@ -11,6 +11,7 @@ import {
     TableRecordSet,
     TableSchema
 } from "./types";
+import * as utils from "./utils";
 
 export const createRecordModelClass = (Base: RecordClass) => {
     return class ExtendedRecordModel extends Base implements ExtendedRecord {
@@ -33,6 +34,8 @@ export class RecordModelFactory {
     }
 
     newRecordModel(id: string, table: Table) {
+        utils.ensureParamString("id", id);
+        utils.ensureParamObject("table", table);
         const model = this.createRecordModel(table.schema);
         return new model(id, table) as TableRecord;
     }

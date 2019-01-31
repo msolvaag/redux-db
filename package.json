@@ -1,11 +1,10 @@
 {
   "name": "redux-db",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.5",
   "description": "A state normalizer and orm for redux",
   "main": "./dist/cjs/index.js",
   "module": "./dist/es/index.js",
   "jsnext:main": "./dist/es/index.js",
-  "typings": "./dist/redux-db.d.ts",
   "scripts": {
     "test": "jest",
     "build": "gulp clean && yarn build:es && yarn build:cjs && yarn build:amd && gulp compress",

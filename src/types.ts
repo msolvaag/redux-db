@@ -92,18 +92,74 @@ export interface FieldSchema {
     getRecordValue(record: any): any;
 }
 
-/// Represents an immutable wrapper for a db table.
+/**
+ * Represents an immutable wrapper for a db table.
+ *
+ * @export
+ * @interface Table
+ * @template R
+ */
 export interface Table<R extends TableRecord = TableRecord> {
     session: Session;
     schema: TableSchema;
     state: TableState;
     dirty: boolean;
 
-    /// Gets a single record by it's PK.
+    /**
+     * Gets a single record by it's PK.
+     * Throws if record is not in table.
+     *
+     * @param {(string | number)} id
+     * @returns {R}
+     * @memberof Table
+     */
     get(id: string | number): R;
-    /// Gets the value of a record by it's PK(.
+
+    /**
+     * Gets a single record by it's PK.
+     * If not in table, then returns undefined.
+     *
+     * @param {(string | number)} id primary key
+     * @returns {(R | undefined)}
+     * @memberof Table
+     */
+    getOrDefault(id: string | number): R | undefined;
+
+    /**
+     * Gets the value of a record by it's PK
+     *
+     * @param {(string | number)} id primary key
+     * @returns {(ValueType<R> | undefined)}
+     * @memberof Table
+     */
     getValue(id: string | number): ValueType<R> | undefined;
-    /// Gets the index used for a given foreign key.
+
+    /**
+     * Gets registered metadata for a single record.
+     *
+     * @param {(string | number)} id primary key
+     * @returns {{}} object
+     * @memberof Table
+     */
+    getMetadata(id: string | number): {};
+
+    /**
+     * Sets metadata fields of a given record.
+     *
+     * @param {(string | number)} id primary key
+     * @param {{}} metadata object with properties to store
+     * @memberof Table
+     */
+    setMetadata(id: string | number, metadata: {}): void;
+
+    /**
+     * Gets the index used for a given foreign key.
+     *
+     * @param {string} schemaName
+     * @param {string} fkId
+     * @returns {string[]}
+     * @memberof Table
+     */
     getIndex(schemaName: string, fkId: string): string[];
 
     /**
@@ -227,6 +283,22 @@ export interface TableRecord<T = any> {
      * @memberof TableRecord
      */
     value: T;
+
+    /**
+     * Gets record metadata.
+     *
+     * @type {any}
+     * @memberof TableRecord
+     */
+    metadata: any;
+
+    /**
+     * Updates record metadata.
+     *
+     * @param {{}} props object with props
+     * @memberof TableRecord
+     */
+    setMetadata(props: {}): void;
 
     /**
      * Update record with new data.
@@ -360,23 +432,77 @@ export interface ComputeContext<T> {
     record: TableRecord<T>;
 }
 
-/// Holds context state when normalizing data
+/**
+ * Holds context state when normalizing data
+ *
+ * @export
+ * @interface NormalizeContext
+ */
 export interface NormalizeContext {
-    /// Gets a reference to the table where the normalization started.
+    /**
+     * Gets the table instance from where the normalization started.
+     *
+     * @type {Table}
+     * @memberof NormalizeContext
+     */
     table?: Table;
-    /// Gets a reference to the schema from data is normalized.
+
+    /**
+     * Gets the schema instance from where the data is normalized.
+     *
+     * @type {TableSchema}
+     * @memberof NormalizeContext
+     */
     schema: TableSchema;
-    /// Gets a reference to the current db instance.
+
+    /**
+     * Gets the schema instance which is currently being normalized.
+     *
+     * @type {TableSchema}
+     * @memberof NormalizeContext
+     */
+    currentSchema: TableSchema;
+
+    /**
+     * Gets a reference to the current db instance.
+     *
+     * @type {DatabaseSchema}
+     * @memberof NormalizeContext
+     */
     db: DatabaseSchema;
-    /// Gets the current normalized output.
-    output: MapOf<TableState>;
-    /// Gets a map of emitted data by schema name.
-    emits: { [key: string]: any[] };
-    /// Gets a flag to whether normalize primary keys or not.
+
+    /**
+     * Gets a flag to whether normalize primary keys or not.
+     *
+     * @type {boolean}
+     * @memberof NormalizeContext
+     */
     normalizePKs: boolean;
 
-    /// Emits data for further normalization
-    emit(tableName: string, record: any): void;
+    /**
+     * Gets the current normalized output.
+     *
+     * @type {MapOf<TableState>}
+     * @memberof NormalizeContext
+     */
+    output: MapOf<TableState>;
+
+    /**
+     * Gets a map of emitted data by schema name.
+     *
+     * @type {{ [key: string]: any[] }}
+     * @memberof NormalizeContext
+     */
+    emits: { [key: string]: any[] };
+
+    /**
+     * Emits data for further normalization
+     *
+     * @param {string} tableSchemaName name of table
+     * @param {*} record data to normalize
+     * @memberof NormalizeContext
+     */
+    emit(tableSchemaName: string, record: any): void;
 }
 
 /// Represents the schema instance for a database.
@@ -435,6 +561,7 @@ export interface TableState<T = any> {
     byId: MapOf<T>;
     ids: string[];
     indexes: MapOf<TableIndex>;
+    meta: MapOf<{}>;
 }
 
 /// Represents an index structure for a referenced key.

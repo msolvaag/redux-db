@@ -8,4 +8,4 @@ export const ALL = "*";
 
 export const RESERVED_PROPERTIES = ["id", "table", "value", "_fields", "delete", "update"];
 export const initialState = <T = any>(name?: string) =>
-    ({ ids: [], byId: {}, indexes: {}, name }) as TableState<T>;
+    ({ ids: [], byId: {}, indexes: {}, meta: {}, name }) as TableState<T>;

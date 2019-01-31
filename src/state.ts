@@ -8,13 +8,18 @@ export const merge = (original: TableState, modified: Partial<TableState>) => {
         : original.ids;
 
     const byId = modified.byId
-        ? { ...original.byId, ...modified.byId } :
-        original.byId;
+        ? { ...original.byId, ...modified.byId }
+        : original.byId;
+
+    const meta = modified.meta
+        ? { ...original.meta, ...modified.meta }
+        : original.meta;
 
     return {
         ...original,
         byId,
-        ids
+        ids,
+        meta
     };
 };
 
@@ -22,10 +27,13 @@ export const splice = (original: TableState, idsToDelete: string[]) => {
     const byId = { ...original.byId };
     const ids = original.ids.slice();
     const indexes = { ...original.indexes };
+    const meta = { ...original.meta };
 
     const deleted = idsToDelete.reduce((n, id) => {
         const record = byId[id];
         delete byId[id];
+        delete meta[id];
+
         const idx = ids.indexOf(id);
         if (idx >= 0)
             ids.splice(idx, 1);
@@ -38,7 +46,7 @@ export const splice = (original: TableState, idsToDelete: string[]) => {
 
     return {
         deleted,
-        state: { ...original, byId, ids, indexes }
+        state: { ...original, byId, ids, indexes, meta }
     };
 };
 

@@ -12,6 +12,7 @@ import { ensureParamObject } from "../utils";
 export default class DbNormalizeContext implements NormalizeContext {
     table?: Table;
     schema: TableSchema;
+    currentSchema: TableSchema;
     db: DatabaseSchema;
     output: MapOf<TableState> = {};
     emits: { [key: string]: any[] } = {};
@@ -25,6 +26,7 @@ export default class DbNormalizeContext implements NormalizeContext {
         this.table = options.table;
         this.normalizePKs = options.normalizePKs === true;
         this.argument = options.argument;
+        this.currentSchema = schema;
     }
 
     emit(tableName: string, record: any) {

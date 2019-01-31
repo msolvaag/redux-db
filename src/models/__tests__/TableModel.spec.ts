@@ -20,7 +20,8 @@ const mergeState = (...states: TableState[]) =>
             ...indexes,
             ...s.indexes
         },
-        name
+        name,
+        meta: {}
     }), initialState(TABLE1));
 
 const createTable = (state: TableState = initialState(TABLE1)) => {
@@ -35,7 +36,8 @@ const createTable = (state: TableState = initialState(TABLE1)) => {
         },
         ids: ["1"],
         indexes: {},
-        name: TABLE1
+        name: TABLE1,
+        meta: {}
     }, state);
 
     const db = createDatabase(schema);
@@ -166,7 +168,8 @@ describe("getValue", () => {
     const state = {
         byId: { 1: value, 2: value },
         ids: ["1", "2"],
-        indexes: {}
+        indexes: {},
+        meta: {}
     };
     const table: any = new TableModel(session, schema, state);
     test("returns the value of a single record by id", () =>
@@ -195,7 +198,8 @@ describe("getIndex", () => {
                 },
                 unique: false
             }
-        }
+        },
+        meta: {}
     };
     const table: any = new TableModel(session, schema, state);
     test("throws if missing args", () => {
@@ -228,6 +232,7 @@ describe("insert", () => {
             byId: { [id]: value },
             ids: [id],
             indexes: {},
+            meta: {},
             name: TABLE1
         };
         let inserted: any;
@@ -284,6 +289,7 @@ describe("update", () => {
             byId: { [id]: value },
             ids: [id],
             indexes: {},
+            meta: {},
             name: TABLE1
         };
         let updated: any;
@@ -336,12 +342,14 @@ describe("upsert", () => {
             byId: { [id1]: toUpdate },
             ids: [id1],
             indexes: {},
+            meta: {},
             name: TABLE1
         };
         const insertedState = {
             byId: { [id2]: toInsert },
             ids: [id2],
             indexes: {},
+            meta: {},
             name: TABLE1
         };
         let upserted: any;
@@ -386,6 +394,7 @@ describe("delete", () => {
         byId: { 3: { data: "last" } },
         ids: ["3"],
         indexes: {},
+        meta: {},
         name: TABLE1
     };
     const table = createTable(state);
@@ -416,6 +425,7 @@ describe("deleteAll", () => {
         byId: { 3: { data: "last" } },
         ids: ["3"],
         indexes: {},
+        meta: {},
         name: TABLE1
     };
     const table = createTable(state);

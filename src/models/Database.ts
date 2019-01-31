@@ -78,6 +78,8 @@ export default class Database<T extends TableMap> implements DatabaseSchema {
     }
 
     selectTables(state: any) {
+        ensureParamObject("state", state);
+
         const tableSchemas = Object.keys(state)
             .filter(tableName => this.tableMap[tableName])
             .map(tableName => this.tableMap[tableName]);
@@ -91,6 +93,8 @@ export default class Database<T extends TableMap> implements DatabaseSchema {
     }
 
     selectTable(tableState: any, schemaName?: string) {
+        ensureParamObject("tableState", tableState);
+
         const { name = schemaName } = tableState;
         if (!name)
             throw new Error(errors.unknownTableState());

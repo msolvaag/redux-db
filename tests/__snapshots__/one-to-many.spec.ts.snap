@@ -32,6 +32,7 @@ Object {
         },
       },
     },
+    "meta": Object {},
     "name": "BlogPost",
   },
   "Comment": Object {
@@ -106,6 +107,7 @@ Object {
         },
       },
     },
+    "meta": Object {},
     "name": "Comment",
   },
   "User": Object {
@@ -129,6 +131,7 @@ Object {
       "user3",
     ],
     "indexes": Object {},
+    "meta": Object {},
     "name": "User",
   },
 }

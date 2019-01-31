@@ -11,7 +11,7 @@ define("constants", ["require", "exports"], function (require, exports) {
     exports.ALL = "*";
     exports.RESERVED_PROPERTIES = ["id", "table", "value", "_fields", "delete", "update"];
     exports.initialState = function (name) {
-        return ({ ids: [], byId: {}, indexes: {}, name: name });
+        return ({ ids: [], byId: {}, indexes: {}, meta: {}, name: name });
     };
 });
 // tslint:disable:max-line-length
@@ -43,101 +43,10 @@ define("errors", ["require", "exports"], function (require, exports) {
         unknownTableState: function () { return "Failed to identifiy table state."; }
     };
 });
-define("ModelFactory", ["require", "exports", "tslib", "constants", "errors"], function (require, exports, tslib_1, constants_1, errors_1) {
+define("utils", ["require", "exports", "tslib", "errors"], function (require, exports, tslib_1, errors_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     errors_1 = tslib_1.__importDefault(errors_1);
-    var createRecordModelClass = function (Base) {
-        return /** @class */ (function (_super) {
-            tslib_1.__extends(ExtendedRecordModel, _super);
-            function ExtendedRecordModel(id, table) {
-                var _this = _super.call(this, id, table) || this;
-                _this._fields = {};
-                return _this;
-            }
-            return ExtendedRecordModel;
-        }(Base));
-    };
-    var RecordModelFactory = /** @class */ (function () {
-        function RecordModelFactory(recordBaseType, factory) {
-            this._recordClass = {};
-            this._defineProperty = function (model, name, field, factory, cache) {
-                if (cache === void 0) { cache = true; }
-                if (constants_1.RESERVED_PROPERTIES.indexOf(name) >= 0)
-                    throw new Error(errors_1.default.reservedProperty(field.table.name, name));
-                Object.defineProperty(model.prototype, name, {
-                    get: function () {
-                        // TODO: Improve the instance cache mechanism. Invalidate when the field value changes..
-                        return cache
-                            ? (this._fields[name] || (this._fields[name] = factory(field, this)))
-                            : factory(field, this);
-                    }
-                });
-            };
-            this._recordBaseType = recordBaseType;
-            this._factory = factory;
-        }
-        RecordModelFactory.prototype.newRecordModel = function (id, table) {
-            var model = this.createRecordModel(table.schema);
-            return new model(id, table);
-        };
-        RecordModelFactory.prototype.createRecordModel = function (schema) {
-            var _this = this;
-            if (this._recordClass[schema.name])
-                return this._recordClass[schema.name];
-            else {
-                var model_1 = createRecordModelClass(this._recordBaseType);
-                schema.fields.forEach(function (f) {
-                    return (f.isForeignKey || !f.isPrimaryKey)
-                        && _this._defineProperty(model_1, f.propName, f, _this._newRecordField.bind(_this), false);
-                });
-                schema.relations.forEach(function (f) {
-                    return f.relationName && _this._defineProperty(model_1, f.relationName, f, f.unique
-                        ? _this._newRecordRelation.bind(_this)
-                        : _this._newRecordSet.bind(_this), !f.unique);
-                });
-                return this._recordClass[schema.name] = model_1;
-            }
-        };
-        RecordModelFactory.prototype._newRecordField = function (schema, record) {
-            if (!schema.isForeignKey)
-                return this._factory.newRecordFieldModel(schema, record);
-            var refTable = schema.references && record.table.session.tables[schema.references];
-            if (!refTable)
-                throw new Error(errors_1.default.fkReferenceNotInSession(schema.name, schema.references));
-            var recordId = schema.getRecordValue(record);
-            if (recordId === undefined)
-                return null;
-            return refTable.get(recordId);
-        };
-        RecordModelFactory.prototype._newRecordSet = function (schema, record) {
-            var refTable = record.table.session.tables[schema.table.name];
-            if (!refTable)
-                throw new Error(errors_1.default.tableNotInSession(schema.table.name));
-            return this._factory.newRecordSetModel(refTable, schema, record);
-        };
-        RecordModelFactory.prototype._newRecordRelation = function (schema, record) {
-            var refTable = record.table.session.tables[schema.table.name];
-            if (!refTable)
-                throw new Error(errors_1.default.tableNotInSession(schema.table.name));
-            var id = refTable.getIndex(schema.name, record.id)[0];
-            if (id === undefined)
-                return null;
-            return this.newRecordModel(id, refTable);
-        };
-        return RecordModelFactory;
-    }());
-    exports.RecordModelFactory = RecordModelFactory;
-    var createModelFactory = function (factory, RecordModel) {
-        var recordFactory = new RecordModelFactory(RecordModel, factory);
-        return tslib_1.__assign({}, factory, { newRecordModel: function (id, table) { return recordFactory.newRecordModel(id, table); } });
-    };
-    exports.default = createModelFactory;
-});
-define("utils", ["require", "exports", "tslib", "errors"], function (require, exports, tslib_2, errors_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    errors_2 = tslib_2.__importDefault(errors_2);
     exports.toArray = function (obj) {
         if (!obj)
             return [];
@@ -171,12 +80,12 @@ define("utils", ["require", "exports", "tslib", "errors"], function (require, ex
     };
     exports.ensureParam = function (name, value) {
         if (value === undefined)
-            throw new Error(errors_2.default.argument(name, "value"));
+            throw new Error(errors_1.default.argument(name, "value"));
         return value;
     };
     exports.ensureParamString = function (name, value) {
         if (value === undefined || value === null || typeof value !== "string" || value.length === 0)
-            throw new Error(errors_2.default.argument(name, "string"));
+            throw new Error(errors_1.default.argument(name, "string"));
         return value;
     };
     exports.ensureParamObject = function (name, value) {
@@ -185,17 +94,17 @@ define("utils", ["require", "exports", "tslib", "errors"], function (require, ex
             props[_i - 2] = arguments[_i];
         }
         if (!value || !exports.isObject(value))
-            throw new Error(errors_2.default.argument(name, "object"));
+            throw new Error(errors_1.default.argument(name, "object"));
         if (props) {
             var missing = props.filter(function (p) { return value[p] === undefined; });
             if (missing.length)
-                throw new Error(errors_2.default.argumentShape(name, missing));
+                throw new Error(errors_1.default.argumentShape(name, missing));
         }
         return value;
     };
     exports.ensureParamFunction = function (name, value) {
         if (!value || typeof value !== "function")
-            throw new Error(errors_2.default.argument(name, "function"));
+            throw new Error(errors_1.default.argument(name, "function"));
         return value;
     };
     function optionalParamString(name, val, fallback) {
@@ -205,7 +114,7 @@ define("utils", ["require", "exports", "tslib", "errors"], function (require, ex
     exports.optionalParamString = optionalParamString;
     exports.ensureID = function (id) {
         if (!exports.isValidID(id))
-            throw new Error(errors_2.default.invalidId());
+            throw new Error(errors_1.default.invalidId());
         return exports.asID(id);
     };
     // A valid id must be a non-empty string or a number.
@@ -228,7 +137,7 @@ define("utils", ["require", "exports", "tslib", "errors"], function (require, ex
             hash[source[i]] = true;
         for (i = 0; i < second.length; i++) {
             if (unique && hash[second[i]])
-                throw new Error(errors_2.default.uniqueConstraintViolation(second[i]));
+                throw new Error(errors_1.default.uniqueConstraintViolation(second[i]));
             hash[second[i]] = true;
         }
         return Object.keys(hash);
@@ -264,6 +173,100 @@ define("utils", ["require", "exports", "tslib", "errors"], function (require, ex
         return true;
     };
 });
+define("ModelFactory", ["require", "exports", "tslib", "constants", "errors", "utils"], function (require, exports, tslib_2, constants_1, errors_2, utils) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    errors_2 = tslib_2.__importDefault(errors_2);
+    utils = tslib_2.__importStar(utils);
+    exports.createRecordModelClass = function (Base) {
+        return /** @class */ (function (_super) {
+            tslib_2.__extends(ExtendedRecordModel, _super);
+            function ExtendedRecordModel(id, table) {
+                var _this = _super.call(this, id, table) || this;
+                _this._fields = {};
+                return _this;
+            }
+            return ExtendedRecordModel;
+        }(Base));
+    };
+    var RecordModelFactory = /** @class */ (function () {
+        function RecordModelFactory(recordBaseType, factory) {
+            this._recordClass = {};
+            this._defineProperty = function (model, name, field, factory, cache) {
+                if (cache === void 0) { cache = true; }
+                if (constants_1.RESERVED_PROPERTIES.indexOf(name) >= 0)
+                    throw new Error(errors_2.default.reservedProperty(field.table.name, name));
+                Object.defineProperty(model.prototype, name, {
+                    get: function () {
+                        // TODO: Improve the instance cache mechanism. Invalidate when the field value changes..
+                        return cache
+                            ? (this._fields[name] || (this._fields[name] = factory(field, this)))
+                            : factory(field, this);
+                    }
+                });
+            };
+            this._recordBaseType = recordBaseType;
+            this._factory = factory;
+        }
+        RecordModelFactory.prototype.newRecordModel = function (id, table) {
+            utils.ensureParamString("id", id);
+            utils.ensureParamObject("table", table);
+            var model = this.createRecordModel(table.schema);
+            return new model(id, table);
+        };
+        RecordModelFactory.prototype.createRecordModel = function (schema) {
+            var _this = this;
+            if (this._recordClass[schema.name])
+                return this._recordClass[schema.name];
+            else {
+                var model_1 = exports.createRecordModelClass(this._recordBaseType);
+                schema.fields.forEach(function (f) {
+                    return (f.isForeignKey || !f.isPrimaryKey)
+                        && _this._defineProperty(model_1, f.propName, f, _this._newRecordField.bind(_this), false);
+                });
+                schema.relations.forEach(function (f) {
+                    return f.relationName && _this._defineProperty(model_1, f.relationName, f, f.unique
+                        ? _this._newRecordRelation.bind(_this)
+                        : _this._newRecordSet.bind(_this), !f.unique);
+                });
+                return this._recordClass[schema.name] = model_1;
+            }
+        };
+        RecordModelFactory.prototype._newRecordField = function (schema, record) {
+            if (!schema.isForeignKey)
+                return this._factory.newRecordFieldModel(schema, record);
+            var refTable = schema.references && record.table.session.tables[schema.references];
+            if (!refTable)
+                throw new Error(errors_2.default.fkReferenceNotInSession(schema.name, schema.references));
+            var recordId = schema.getRecordValue(record);
+            if (recordId === undefined)
+                return null;
+            return refTable.get(recordId);
+        };
+        RecordModelFactory.prototype._newRecordSet = function (schema, record) {
+            var refTable = record.table.session.tables[schema.table.name];
+            if (!refTable)
+                throw new Error(errors_2.default.tableNotInSession(schema.table.name));
+            return this._factory.newRecordSetModel(refTable, schema, record);
+        };
+        RecordModelFactory.prototype._newRecordRelation = function (schema, record) {
+            var refTable = record.table.session.tables[schema.table.name];
+            if (!refTable)
+                throw new Error(errors_2.default.tableNotInSession(schema.table.name));
+            var id = refTable.getIndex(schema.name, record.id)[0];
+            if (id === undefined)
+                return null;
+            return this.newRecordModel(id, refTable);
+        };
+        return RecordModelFactory;
+    }());
+    exports.RecordModelFactory = RecordModelFactory;
+    var createModelFactory = function (factory, RecordModel) {
+        var recordFactory = new RecordModelFactory(RecordModel, factory);
+        return tslib_2.__assign({}, factory, { newRecordModel: function (id, table) { return recordFactory.newRecordModel(id, table); } });
+    };
+    exports.default = createModelFactory;
+});
 define("Normalizer", ["require", "exports", "tslib", "constants", "errors", "utils"], function (require, exports, tslib_3, constants_2, errors_3, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -280,6 +283,7 @@ define("Normalizer", ["require", "exports", "tslib", "constants", "errors", "uti
                 throw new Error(errors_3.default.normalizeInvalidData());
             utils.ensureParamObject("context", context);
             utils.ensureParamObject("context.output", context.output);
+            context.currentSchema = this.schema;
             if (!context.output[this.schema.name])
                 context.output[this.schema.name] = constants_2.initialState(this.schema.name);
             return utils.ensureArray(data).map(function (obj) {
@@ -435,8 +439,9 @@ define("models/Database", ["require", "exports", "tslib", "constants", "errors",
         Database.prototype.getTableSchema = function (name) {
             return this.tableMap[name];
         };
-        Database.prototype.wrapTables = function (state) {
+        Database.prototype.selectTables = function (state) {
             var _this = this;
+            utils_1.ensureParamObject("state", state);
             var tableSchemas = Object.keys(state)
                 .filter(function (tableName) { return _this.tableMap[tableName]; })
                 .map(function (tableName) { return _this.tableMap[tableName]; });
@@ -446,20 +451,15 @@ define("models/Database", ["require", "exports", "tslib", "constants", "errors",
             });
             return session.tables;
         };
-        Database.prototype.wrapTable = function (tableState, schemaName) {
+        Database.prototype.selectTable = function (tableState, schemaName) {
             var _a;
+            utils_1.ensureParamObject("tableState", tableState);
             var _b = tableState.name, name = _b === void 0 ? schemaName : _b;
             if (!name)
                 throw new Error(errors_4.default.unknownTableState());
-            return this.wrapTables((_a = {},
+            return this.selectTables((_a = {},
                 _a[name] = tableState,
-                _a));
-        };
-        Database.prototype.selectTables = function (state) {
-            return this.wrapTables(state);
-        };
-        Database.prototype.selectTable = function (tableState, name) {
-            return this.wrapTable(tableState, name);
+                _a))[name];
         };
         return Database;
     }());
@@ -593,7 +593,7 @@ define("models/RecordFieldModel", ["require", "exports", "utils"], function (req
     }());
     exports.default = RecordFieldModel;
 });
-define("models/RecordModel", ["require", "exports", "utils"], function (require, exports, utils_5) {
+define("models/RecordModel", ["require", "exports", "tslib", "utils"], function (require, exports, tslib_7, utils_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var RecordModel = /** @class */ (function () {
@@ -611,6 +611,13 @@ define("models/RecordModel", ["require", "exports", "utils"], function (require,
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(RecordModel.prototype, "metadata", {
+            get: function () {
+                return this.table.getMetadata(this.id);
+            },
+            enumerable: true,
+            configurable: true
+        });
         RecordModel.prototype.delete = function () {
             this.table.delete(this.id);
         };
@@ -619,14 +626,17 @@ define("models/RecordModel", ["require", "exports", "utils"], function (require,
             this.table.update(data);
             return this;
         };
+        RecordModel.prototype.setMetadata = function (data) {
+            this.table.setMetadata(this.id, tslib_7.__assign({}, this.metadata, data));
+        };
         return RecordModel;
     }());
     exports.default = RecordModel;
 });
-define("models/RecordSetModel", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_7, errors_7, utils_6) {
+define("models/RecordSetModel", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_8, errors_7, utils_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    errors_7 = tslib_7.__importDefault(errors_7);
+    errors_7 = tslib_8.__importDefault(errors_7);
     var RecordSetModel = /** @class */ (function () {
         function RecordSetModel(table, schema, owner) {
             this.table = utils_6.ensureParamObject("table", table);
@@ -683,27 +693,31 @@ define("models/RecordSetModel", ["require", "exports", "tslib", "errors", "utils
     }());
     exports.default = RecordSetModel;
 });
-define("state", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_8, errors_8, utils_7) {
+define("state", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_9, errors_8, utils_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    errors_8 = tslib_8.__importDefault(errors_8);
+    errors_8 = tslib_9.__importDefault(errors_8);
     exports.merge = function (original, modified) {
         var ids = modified.ids
             ? utils_7.mergeIds(original.ids, modified.ids, true)
             : original.ids;
         var byId = modified.byId
-            ? tslib_8.__assign({}, original.byId, modified.byId) :
-            original.byId;
-        return tslib_8.__assign({}, original, { byId: byId,
-            ids: ids });
+            ? tslib_9.__assign({}, original.byId, modified.byId) : original.byId;
+        var meta = modified.meta
+            ? tslib_9.__assign({}, original.meta, modified.meta) : original.meta;
+        return tslib_9.__assign({}, original, { byId: byId,
+            ids: ids,
+            meta: meta });
     };
     exports.splice = function (original, idsToDelete) {
-        var byId = tslib_8.__assign({}, original.byId);
+        var byId = tslib_9.__assign({}, original.byId);
         var ids = original.ids.slice();
-        var indexes = tslib_8.__assign({}, original.indexes);
+        var indexes = tslib_9.__assign({}, original.indexes);
+        var meta = tslib_9.__assign({}, original.meta);
         var deleted = idsToDelete.reduce(function (n, id) {
             var record = byId[id];
             delete byId[id];
+            delete meta[id];
             var idx = ids.indexOf(id);
             if (idx >= 0)
                 ids.splice(idx, 1);
@@ -713,7 +727,7 @@ define("state", ["require", "exports", "tslib", "errors", "utils"], function (re
         }, []);
         return {
             deleted: deleted,
-            state: tslib_8.__assign({}, original, { byId: byId, ids: ids, indexes: indexes })
+            state: tslib_9.__assign({}, original, { byId: byId, ids: ids, indexes: indexes, meta: meta })
         };
     };
     exports.updateIndexes = function (name, original, modified) {
@@ -765,6 +779,7 @@ define("models/NormalizeContext", ["require", "exports", "utils"], function (req
             this.table = options.table;
             this.normalizePKs = options.normalizePKs === true;
             this.argument = options.argument;
+            this.currentSchema = schema;
         }
         DbNormalizeContext.prototype.emit = function (tableName, record) {
             this.emits[tableName] = this.emits[tableName] || [];
@@ -774,24 +789,26 @@ define("models/NormalizeContext", ["require", "exports", "utils"], function (req
     }());
     exports.default = DbNormalizeContext;
 });
-define("models/TableModel", ["require", "exports", "tslib", "constants", "errors", "state", "utils", "models/NormalizeContext"], function (require, exports, tslib_9, constants_5, errors_9, state_1, utils, NormalizeContext_1) {
+define("models/TableModel", ["require", "exports", "tslib", "constants", "errors", "state", "utils", "models/NormalizeContext"], function (require, exports, tslib_10, constants_5, errors_9, state_1, utils, NormalizeContext_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    errors_9 = tslib_9.__importDefault(errors_9);
-    state_1 = tslib_9.__importDefault(state_1);
-    utils = tslib_9.__importStar(utils);
-    NormalizeContext_1 = tslib_9.__importDefault(NormalizeContext_1);
+    errors_9 = tslib_10.__importDefault(errors_9);
+    state_1 = tslib_10.__importDefault(state_1);
+    utils = tslib_10.__importStar(utils);
+    NormalizeContext_1 = tslib_10.__importDefault(NormalizeContext_1);
     var TableModel = /** @class */ (function () {
         function TableModel(session, schema, state) {
             this.dirty = false;
             this.session = utils.ensureParamObject("session", session);
             this.schema = utils.ensureParamObject("schema", schema);
             this.state = utils.ensureParamObject("state", state || constants_5.initialState(this.schema.name));
-            var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes, name = _a.name;
+            var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes, meta = _a.meta, name = _a.name;
             if (!ids || !byId || !indexes)
                 throw new Error(errors_9.default.tableInvalidState(schema.name));
             if (!name)
                 this.state.name = name;
+            if (!meta)
+                this.state.meta = {};
         }
         Object.defineProperty(TableModel.prototype, "length", {
             get: function () {
@@ -818,11 +835,29 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
                 throw new Error(errors_9.default.recordNotFound(this.schema.name, id));
             return this.schema.db.factory.newRecordModel(utils.asID(id), this);
         };
+        TableModel.prototype.getOrDefault = function (id) {
+            if (!this.exists(id))
+                return undefined;
+            return this.schema.db.factory.newRecordModel(utils.asID(id), this);
+        };
         TableModel.prototype.getValue = function (id) {
             if (utils.isValidID(id))
                 return this.state.byId[id];
             else
                 return undefined;
+        };
+        TableModel.prototype.getValues = function () {
+            return this.values();
+        };
+        TableModel.prototype.getMetadata = function (id) {
+            return this.state.meta[id] || {};
+        };
+        TableModel.prototype.setMetadata = function (ids, metadata) {
+            var meta = utils.ensureArray(ids).reduce(function (map, id) {
+                var _a;
+                return (tslib_10.__assign({}, map, (_a = {}, _a[id] = metadata, _a)));
+            }, {});
+            this.state = state_1.default.merge(this.state, { meta: meta });
         };
         TableModel.prototype.getIndex = function (name, fk) {
             utils.ensureParamString("name", name);
@@ -923,7 +958,7 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
         };
         TableModel.prototype.normalize = function (data, options) {
             utils.ensureParam("data", data);
-            var ctx = new NormalizeContext_1.default(this.schema, tslib_9.__assign({ table: this, normalizePKs: true }, options));
+            var ctx = new NormalizeContext_1.default(this.schema, tslib_10.__assign({ table: this, normalizePKs: true }, options));
             this.schema.normalize(data, ctx);
             return ctx;
         };
@@ -962,11 +997,11 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
     }());
     exports.default = TableModel;
 });
-define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_10, errors_10, utils) {
+define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "utils"], function (require, exports, tslib_11, errors_10, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    errors_10 = tslib_10.__importDefault(errors_10);
-    utils = tslib_10.__importStar(utils);
+    errors_10 = tslib_11.__importDefault(errors_10);
+    utils = tslib_11.__importStar(utils);
     var TableSchemaModel = /** @class */ (function () {
         function TableSchemaModel(db, name, definition) {
             var _this = this;
@@ -1012,7 +1047,7 @@ define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "uti
                         obj = (_a = {}, _a[otherFks[0].name] = obj, _a);
                     else
                         obj = { id: obj }; // TODO: this might be quite wrong..
-                return tslib_10.__assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
+                return tslib_11.__assign({}, obj, (_b = {}, _b[rel.name] = ownerId, _b));
             });
         };
         TableSchemaModel.prototype.normalize = function (data, context) {
@@ -1078,23 +1113,23 @@ define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "uti
             var merger = this.db.getRecordMerger(this.name);
             if (merger)
                 return merger(oldRecord, newRecord, this);
-            return tslib_10.__assign({}, oldRecord, newRecord);
+            return tslib_11.__assign({}, oldRecord, newRecord);
         };
         return TableSchemaModel;
     }());
     exports.default = TableSchemaModel;
 });
-define("models/index", ["require", "exports", "tslib", "models/Database", "models/DatabaseSession", "models/FieldSchemaModel", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, tslib_11, Database_1, DatabaseSession_1, FieldSchemaModel_1, RecordFieldModel_1, RecordModel_1, RecordSetModel_1, TableModel_1, TableSchemaModel_1) {
+define("models/index", ["require", "exports", "tslib", "models/Database", "models/DatabaseSession", "models/FieldSchemaModel", "models/RecordFieldModel", "models/RecordModel", "models/RecordSetModel", "models/TableModel", "models/TableSchemaModel"], function (require, exports, tslib_12, Database_1, DatabaseSession_1, FieldSchemaModel_1, RecordFieldModel_1, RecordModel_1, RecordSetModel_1, TableModel_1, TableSchemaModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    Database_1 = tslib_11.__importDefault(Database_1);
-    DatabaseSession_1 = tslib_11.__importDefault(DatabaseSession_1);
-    FieldSchemaModel_1 = tslib_11.__importDefault(FieldSchemaModel_1);
-    RecordFieldModel_1 = tslib_11.__importDefault(RecordFieldModel_1);
-    RecordModel_1 = tslib_11.__importDefault(RecordModel_1);
-    RecordSetModel_1 = tslib_11.__importDefault(RecordSetModel_1);
-    TableModel_1 = tslib_11.__importDefault(TableModel_1);
-    TableSchemaModel_1 = tslib_11.__importDefault(TableSchemaModel_1);
+    Database_1 = tslib_12.__importDefault(Database_1);
+    DatabaseSession_1 = tslib_12.__importDefault(DatabaseSession_1);
+    FieldSchemaModel_1 = tslib_12.__importDefault(FieldSchemaModel_1);
+    RecordFieldModel_1 = tslib_12.__importDefault(RecordFieldModel_1);
+    RecordModel_1 = tslib_12.__importDefault(RecordModel_1);
+    RecordSetModel_1 = tslib_12.__importDefault(RecordSetModel_1);
+    TableModel_1 = tslib_12.__importDefault(TableModel_1);
+    TableSchemaModel_1 = tslib_12.__importDefault(TableSchemaModel_1);
     exports.Database = Database_1.default;
     exports.DatabaseSession = DatabaseSession_1.default;
     exports.FieldSchemaModel = FieldSchemaModel_1.default;
@@ -1104,12 +1139,12 @@ define("models/index", ["require", "exports", "tslib", "models/Database", "model
     exports.TableModel = TableModel_1.default;
     exports.TableSchemaModel = TableSchemaModel_1.default;
 });
-define("index", ["require", "exports", "tslib", "ModelFactory", "models/index", "Normalizer", "constants", "models/index", "ModelFactory", "utils"], function (require, exports, tslib_12, ModelFactory_1, models_1, Normalizer_1, constants_6, models_2, ModelFactory_2, utils) {
+define("index", ["require", "exports", "tslib", "ModelFactory", "models/index", "Normalizer", "constants", "models/index", "ModelFactory", "utils"], function (require, exports, tslib_13, ModelFactory_1, models_1, Normalizer_1, constants_6, models_2, ModelFactory_2, utils) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    ModelFactory_1 = tslib_12.__importDefault(ModelFactory_1);
-    Normalizer_1 = tslib_12.__importDefault(Normalizer_1);
-    utils = tslib_12.__importStar(utils);
+    ModelFactory_1 = tslib_13.__importDefault(ModelFactory_1);
+    Normalizer_1 = tslib_13.__importDefault(Normalizer_1);
+    utils = tslib_13.__importStar(utils);
     var defaultFactory = {
         newTableSchema: function (db, name, schema) { return new models_1.TableSchemaModel(db, name, schema); },
         newFieldSchema: function (table, name, schema) { return new models_1.FieldSchemaModel(table, name, schema); },
@@ -1120,16 +1155,16 @@ define("index", ["require", "exports", "tslib", "ModelFactory", "models/index", 
         newSession: function (db, state, options) { return new models_1.DatabaseSession(db, state, options); }
     };
     exports.createFactory = function (factory, recordModelClass) {
-        return ModelFactory_1.default(tslib_12.__assign({}, defaultFactory, factory), recordModelClass || models_1.RecordModel);
+        return ModelFactory_1.default(tslib_13.__assign({}, defaultFactory, factory), recordModelClass || models_1.RecordModel);
     };
     exports.createDatabase = function (schema, options) {
         if (options === void 0) { options = {}; }
-        var _a = options.factory, factory = _a === void 0 ? {} : _a, _b = options.recordModelClass, recordModelClass = _b === void 0 ? models_1.RecordModel : _b, dbOptions = tslib_12.__rest(options, ["factory", "recordModelClass"]);
+        var _a = options.factory, factory = _a === void 0 ? {} : _a, _b = options.recordModelClass, recordModelClass = _b === void 0 ? models_1.RecordModel : _b, dbOptions = tslib_13.__rest(options, ["factory", "recordModelClass"]);
         var modelFactory = exports.createFactory(factory, recordModelClass);
         return new models_1.Database(schema, modelFactory, dbOptions);
     };
-    tslib_12.__exportStar(constants_6, exports);
-    tslib_12.__exportStar(models_2, exports);
-    tslib_12.__exportStar(ModelFactory_2, exports);
+    tslib_13.__exportStar(constants_6, exports);
+    tslib_13.__exportStar(models_2, exports);
+    tslib_13.__exportStar(ModelFactory_2, exports);
     exports.utils = utils;
 });
