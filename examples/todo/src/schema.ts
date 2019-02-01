@@ -31,12 +31,12 @@ export const schema: ReduxDB.Schema = {
 };
 
 // create db instance
-export const dbInstance = ReduxDB.createDatabase(schema, {
+export const database = ReduxDB.createDatabase<Session>(schema, {
     onNormalize: {
-        TaskLabel: (record, ctx) => {
+        [TABLE_TASK_LABEL]: (record, ctx) => {
             const { id, name, taskId } = record;
 
-            ctx.emit("Label", { id, name });
+            ctx.emit(TABLE_LABEL, { id, name });
 
             return { labelId: id, taskId };
         }
@@ -69,7 +69,7 @@ export type UserTable = ReduxDB.Table<UserRecord>;
 export type CommentTable = ReduxDB.Table<CommentRecord>;
 export type LabelTable = ReduxDB.Table<LabelRecord>;
 
-export interface Session {
+export interface Session extends ReduxDB.TableMap {
     Task: TaskTable;
     Comment: CommentTable;
     User: UserTable;

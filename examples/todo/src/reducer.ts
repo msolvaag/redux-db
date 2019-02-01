@@ -1,35 +1,36 @@
-import { Session, dbInstance } from "./schema";
-import { DONE, APP_LOAD, APP_ERROR, UI_SET_TASK_FILTER, LOAD_TASKS, LOAD_USERS, DELETE_TASK, UPDATE_TASK, ADD_COMMENT, DELETE_COMMENT, CREATE_TASK } from "./actions";
-import { Reducer } from 'redux';
+import * as actions from "./actions";
+import { database, Session } from "./schema";
+
+const { DONE } = actions;
 
 // db reducer
-export const dbReducer = dbInstance.combineReducers(
+export const dbReducer = database.combineReducers(
     (session: Session, action: Action) => {
         const { Task, Comment, User } = session;
 
         switch (action.type) {
-            case DONE(LOAD_TASKS):
-            case DONE(CREATE_TASK):
+            case DONE(actions.LOAD_TASKS):
+            case DONE(actions.CREATE_TASK):
                 Task.upsert(action.payload);
                 break;
 
-            case DONE(LOAD_USERS):
+            case DONE(actions.LOAD_USERS):
                 User.upsert(action.payload);
                 break;
 
-            case DONE(DELETE_TASK):
+            case DONE(actions.DELETE_TASK):
                 Task.delete(action.payload);
                 break;
 
-            case DONE(UPDATE_TASK):
+            case DONE(actions.UPDATE_TASK):
                 Task.update(action.payload);
                 break;
 
-            case DONE(ADD_COMMENT):
+            case DONE(actions.ADD_COMMENT):
                 Comment.insert(action.payload);
                 break;
 
-            case DONE(DELETE_COMMENT):
+            case DONE(actions.DELETE_COMMENT):
                 Comment.delete(action.payload);
                 break;
         }
@@ -37,17 +38,17 @@ export const dbReducer = dbInstance.combineReducers(
 );
 
 // ui reducer
-export const uiReducer: Reducer<TodoApp.UIState> = (state = { loading: false, error: null, taskFilter: "open" }, action) => {
+export const uiReducer = (state = { loading: false, error: null, taskFilter: "open" }, action: any) => {
     switch (action.type) {
 
-        case APP_LOAD:
+        case actions.APP_LOAD:
             return { ...state, loading: true };
-        case DONE(APP_LOAD):
+        case DONE(actions.APP_LOAD):
             return { ...state, loading: false };
-        case APP_ERROR:
+        case actions.APP_ERROR:
             return { ...state, error: action.payload };
 
-        case UI_SET_TASK_FILTER:
+        case actions.UI_SET_TASK_FILTER:
             return { ...state, taskFilter: action.payload };
         default:
             return state;

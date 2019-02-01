@@ -1,6 +1,5 @@
 import { createSelector, createStructuredSelector } from "reselect";
-import { dbInstance as db, DbState, Session, schema } from "./schema";
-import { TableState, DatabaseState } from '../../../src';
+import { database, TaskTable, UserTable } from "./schema";
 
 export interface TaskViewModel extends TodoApp.Task {
     ownerName: string;
@@ -12,6 +11,7 @@ export interface CommentViewModel extends TodoApp.Comment {
     authorName: string;
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface UserViewModel extends TodoApp.User { }
 
 const taskSelector = createStructuredSelector({
@@ -23,7 +23,7 @@ const taskSelector = createStructuredSelector({
 export const selectFilteredTasks = createSelector(
     taskSelector,
     (state: any) => state.ui.taskFilter,
-    (tables, filter) => db.selectTables(tables)
+    (tables, filter) => database.selectTables(tables)
         .Task.all().filter(t => t.value.status === filter || filter === null).map(t => ({
             ...t.value,
             ownerName: t.owner.value.name,
@@ -35,13 +35,13 @@ export const selectTask = createSelector(
     taskSelector,
     (state: any, id: any) => id,
     (tables, id) => {
-        const t = db.selectTables<Session>(tables).Task.get(id);
+        const t = database.selectTables(tables).Task.get(id);
 
         return {
             ...t.value,
             ownerName: t.owner.value.name,
             numComments: t.comments.length,
-            comments: t.comments.map(c => ({
+            comments: t.comments.all().map(c => ({
                 ...c.value,
                 authorName: c.author.value.name
             }) as CommentViewModel)
@@ -49,22 +49,23 @@ export const selectTask = createSelector(
     }
 );
 
-
 export const selectUsers = createSelector(
-    (state: any) => state.db,
-    (dbState) => {
-        const tables = db.wrapTables(dbState);
+    (state: any) => state.db.User,
+    (table) => {
+        const User = database.selectTable(table) as UserTable;
+
+        return User.values();
     }
 );
 
 export const selectTaskStats = createSelector(
     (state: any) => state.db.Task,
     (table) => {
-        const Task = db.selectTable<TaskTable>(table);
+        const Task = database.selectTable(table) as TaskTable;
 
         return {
-            numOpen: Task.filter(t => t.value.status === "open").length,
-            numClosed: Task.filter(t => t.value.status === "closed").length
+            numOpen: Task.all().filter(t => t.value.status === "open").length,
+            numClosed: Task.all().filter(t => t.value.status === "closed").length
         };
     }
 );
