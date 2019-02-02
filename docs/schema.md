@@ -10,3 +10,4 @@ To make redux-db know how to tie your records together and how to normalize give
 }
 ```
 
+The table name is up to you, but the field names **must match** your data model.
