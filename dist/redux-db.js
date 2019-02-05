@@ -317,8 +317,8 @@ define("Normalizer", ["require", "exports", "tslib", "constants", "errors", "uti
             var pk = this.schema.getPrimaryKey(record);
             if (pk)
                 return pk;
-            // Invoke the "onGeneratePK" hook if PK not found.
-            var generator = this.db.getPkGenerator(this.schema.name);
+            // Invoke the "onMissingPK" hook if PK not found.
+            var generator = this.db.getMissingPkHandler(this.schema.name);
             if (!generator)
                 return undefined;
             var generatedPk = generator(record, this.schema);
@@ -327,7 +327,7 @@ define("Normalizer", ["require", "exports", "tslib", "constants", "errors", "uti
                 if (this.schema.primaryKeys.length === 1)
                     record[this.schema.primaryKeys[0].propName] = generatedPk;
             // Handling multiple PK field defs:
-            // We may need the "onGeneratePK" hook to return an object defining each key value.
+            // We may need the "onMissingPK" hook to return an object defining each key value.
             // BUT this seems like a rare scenario..
             // So for now; don't populate record.
             return generatedPk;
@@ -370,8 +370,10 @@ define("models/Database", ["require", "exports", "tslib", "constants", "errors",
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     errors_4 = tslib_4.__importDefault(errors_4);
+    var KEY_SEPARATOR = "_";
     var defaultOptions = {
-        cascadeAsDefault: false
+        cascadeAsDefault: false,
+        keySeparator: KEY_SEPARATOR
     };
     var getMappedFunction = function (map, key, defaultFn) {
         if (!map)
@@ -399,9 +401,13 @@ define("models/Database", ["require", "exports", "tslib", "constants", "errors",
             this.getRecordMerger = function (schemaName) {
                 return getMappedFunction(_this.options.onRecordMerge, schemaName);
             };
+            this.getMissingPkHandler = function (schemaName) {
+                return getMappedFunction(_this.options.onMissingPK, schemaName);
+            };
             this.schema = utils_1.ensureParamObject("schema", schema);
             this.factory = utils_1.ensureParamObject("factory", factory);
             this.options = tslib_4.__assign({}, defaultOptions, options);
+            this.keySeparator = this.options.keySeparator || "";
             this.tables = Object.keys(schema).map(function (tableName) {
                 return _this.factory.newTableSchema(_this, tableName, schema[tableName]);
             });
@@ -528,6 +534,7 @@ define("models/FieldSchemaModel", ["require", "exports", "tslib", "constants", "
             this.name = utils_3.optionalParamString("schema.fieldName", schema.fieldName, name);
             this.propName = utils_3.optionalParamString("schema.propName", schema.propName, name);
             this.references = utils_3.optionalParamString("schema.references", schema.references);
+            this.order = schema.order || 0;
             this.isPrimaryKey = schema.pk === true || schema.type === constants_4.TYPE_PK;
             this.isForeignKey = !!this.references;
             this.isStamp = schema.stamp === true || schema.type === constants_4.TYPE_MODIFIED;
@@ -1010,9 +1017,10 @@ define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "uti
             this.name = utils.ensureParamString("name", name);
             utils.ensureParamObject("definition", definition);
             this.fields = Object.keys(definition)
-                .map(function (fieldName) {
-                return db.factory.newFieldSchema(_this, fieldName, definition[fieldName]);
+                .map(function (fieldName, order) {
+                return db.factory.newFieldSchema(_this, fieldName, tslib_11.__assign({ order: order }, definition[fieldName]));
             });
+            this.fields.sort(function (a, b) { return a.order - b.order; });
             this._normalizer = db.factory.newSchemaNormalizer(this);
             this._primaryKeyFields = this.fields.filter(function (f) { return f.isPrimaryKey; });
             this._foreignKeyFields = this.fields.filter(function (f) { return f.isForeignKey; });
@@ -1071,11 +1079,20 @@ define("models/TableSchemaModel", ["require", "exports", "tslib", "errors", "uti
                 throw new Error(errors_10.default.pkNotFound(this.name));
             return pk;
         };
+        TableSchemaModel.prototype.composePrimaryKey = function (parts) {
+            if (Array.isArray(parts))
+                return parts.join(this.db.keySeparator);
+            return parts;
+        };
         TableSchemaModel.prototype.getPrimaryKey = function (record) {
+            var _this = this;
+            var generator = this.db.getPkGenerator(this.name);
+            if (generator)
+                return generator(record, this);
             var lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
-            var combinedPk = lookup.reduce(function (p, n) {
-                var k = n.getValue(record);
-                return p && k ? (p + "_" + k) : k;
+            var combinedPk = lookup.reduce(function (pk, field) {
+                var key = field.getValue(record);
+                return pk && key ? (pk + _this.db.keySeparator + key) : key;
             }, null);
             if (utils.isValidID(combinedPk))
                 return utils.asID(combinedPk);

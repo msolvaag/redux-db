@@ -1,5 +1,4 @@
 import { createFactory, Database, RecordModel } from "..";
-import { initialState } from "../constants";
 import * as ModelFactory from "../ModelFactory";
 
 describe("RecordModelFactory", () => {

@@ -6,6 +6,7 @@ import {
     NormalizeOptions,
     PartialValue,
     PartialValues,
+    PkType,
     Session,
     Table,
     TableIndex,
@@ -48,24 +49,24 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         return this.state.ids.map(id => this.state.byId[id]);
     }
 
-    exists(id: number | string) {
+    exists(id: PkType) {
         if (!utils.isValidID(id)) return false;
         return this.state.byId[utils.asID(id)] !== undefined;
     }
 
-    get(id: number | string): R {
+    get(id: PkType): R {
         if (!this.exists(id))
             throw new Error(errors.recordNotFound(this.schema.name, id));
         return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
-    getOrDefault(id: number | string): R | undefined {
+    getOrDefault(id: PkType): R | undefined {
         if (!this.exists(id))
             return undefined;
         return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
-    getValue(id: number | string) {
+    getValue(id: PkType) {
         if (utils.isValidID(id))
             return this.state.byId[id];
         else
@@ -76,11 +77,11 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         return this.values();
     }
 
-    getMetadata(id: number | string) {
+    getMetadata(id: PkType) {
         return this.state.meta[id] || {};
     }
 
-    setMetadata(ids: number | string | (string | number)[], metadata: {}) {
+    setMetadata(ids: PkType | PkType[], metadata: {}) {
         const meta = utils.ensureArray(ids).reduce((map, id) => ({ ...map, [id]: metadata }), {});
 
         this.state = tableState.merge(this.state, { meta });
@@ -111,7 +112,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
             data, this.upsertNormalized, { normalizePKs: true, argument });
     }
 
-    delete(data: string | number | PartialValue<R> | (string | number | PartialValue<R>)[]) {
+    delete(data: PkType | PartialValue<R> | (PkType | PartialValue<R>)[]) {
         utils.ensureParam("data", data);
 
         const idsToDelete = utils.ensureArray(data).map(subject =>

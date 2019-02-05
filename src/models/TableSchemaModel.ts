@@ -28,10 +28,10 @@ export default class TableSchemaModel implements TableSchema {
         utils.ensureParamObject("definition", definition);
 
         this.fields = Object.keys(definition)
-            .map(fieldName =>
+            .map((fieldName, order) =>
                 db.factory.newFieldSchema(this,
-                    fieldName,
-                    definition[fieldName]));
+                    fieldName, { order, ...definition[fieldName] }));
+        this.fields.sort((a, b) => a.order - b.order);
 
         this._normalizer = db.factory.newSchemaNormalizer(this);
         this._primaryKeyFields = this.fields.filter(f => f.isPrimaryKey);
@@ -93,12 +93,22 @@ export default class TableSchemaModel implements TableSchema {
         return pk;
     }
 
-    getPrimaryKey(record: any) {
+    composePrimaryKey(parts: any) {
+        if (Array.isArray(parts))
+            return parts.join(this.db.keySeparator);
+        return parts;
+    }
+
+    getPrimaryKey(record: any): string | undefined {
+        const generator = this.db.getPkGenerator(this.name);
+        if (generator)
+            return generator(record, this);
+
         const lookup = (this._primaryKeyFields.length ? this._primaryKeyFields : this._foreignKeyFields);
 
-        const combinedPk = lookup.reduce((p, n) => {
-            const k = n.getValue(record);
-            return p && k ? (p + "_" + k) : k;
+        const combinedPk = lookup.reduce((pk, field) => {
+            const key = field.getValue(record);
+            return pk && key ? (pk + this.db.keySeparator + key) : key;
         }, null as string | null | undefined | number);
 
         if (utils.isValidID(combinedPk))

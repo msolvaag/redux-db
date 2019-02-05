@@ -8,7 +8,7 @@ export default class SchemaNormalizer {
     db: DatabaseSchema;
 
     constructor(schema: TableSchema) {
-        this.schema = schema;
+        this.schema = utils.ensureParamObject("schema", schema, "db");
         this.db = schema.db;
     }
 
@@ -63,8 +63,8 @@ export default class SchemaNormalizer {
         const pk = this.schema.getPrimaryKey(record);
         if (pk) return pk;
 
-        // Invoke the "onGeneratePK" hook if PK not found.
-        const generator = this.db.getPkGenerator(this.schema.name);
+        // Invoke the "onMissingPK" hook if PK not found.
+        const generator = this.db.getMissingPkHandler(this.schema.name);
         if (!generator) return undefined;
 
         const generatedPk = generator(record, this.schema);
@@ -74,7 +74,7 @@ export default class SchemaNormalizer {
                 record[this.schema.primaryKeys[0].propName] = generatedPk;
 
         // Handling multiple PK field defs:
-        // We may need the "onGeneratePK" hook to return an object defining each key value.
+        // We may need the "onMissingPK" hook to return an object defining each key value.
         // BUT this seems like a rare scenario..
         // So for now; don't populate record.
 

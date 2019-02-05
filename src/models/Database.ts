@@ -16,8 +16,11 @@ import {
 } from "../types";
 import { ensureArray, ensureParamObject, isEqual, toObject } from "../utils";
 
+const KEY_SEPARATOR = "_";
+
 const defaultOptions: DatabaseOptions = {
-    cascadeAsDefault: false
+    cascadeAsDefault: false,
+    keySeparator: KEY_SEPARATOR
 };
 
 const getMappedFunction = <T extends Function>(map: MapOf<T> | T | undefined, key: string, defaultFn?: T) => {
@@ -37,11 +40,13 @@ export default class Database<T extends TableMap> implements DatabaseSchema {
     options: DatabaseOptions;
     factory: ModelFactory & RecordFactory;
     tableMap: MapOf<TableSchema>;
+    keySeparator: string;
 
     constructor(schema: Schema, factory: ModelFactory & RecordFactory, options?: DatabaseOptions) {
         this.schema = ensureParamObject("schema", schema);
         this.factory = ensureParamObject("factory", factory);
         this.options = { ...defaultOptions, ...options };
+        this.keySeparator = this.options.keySeparator || "";
 
         this.tables = Object.keys(schema).map(tableName =>
             this.factory.newTableSchema(this, tableName, schema[tableName]));
@@ -57,6 +62,8 @@ export default class Database<T extends TableMap> implements DatabaseSchema {
         getMappedFunction(this.options.onRecordCompare, schemaName, isEqual)
     getRecordMerger = (schemaName: string) =>
         getMappedFunction(this.options.onRecordMerge, schemaName)
+    getMissingPkHandler = (schemaName: string) =>
+        getMappedFunction(this.options.onMissingPK, schemaName)
 
     combineReducers(...reducers: Reducer[]) {
         return (state: any = {}, action: any) => this.reduce(state, action, reducers);

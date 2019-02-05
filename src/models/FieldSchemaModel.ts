@@ -7,6 +7,7 @@ export default class FieldSchemaModel implements FieldSchema {
     readonly table: TableSchema;
     readonly name: string;
     readonly propName: string;
+    readonly order: number;
 
     readonly type: FieldType;
 
@@ -32,6 +33,7 @@ export default class FieldSchemaModel implements FieldSchema {
         this.name = optionalParamString("schema.fieldName", schema.fieldName, name);
         this.propName = optionalParamString("schema.propName", schema.propName, name);
         this.references = optionalParamString("schema.references", schema.references);
+        this.order = schema.order || 0;
 
         this.isPrimaryKey = schema.pk === true || schema.type === TYPE_PK;
         this.isForeignKey = !!this.references;

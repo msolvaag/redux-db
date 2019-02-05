@@ -1,4 +1,4 @@
-import * as ReduxDB from "../src";
+import * as ReduxDB from "../dist/cjs";
 import * as data from "./data";
 
 const schema = {

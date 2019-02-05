@@ -4,10 +4,12 @@ export type Values<R> = ValueType<R> | ValueType<R>[];
 export type PartialValue<R> = Partial<ValueType<R>>;
 export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
 
+export type PkType = string | number;
+
 export interface RecordEntity { id: string; }
 
 export type Reducer = (session: any, action: any, arg?: any) => void;
-export type PkGenerator = (record: any, schema: TableSchema) => string | null | undefined;
+export type PkGenerator = (record: any, schema: TableSchema) => string | undefined;
 export type RecordNormalizer = (record: any, context: NormalizeContext) => any;
 export type RecordComparer = (a: any, b: any, schema: TableSchema) => boolean;
 export type RecordMerger = (a: any, b: any, schema: TableSchema) => any;
@@ -36,6 +38,7 @@ export interface TableSchema {
     connect(schemas: MapOf<TableSchema>): void;
     /// Gets the value of the PK for the given record.
 
+    composePrimaryKey(parts: any): string;
     ensurePrimaryKey(record: any): string;
 
     getPrimaryKey(record: any): string | undefined;
@@ -82,6 +85,7 @@ export interface FieldSchema {
     isForeignKey: boolean;
     isStamp: boolean;
     notNull: boolean;
+    order: number;
 
     /// Connects this schema with the referenced table.
     /// Used internally in the setup of the schema object model.
@@ -422,6 +426,8 @@ export interface FieldDefinition {
     /// If set, exports that this field is nullable or not.
     notNull?: boolean;
 
+    order?: number;
+
     /// Defines a custom value factory for the field.
     value?: (record: any, context: ComputeContext<any>) => any;
 }
@@ -511,10 +517,13 @@ export interface DatabaseSchema {
     options: DatabaseOptions;
     factory: ModelFactory & RecordFactory;
 
+    keySeparator: string;
+
     getRecordNormalizer: (schemaName: string) => RecordNormalizer | undefined;
     getPkGenerator: (schemaName: string) => PkGenerator | undefined;
     getRecordComparer: (schemaName: string) => RecordComparer | undefined;
     getRecordMerger: (schemaName: string) => RecordMerger | undefined;
+    getMissingPkHandler: (schemaName: string) => PkGenerator | undefined;
 }
 
 /// Represents the available options for creating a new database.
@@ -524,9 +533,11 @@ export interface DatabaseOptions {
     onGeneratePK?: MapOf<PkGenerator> | PkGenerator;
     onRecordCompare?: MapOf<RecordComparer> | RecordComparer;
     onRecordMerge?: MapOf<RecordMerger> | RecordMerger;
+    onMissingPK?: MapOf<PkGenerator> | PkGenerator;
 
     cascadeAsDefault?: boolean;
     strict?: boolean;
+    keySeparator?: string;
 }
 
 export interface DatabaseCreateOptions extends DatabaseOptions {
