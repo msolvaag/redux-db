@@ -1,5 +1,12 @@
+// tslint:disable:max-line-length
+type Diff<T extends string | number | symbol, U extends string | number | symbol> = ({ [P in T]: P } & { [P in U]: never } & { [x: string]: never })[T];
+type RecordProps<R> = Pick<R, Diff<keyof R, keyof TableRecord>>;
+type PropValueTypes<R extends Record<K, any>, K extends string | number | symbol> = {
+    [P in K]: R[K] extends { value: infer ValueType } ? ValueType : never
+};
+
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
-export type ValueType<R> = R extends { value: infer ValueType } ? ValueType : never;
+export type ValueType<R> = (R extends { value: infer ValueType } ? ValueType : never) & (PropValueTypes<R, keyof RecordProps<R>>);
 export type Values<R> = ValueType<R> | ValueType<R>[];
 export type PartialValue<R> = Partial<ValueType<R>>;
 export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
