@@ -1,6 +1,6 @@
 {
   "name": "redux-db",
-  "version": "1.0.0-beta.5",
+  "version": "1.1.0-beta.0",
   "description": "A state normalizer and orm for redux",
   "main": "./dist/cjs/index.js",
   "module": "./dist/es/index.js",
@@ -37,15 +37,16 @@
   "devDependencies": {
     "@types/jest": "^23.3.9",
     "@types/lodash": "^4.14.116",
+    "@types/node": "^10.12.21",
+    "del": "^3.0.0",
     "gulp": "^3.9.1",
     "gulp-rename": "^1.4.0",
     "gulp-uglify": "^3.0.1",
-    "del": "^3.0.0",
     "jest": "^23.6.0",
     "lodash": "^4.17.11",
     "pump": "^3.0.0",
     "ts-jest": "^23.10.4",
-    "ts-node": "^7.0.1",
+    "ts-node": "^8.0.2",
     "tslint": "^5.11.0",
     "typescript": "^3.2.2"
   }

@@ -6,7 +6,7 @@ type PropValueTypes<R extends Record<K, any>, K extends string | number | symbol
 };
 
 export type FieldType = "ATTR" | "MODIFIED" | "PK";
-export type ValueType<R> = (R extends { value: infer ValueType } ? ValueType : never) & (PropValueTypes<R, keyof RecordProps<R>>);
+export type ValueType<R> = (R extends { value: infer ValueType } ? ValueType : never) & (Partial<PropValueTypes<R, keyof RecordProps<R>>>);
 export type Values<R> = ValueType<R> | ValueType<R>[];
 export type PartialValue<R> = Partial<ValueType<R>>;
 export type PartialValues<R> = PartialValue<R> | (PartialValue<R>[]);
