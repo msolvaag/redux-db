@@ -4,7 +4,6 @@
   "description": "A state normalizer and orm for redux",
   "main": "./dist/cjs/index.js",
   "module": "./dist/es/index.js",
-  "jsnext:main": "./dist/es/index.js",
   "scripts": {
     "test": "jest",
     "build": "gulp clean && yarn build:es && yarn build:cjs && yarn build:es6 && yarn build:amd && gulp compress",

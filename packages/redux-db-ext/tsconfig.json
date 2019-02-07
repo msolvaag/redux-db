@@ -1,8 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
-    "baseUrl": ".",
+    "rootDir": "./src",
     "noEmitOnError": true,
     "noEmitHelpers": true,
     "importHelpers": true,
@@ -19,19 +18,13 @@
     "alwaysStrict": true,
     "esModuleInterop": true,
     "allowJs": false,
-    "paths": {
-      "redux-db": [
-        "../../dist/es"
-      ]
-    }
+    "declaration": true
   },
   "exclude": [
     "node_modules",
     "**/*.spec.ts",
-    "wwwroot",
     "test",
     "docs",
-    "examples",
     "dist"
   ]
 }

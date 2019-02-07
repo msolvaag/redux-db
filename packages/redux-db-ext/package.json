@@ -1,11 +1,43 @@
 {
   "name": "redux-db-ext",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Extensions to redux-db",
-  "main": "index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/es/index.js",
   "author": "msolvaag",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/msolvaag/redux-db/issues"
+  },
+  "homepage": "https://github.com/msolvaag/redux-db/packages/redux-db-ext#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msolvaag/redux-db.git"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "gulp clean && yarn build:es && yarn build:cjs && yarn build:es6 && yarn build:amd && gulp compress",
+    "build:es": "tsc -p ./tsconfig.es.json",
+    "build:es6": "tsc -p ./tsconfig.es6.json",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "build:amd": "tsc -p ./tsconfig.dist.json"
+  },
   "dependencies": {
     "redux-db": "^1.1.0-beta.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.9",
+    "@types/lodash": "^4.14.116",
+    "@types/node": "^10.12.21",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.4.0",
+    "gulp-uglify": "^3.0.1",
+    "jest": "^23.6.0",
+    "lodash": "^4.17.11",
+    "pump": "^3.0.0",
+    "ts-jest": "^23.10.4",
+    "tslint": "^5.11.0",
+    "typescript": "^3.3.1"
   }
 }

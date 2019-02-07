@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "es5",
+    "outFile": "./dist/redux-db-ext.js",
+    "module": "amd",
+    "moduleResolution": "node"
+  }
+}
