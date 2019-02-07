@@ -52,6 +52,13 @@ ramda@^0.22.1:
   resolved "https://registry.yarnpkg.com/ramda/-/ramda-0.22.1.tgz#031da0c3df417c5b33c96234757eb37033f36a0e"
   integrity sha1-Ax2gw99BfFszyWI0dX6zcDPzag4=
 
+redux-db@1.1.0-beta.0:
+  version "1.1.0-beta.0"
+  resolved "https://registry.yarnpkg.com/redux-db/-/redux-db-1.1.0-beta.0.tgz#8e980e5a5301aa85f8ca49b4770167e24dc13dea"
+  integrity sha512-79iSh4p3X0jXkpkF7lVeMHOm8KfUKBIsOUw8tScQEjz0qAeYfWef0SMLksZe+XxTUu4FP8/wSCYPl168UKtmJQ==
+  dependencies:
+    tslib "^1.9.3"
+
 redux-orm@^0.12.2:
   version "0.12.2"
   resolved "https://registry.yarnpkg.com/redux-orm/-/redux-orm-0.12.2.tgz#cc6c16f387c0f65f66aee8b8d53f1ecc933a9164"
@@ -95,6 +102,16 @@ ts-node@^8.0.2:
     make-error "^1.1.1"
     source-map-support "^0.5.6"
     yn "^3.0.0"
+
+tslib@^1.9.3:
+  version "1.9.3"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.9.3.tgz#d7e4dd79245d85428c4d7e4822a79917954ca286"
+  integrity sha512-4krF8scpejhaOgqzBEcGM7yDIEfi0/8+8zDRZhNZZ2kjmHJ4hv3zCbQWxoJGz1iw5U0Jl0nma13xzHXcncMavQ==
+
+typescript@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.3.1.tgz#6de14e1db4b8a006ac535e482c8ba018c55f750b"
+  integrity sha512-cTmIDFW7O0IHbn1DPYjkiebHxwtCMU+eTy30ZtJNBPF9j2O1ITu5XH2YnBeVRKWHqF+3JQwWJv0Q0aUgX8W7IA==
 
 yn@^3.0.0:
   version "3.0.0"

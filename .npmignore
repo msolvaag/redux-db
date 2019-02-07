@@ -9,6 +9,7 @@ tests
 packages
 config
 _config.yml
+.gitbook.yml
 logo.*
 jest.*
 tslint.json

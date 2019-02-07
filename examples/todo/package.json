@@ -19,7 +19,7 @@
     "react-router-dom": "^4.3.1",
     "react-router-redux": "next",
     "redux": "^4.0.1",
-    "redux-db": "1.0.0-beta.5",
+    "redux-db": "1.1.0-beta.0",
     "redux-observable": "^1.0.0",
     "reselect": "^4.0.0",
     "rxjs": "^6.4.0",
