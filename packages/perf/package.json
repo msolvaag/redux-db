@@ -1,0 +1,14 @@
+{
+  "name": "perf",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "ts-node -T -P ./tsconfig.json ./index.ts"
+  },
+  "dependencies": {
+    "redux-orm": "^0.12.2",
+    "redux-db": "1.1.0",
+    "ts-node": "^8.0.2"
+  }
+}

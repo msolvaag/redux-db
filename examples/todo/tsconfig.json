@@ -16,7 +16,8 @@
     "allowJs": true,
     "alwaysStrict": true,
     "baseUrl": "./src",
-    "traceResolution": true
+    "diagnostics": false,
+    "traceResolution": false
   },
   "exclude": [
     "node_modules",

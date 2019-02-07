@@ -114,6 +114,7 @@ export interface Table<R extends TableRecord = TableRecord> {
     session: Session;
     schema: TableSchema;
     state: TableState;
+    db: DatabaseSchema;
     dirty: boolean;
 
     /**

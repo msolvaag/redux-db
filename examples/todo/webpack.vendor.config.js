@@ -17,7 +17,7 @@ const config = {
             "redux-observable",
             "react-redux",
             "react-router-dom",
-            //"redux-db",
+            "redux-db",
             "reselect",
 
             "rxjs/add/operator/switchMap",

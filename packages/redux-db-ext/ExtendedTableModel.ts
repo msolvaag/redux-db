@@ -4,7 +4,7 @@ import errors from "./errors";
 export default class ExtendedTableModel<R extends ReduxDB.TableRecord> extends ReduxDB.TableModel<R> {
 
     getMany(ids: (number | string)[]): R[] {
-        return ids.map(id => this.schema.db.factory.newRecordModel(ReduxDB.utils.asID(id), this) as R);
+        return ids.map(id => this.db.factory.newRecordModel(ReduxDB.utils.asID(id), this) as R);
     }
 
     getByFk(fieldName: string, id: number | string): ReduxDB.TableRecordSet<R> {
@@ -15,7 +15,7 @@ export default class ExtendedTableModel<R extends ReduxDB.TableRecord> extends R
         const [field] = this.schema.fields.filter(f => f.isForeignKey && f.name === fieldName);
         if (!field) throw new Error(errors.fkUndefined(this.schema.name, fieldName));
 
-        return this.schema.db.factory.newRecordSetModel(this, field, { id: pk }) as ReduxDB.TableRecordSet<R>;
+        return this.db.factory.newRecordSetModel(this, field, { id: pk }) as ReduxDB.TableRecordSet<R>;
     }
 
     getFieldValue<F>(id: string | number, field: keyof ReduxDB.ValueType<R>) {

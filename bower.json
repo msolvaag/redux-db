@@ -21,6 +21,7 @@
     "tests",
     "docs",
     "packages",
-    "examples"
+    "examples",
+    "config"
   ]
 }

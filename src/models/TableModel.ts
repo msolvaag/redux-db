@@ -2,6 +2,7 @@ import { initialState } from "../constants";
 import errors from "../errors";
 import tableState from "../state";
 import {
+    DatabaseSchema,
     MapOf,
     NormalizeOptions,
     PartialValue,
@@ -23,6 +24,7 @@ import NormalizeContext from "./NormalizeContext";
 export default class TableModel<R extends TableRecord> implements Table<R> {
     readonly session: Session;
     readonly schema: TableSchema;
+    readonly db: DatabaseSchema;
     state: TableState<ValueType<R>>;
     dirty = false;
 
@@ -30,6 +32,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
         this.session = utils.ensureParamObject("session", session);
         this.schema = utils.ensureParamObject("schema", schema);
         this.state = utils.ensureParamObject("state", state || initialState(this.schema.name));
+        this.db = this.schema.db;
 
         const { ids, byId, indexes, meta, name } = this.state;
         if (!ids || !byId || !indexes) throw new Error(errors.tableInvalidState(schema.name));
@@ -42,7 +45,7 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     }
 
     all(): R[] {
-        return this.state.ids.map(id => this.schema.db.factory.newRecordModel(id, this) as R);
+        return this.state.ids.map(id => this.db.factory.newRecordModel(id, this) as R);
     }
 
     values() {
@@ -57,13 +60,13 @@ export default class TableModel<R extends TableRecord> implements Table<R> {
     get(id: PkType): R {
         if (!this.exists(id))
             throw new Error(errors.recordNotFound(this.schema.name, id));
-        return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
+        return this.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
     getOrDefault(id: PkType): R | undefined {
         if (!this.exists(id))
             return undefined;
-        return this.schema.db.factory.newRecordModel(utils.asID(id), this) as R;
+        return this.db.factory.newRecordModel(utils.asID(id), this) as R;
     }
 
     getValue(id: PkType) {

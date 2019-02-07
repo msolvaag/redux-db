@@ -274,7 +274,7 @@ define("Normalizer", ["require", "exports", "tslib", "constants", "errors", "uti
     utils = tslib_3.__importStar(utils);
     var SchemaNormalizer = /** @class */ (function () {
         function SchemaNormalizer(schema) {
-            this.schema = schema;
+            this.schema = utils.ensureParamObject("schema", schema, "db");
             this.db = schema.db;
         }
         SchemaNormalizer.prototype.normalize = function (data, context) {
@@ -809,6 +809,7 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
             this.session = utils.ensureParamObject("session", session);
             this.schema = utils.ensureParamObject("schema", schema);
             this.state = utils.ensureParamObject("state", state || constants_5.initialState(this.schema.name));
+            this.db = this.schema.db;
             var _a = this.state, ids = _a.ids, byId = _a.byId, indexes = _a.indexes, meta = _a.meta, name = _a.name;
             if (!ids || !byId || !indexes)
                 throw new Error(errors_9.default.tableInvalidState(schema.name));
@@ -826,7 +827,7 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
         });
         TableModel.prototype.all = function () {
             var _this = this;
-            return this.state.ids.map(function (id) { return _this.schema.db.factory.newRecordModel(id, _this); });
+            return this.state.ids.map(function (id) { return _this.db.factory.newRecordModel(id, _this); });
         };
         TableModel.prototype.values = function () {
             var _this = this;
@@ -840,12 +841,12 @@ define("models/TableModel", ["require", "exports", "tslib", "constants", "errors
         TableModel.prototype.get = function (id) {
             if (!this.exists(id))
                 throw new Error(errors_9.default.recordNotFound(this.schema.name, id));
-            return this.schema.db.factory.newRecordModel(utils.asID(id), this);
+            return this.db.factory.newRecordModel(utils.asID(id), this);
         };
         TableModel.prototype.getOrDefault = function (id) {
             if (!this.exists(id))
                 return undefined;
-            return this.schema.db.factory.newRecordModel(utils.asID(id), this);
+            return this.db.factory.newRecordModel(utils.asID(id), this);
         };
         TableModel.prototype.getValue = function (id) {
             if (utils.isValidID(id))
