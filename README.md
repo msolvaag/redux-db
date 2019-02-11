@@ -1,4 +1,6 @@
-# Initial page
+![logo](logo.png "redux-db")
+
+# redux-db
 
 [![NPM downloads](https://img.shields.io/npm/dm/redux-db.svg?style=flat-square)](https://www.npmjs.com/package/redux-db) [![NPM package](https://img.shields.io/npm/v/redux-db.svg?style=flat-square)](https://www.npmjs.com/package/redux-db)
 

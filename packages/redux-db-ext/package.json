@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/msolvaag/redux-db/issues"
   },
-  "homepage": "https://github.com/msolvaag/redux-db/packages/redux-db-ext#readme",
+  "homepage": "https://github.com/msolvaag/redux-db/tree/master/packages/redux-db-ext",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/msolvaag/redux-db.git"
